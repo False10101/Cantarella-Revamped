@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg: #0C0A09;
+    --surface: #161210;
+    --surface2: #1E1A17;
+    --surface3: #262018;
+    --border: rgba(210, 175, 130, 0.1);
+    --border2: rgba(210, 175, 130, 0.18);
+    --amber: #C9935A;
+    --amber-soft: #D4A87A;
+    --amber-dim: rgba(201, 147, 90, 0.12);
+    --text: #F0EBE3;
+    --text-secondary: #9A8878;
+    --text-dim: #5C4F45;
+    --font-display: var(--font-display);
+    --font-body: var(--font-body);
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .animate-fadeup {
+    animation: fadeUp 1s ease forwards;
+    opacity: 0;
+  }
+  .delay-1 { animation-delay: 0.2s; }
+  .delay-2 { animation-delay: 0.4s; }
+  .delay-3 { animation-delay: 0.6s; }
+  .delay-4 { animation-delay: 0.7s; }
+  .delay-5 { animation-delay: 0.9s; }
+}
