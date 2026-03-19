@@ -14,6 +14,7 @@
   "dependencies": {
     "@tidbcloud/serverless": "^0.2.0",
     "@upstash/vector": "^1.2.3",
+    "bullmq": "^5.71.0",
     "crypto": "^1.0.1",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",

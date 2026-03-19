@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Provider from "./providers";
 import "./globals.css"
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import AuthGuard from "./AuthGuard";
 
 
 export const metadata: Metadata = {
@@ -29,7 +30,9 @@ export default function RootLayout({ children, }: Readonly<{ children: React.Rea
         className={`${cormorant.variable} ${dmSans.variable} antialiased`}
       >
         <Provider>
-          {children}
+          <AuthGuard>
+            {children}
+          </AuthGuard>
         </Provider>
       </body>
     </html>
