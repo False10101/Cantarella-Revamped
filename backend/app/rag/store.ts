@@ -3,31 +3,36 @@ import embed from "./embed";
 import { db } from "../../db";
 import { memories } from "../../db/schema";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
 
 const storeMemory = async (content: string, category: string, userId: number) => {
-    const vector = await embed(content);
+    const currentDate = new Date().toLocaleDateString('en-US', {
+        timeZone: 'Asia/Bangkok',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    const timeAwareContent = `[Stored on ${currentDate}] ${content}`;
     const vectorId = randomUUID();
 
+    const vector = await embed(timeAwareContent);
+
     await db.transaction(async (tx) => {
-        const inserted = await tx.insert(memories).values({
-            content: content,
-            category: category,
-            userId: userId
+        await tx.insert(memories).values({
+            content: timeAwareContent,
+            category,
+            userId,
+            vectorId
         });
+    });
 
-        const insertId = inserted.lastInsertId;
+    await index.upsert({
+        id: vectorId,
+        vector,
+        metadata: { timeAwareContent, userId }
+    });
 
-        await index.upsert({
-            id: vectorId,
-            vector,
-            metadata: { content, userId }
-        })
-
-        await tx.update(memories).set({vectorId: vectorId}).where(eq(memories.id,Number(insertId)))
-    })
-
-    return vectorId
+    return vectorId;
 }
 
 export default storeMemory;

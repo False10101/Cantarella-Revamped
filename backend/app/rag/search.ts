@@ -4,7 +4,7 @@ import { memories } from "../../db/schema";
 import index from "./client";
 import embed from "./embed";
 
-const searchMemory = async(query : string, userId :number, topK = 5) =>{
+const searchMemory = async (query: string, userId: number, topK = 5) => {
     const vector = await embed(query);
 
     const results = await index.query({
@@ -12,15 +12,20 @@ const searchMemory = async(query : string, userId :number, topK = 5) =>{
         topK,
         includeMetadata: true,
         filter: `userId = ${userId}`
-    })
+    });
 
-    const vectorIds = results.map(r => String(r.id))
+    const vectorIds = results.map(r => String(r.id));
 
-    if(vectorIds.length < 1) return [];
+    if (vectorIds.length < 1) return [];
 
-    const memoryRows = await db.select().from(memories).where(inArray(memories.vectorId, vectorIds));
+    const memoryRows = await db
+        .select()
+        .from(memories)
+        .where(inArray(memories.vectorId, vectorIds));
 
-    return memoryRows;
+    return vectorIds
+        .map(vid => memoryRows.find(m => m.vectorId === vid))
+        .filter((m): m is typeof memoryRows[number] => m !== undefined);
 }
 
 export default searchMemory;

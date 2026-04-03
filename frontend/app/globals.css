@@ -20,8 +20,15 @@
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @layer utilities {
@@ -29,9 +36,55 @@
     animation: fadeUp 1s ease forwards;
     opacity: 0;
   }
-  .delay-1 { animation-delay: 0.2s; }
-  .delay-2 { animation-delay: 0.4s; }
-  .delay-3 { animation-delay: 0.6s; }
-  .delay-4 { animation-delay: 0.7s; }
-  .delay-5 { animation-delay: 0.9s; }
+
+  .delay-1 {
+    animation-delay: 0.2s;
+  }
+
+  .delay-2 {
+    animation-delay: 0.4s;
+  }
+
+  .delay-3 {
+    animation-delay: 0.6s;
+  }
+
+  .delay-4 {
+    animation-delay: 0.7s;
+  }
+
+  .delay-5 {
+    animation-delay: 0.9s;
+  }
+}
+
+@keyframes typingPulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.animate-typing-1 {
+  animation: typingPulse 1.2s ease-in-out infinite;
+}
+
+.animate-typing-2 {
+  animation: typingPulse 1.2s ease-in-out infinite 0.2s;
+}
+
+.animate-typing-3 {
+  animation: typingPulse 1.2s ease-in-out infinite 0.4s;
+}
+
+html, body {
+  overscroll-behavior: none;
+  overflow: hidden;
 }

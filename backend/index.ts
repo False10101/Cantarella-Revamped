@@ -2,12 +2,21 @@ import express from 'express';
 import "dotenv/config";
 import {JWTCheck, attachUser} from './app/middleware/auth';
 import messageRouter from './app/routers/messageRouter';
+import cors from 'cors';
 
 const app = express();
+
+app.use(cors({
+    origin: 'http://localhost:3000', 
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+}))
+
 
 app.use(express.json());
 app.use(JWTCheck);
 app.use(attachUser);
+
 
 
 const port = process.env.SERVER_PORT || 3005;

@@ -12,7 +12,7 @@ export default function Navbar({ status }: { status: boolean }) {
     const pathname = usePathname();
 
     return (
-        <div className="flex flex-col relative w-[280px] bg-[var(--surface)] h-full overflow-hidden border-r-[1px] border-[var(--border)]">
+        <div className="flex flex-col relative w-[260px] bg-[var(--surface)] h-full overflow-hidden border-r-[1px] border-[var(--border)]">
             <div className="absolute top-0 left-1/2 -translate-x-1/2"
                 style={{
                     width: '20vw',
