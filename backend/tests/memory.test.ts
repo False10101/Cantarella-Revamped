@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createMemoryTemporalContext,
+  MemoryCandidateReferenceError,
   memoryContentHash,
   normalizeMemoryText,
   prepareMemoryCandidates,
@@ -32,6 +33,17 @@ const candidate: MemoryCandidate = {
   sourceMessageIds: [sourceMessageId],
 };
 
+const candidateOutput = {
+  action: "add",
+  targetMemoryRef: null,
+  type: "preference",
+  canonicalText: "Ian prefers direct feedback.",
+  importance: 0.8,
+  confidence: 0.95,
+  expiresAt: null,
+  sourceMessageRefs: ["message_1"],
+};
+
 const temporalContext = createMemoryTemporalContext(
   "Asia/Bangkok",
   new Date("2026-08-03T17:04:00.000Z"),
@@ -48,24 +60,36 @@ const userMessages = [
 
 describe("memory policy contract", () => {
   it("accepts strict user-evidenced memory operations", () => {
-    expect(parseMemoryPlan(JSON.stringify({ candidates: [candidate] }))).toEqual({
-      candidates: [candidate],
-    });
+    expect(
+      parseMemoryPlan(JSON.stringify({ candidates: [candidateOutput] }), {
+        temporalContext,
+        userMessages,
+        existingMemories: [],
+      }),
+    ).toEqual({ candidates: [candidate] });
   });
 
   it("rejects an update without a target memory", () => {
     expect(() =>
       parseMemoryPlan(
         JSON.stringify({
-          candidates: [{ ...candidate, action: "correct" }],
+          candidates: [{ ...candidateOutput, action: "correct" }],
         }),
+        {
+          temporalContext,
+          userMessages,
+          existingMemories: [],
+        },
       ),
     ).toThrow("violated its schema");
   });
 
   it("retries malformed policy JSON from the original evidence", async () => {
     const requests: CompletionRequest[] = [];
-    const outputs = ["not json", JSON.stringify({ candidates: [candidate] })];
+    const outputs = [
+      "not json",
+      JSON.stringify({ candidates: [candidateOutput] }),
+    ];
     const generator = createMemoryPolicyGenerator({
       async complete(request) {
         requests.push(request);
@@ -91,6 +115,8 @@ describe("memory policy contract", () => {
     expect(requests[1]?.messages[1]?.content).toContain(
       "i prefer direct feedback",
     );
+    expect(requests[0]?.messages[1]?.content).toContain('"ref": "message_1"');
+    expect(requests[0]?.messages[1]?.content).not.toContain(sourceMessageId);
     expect(requests[0]?.messages[0]?.content).toContain(
       "Never derive its calendar date from createdAtUtc",
     );
@@ -102,6 +128,52 @@ describe("memory policy contract", () => {
         (message) => !message.content.includes("not json"),
       ),
     ).toBe(true);
+  });
+
+  it("retries when the model puts a memory reference in message evidence", async () => {
+    const requests: CompletionRequest[] = [];
+    const outputs = [
+      JSON.stringify({
+        candidates: [
+          { ...candidateOutput, sourceMessageRefs: ["memory_1"] },
+        ],
+      }),
+      JSON.stringify({ candidates: [candidateOutput] }),
+    ];
+    const generator = createMemoryPolicyGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: outputs[requests.length - 1] ?? outputs[1]!,
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      temporalContext,
+      userMessages,
+      existingMemories: [
+        {
+          id: existingMemoryId,
+          type: "preference",
+          canonicalText: "Ian prefers concise replies.",
+          importance: 0.7,
+          confidence: 0.9,
+          expiresAt: null,
+          similarity: 0.8,
+        },
+      ],
+    });
+
+    expect(result.plan.candidates).toEqual([candidate]);
+    expect(requests).toHaveLength(2);
+    expect(requests[1]?.messages[0]?.content).toContain(
+      "sourceMessageRefs",
+    );
   });
 
   it("keeps a second malformed result retryable and preserves its raw output", async () => {
@@ -161,16 +233,11 @@ describe("memory write policy guards", () => {
     );
   });
 
-  it("drops untrusted evidence, low-value facts, expired state, and duplicates", () => {
+  it("drops low-value facts, expired state, and duplicates", () => {
     const prepared = prepareMemoryCandidates(
       [
         candidate,
         { ...candidate, canonicalText: "IAN PREFERS DIRECT FEEDBACK!" },
-        {
-          ...candidate,
-          canonicalText: "Untrusted fact",
-          sourceMessageIds: ["11376b4f-8d6f-4487-9951-c1d6fd732ab1"],
-        },
         {
           ...candidate,
           canonicalText: "A passing detail",
@@ -195,6 +262,24 @@ describe("memory write policy guards", () => {
     expect(prepared[0]?.canonicalText).toBe(candidate.canonicalText);
   });
 
+  it("fails loudly when resolved evidence is not an eligible user message", () => {
+    expect(() =>
+      prepareMemoryCandidates(
+        [
+          {
+            ...candidate,
+            sourceMessageIds: ["11376b4f-8d6f-4487-9951-c1d6fd732ab1"],
+          },
+        ],
+        {
+          sourceMessageIds: new Set([sourceMessageId]),
+          existingMemoryIds: new Set([existingMemoryId]),
+          now: new Date("2026-08-03T16:00:00.000Z"),
+        },
+      ),
+    ).toThrow(MemoryCandidateReferenceError);
+  });
+
   it("accepts a valid correction only when its target was retrieved", () => {
     const correction: MemoryCandidate = {
       ...candidate,
@@ -210,13 +295,13 @@ describe("memory write policy guards", () => {
         now: new Date("2026-08-03T16:00:00.000Z"),
       }),
     ).toHaveLength(1);
-    expect(
+    expect(() =>
       prepareMemoryCandidates([correction], {
         sourceMessageIds: new Set([sourceMessageId]),
         existingMemoryIds: new Set(),
         now: new Date("2026-08-03T16:00:00.000Z"),
       }),
-    ).toEqual([]);
+    ).toThrow(MemoryCandidateReferenceError);
   });
 });
 

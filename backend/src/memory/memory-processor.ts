@@ -104,6 +104,13 @@ export class ObsoleteMemoryJobError extends Error {
   }
 }
 
+export class MemoryCandidateReferenceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MemoryCandidateReferenceError";
+  }
+}
+
 export function normalizeMemoryText(text: string): string {
   return text
     .normalize("NFKC")
@@ -135,17 +142,25 @@ export function prepareMemoryCandidates(
   const prepared: PreparedCandidate[] = [];
 
   for (const candidate of candidates) {
-    if (candidate.confidence < 0.72) continue;
-    if (candidate.importance < minimumImportance(candidate.type)) continue;
-    if (
-      candidate.sourceMessageIds.some(
-        (messageId) => !input.sourceMessageIds.has(messageId),
-      )
-    ) continue;
+    const invalidSourceMessageId = candidate.sourceMessageIds.find(
+      (messageId) => !input.sourceMessageIds.has(messageId),
+    );
+    if (invalidSourceMessageId) {
+      throw new MemoryCandidateReferenceError(
+        `Memory candidate referenced unavailable source message ${invalidSourceMessageId}.`,
+      );
+    }
     if (
       candidate.targetMemoryId &&
       !input.existingMemoryIds.has(candidate.targetMemoryId)
-    ) continue;
+    ) {
+      throw new MemoryCandidateReferenceError(
+        `Memory candidate referenced unavailable target memory ${candidate.targetMemoryId}.`,
+      );
+    }
+
+    if (candidate.confidence < 0.72) continue;
+    if (candidate.importance < minimumImportance(candidate.type)) continue;
     if (candidate.targetMemoryId && targeted.has(candidate.targetMemoryId)) continue;
 
     const normalizedText = normalizeMemoryText(candidate.canonicalText);
@@ -229,7 +244,7 @@ async function startMemoryModelRun(
     phase: "memory",
     provider: "openrouter",
     model: getEnvironment().THOUGHT_MODEL,
-    promptVersion: "memory-v1",
+    promptVersion: "memory-v2",
     status: "running",
     inputJson,
   });
