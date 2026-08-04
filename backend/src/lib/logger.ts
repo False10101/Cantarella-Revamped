@@ -15,7 +15,6 @@ export const logger = pino({
       "set-cookie",
       "DATABASE_URL",
       "OPENROUTER_API_KEY",
-      "OPENAI_API_KEY",
       "pushToken",
     ],
     censor: "[REDACTED]",

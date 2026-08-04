@@ -43,10 +43,14 @@ export class EmbeddingError extends Error {
 }
 
 function requiredApiKey(): string {
-  const apiKey = getEnvironment().OPENAI_API_KEY;
+  const apiKey = getEnvironment().OPENROUTER_API_KEY;
 
   if (!apiKey || apiKey === "replace-me") {
-    throw new EmbeddingError("OPENAI_API_KEY is not configured.", null, false);
+    throw new EmbeddingError(
+      "OPENROUTER_API_KEY is not configured.",
+      null,
+      false,
+    );
   }
 
   return apiKey;
@@ -77,20 +81,23 @@ export function createEmbeddingClient(
       let response: Response;
 
       try {
-        response = await fetchImplementation("https://api.openai.com/v1/embeddings", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${requiredApiKey()}`,
-            "Content-Type": "application/json",
+        response = await fetchImplementation(
+          "https://openrouter.ai/api/v1/embeddings",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${requiredApiKey()}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: environment.EMBEDDING_MODEL,
+              input: normalizedInputs,
+              dimensions: EMBEDDING_DIMENSIONS,
+              encoding_format: "float",
+            }),
+            signal: AbortSignal.timeout(environment.MODEL_TIMEOUT_MS),
           },
-          body: JSON.stringify({
-            model: environment.EMBEDDING_MODEL,
-            input: normalizedInputs,
-            dimensions: EMBEDDING_DIMENSIONS,
-            encoding_format: "float",
-          }),
-          signal: AbortSignal.timeout(environment.MODEL_TIMEOUT_MS),
-        });
+        );
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Embedding request failed.";
@@ -101,7 +108,7 @@ export function createEmbeddingClient(
 
       if (!response.ok) {
         throw new EmbeddingError(
-          payload.error?.message ?? `OpenAI returned HTTP ${response.status}.`,
+          payload.error?.message ?? `OpenRouter returned HTTP ${response.status}.`,
           response.status,
           response.status === 408 ||
             response.status === 409 ||
@@ -124,7 +131,7 @@ export function createEmbeddingClient(
         )
       ) {
         throw new EmbeddingError(
-          "OpenAI returned malformed embedding vectors.",
+          "OpenRouter returned malformed embedding vectors.",
           response.status,
           true,
         );
@@ -141,4 +148,3 @@ export function createEmbeddingClient(
     },
   };
 }
-

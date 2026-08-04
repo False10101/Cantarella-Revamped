@@ -10,10 +10,12 @@ const environmentSchema = z.object({
   AUTH0_DOMAIN: z.string().min(1),
   AUTH0_AUDIENCE: z.string().min(1),
   OPENROUTER_API_KEY: z.string().min(1).optional(),
-  OPENAI_API_KEY: z.string().min(1).optional(),
   THOUGHT_MODEL: z.string().min(1).default("qwen/qwen3.7-plus"),
   VOICE_MODEL: z.string().min(1).default("aion-labs/aion-3.0-mini"),
-  EMBEDDING_MODEL: z.string().min(1).default("text-embedding-3-small"),
+  EMBEDDING_MODEL: z
+    .string()
+    .min(1)
+    .default("openai/text-embedding-3-small"),
   MESSAGE_SETTLE_MS: z.coerce.number().int().min(250).max(10_000).default(1_200),
   MODEL_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(300_000).default(120_000),
   JOB_POLL_MS: z.coerce.number().int().min(100).max(10_000).default(500),

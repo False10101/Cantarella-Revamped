@@ -5,14 +5,14 @@ import {
   EmbeddingError,
 } from "../src/models/embedding.js";
 
-describe("OpenAI embedding client", () => {
+describe("OpenRouter embedding client", () => {
   it("requests and validates 1536-dimensional float embeddings", async () => {
     let body: Record<string, unknown> | undefined;
     const client = createEmbeddingClient(async (_input, init) => {
       body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       return new Response(
         JSON.stringify({
-          model: "text-embedding-3-small",
+          model: "openai/text-embedding-3-small",
           data: [{ index: 0, embedding: Array.from({ length: 1_536 }, () => 0) }],
           usage: { prompt_tokens: 4, total_tokens: 4 },
         }),
@@ -23,7 +23,7 @@ describe("OpenAI embedding client", () => {
     const result = await client.embed(["Ian prefers concise replies."]);
 
     expect(body).toMatchObject({
-      model: "text-embedding-3-small",
+      model: "openai/text-embedding-3-small",
       dimensions: 1_536,
       encoding_format: "float",
     });
@@ -61,4 +61,3 @@ describe("OpenAI embedding client", () => {
     });
   });
 });
-
