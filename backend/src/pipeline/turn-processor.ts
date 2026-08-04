@@ -22,6 +22,7 @@ import {
   messages,
   modelRuns,
   personas,
+  reminders,
   turns,
   users,
   userSettings,
@@ -212,6 +213,7 @@ async function loadThoughtContext(
   sourceMessageId: string;
   referenceAt: Date;
   originalRequest: string;
+  reminderIdsByReference: Map<string, string>;
 }> {
   const batchMessages = await database
     .select({
@@ -232,7 +234,8 @@ async function loadThoughtContext(
   const batchMessageIds = batchMessages.map((message) => message.id);
   const referenceMessage = batchMessages.at(-1);
   if (!referenceMessage) throw new Error("The turn has no reference message.");
-  const [recentMessages, summaryRetrieval, memoryRecords] = await Promise.all([
+  const [recentMessages, summaryRetrieval, memoryRecords, reminderRecords] =
+    await Promise.all([
     database
       .select({
         id: messages.id,
@@ -271,7 +274,39 @@ async function loadThoughtContext(
       limit: 8,
       minimumSimilarity: 0.28,
     }),
+    database
+      .select({
+        id: reminders.id,
+        title: reminders.title,
+        status: reminders.status,
+        scheduledFor: reminders.scheduledFor,
+        recurrenceRule: reminders.recurrenceRule,
+        updatedAt: reminders.updatedAt,
+      })
+      .from(reminders)
+      .where(eq(reminders.userId, prepared.userId))
+      .orderBy(desc(reminders.updatedAt))
+      .limit(50),
   ]);
+
+  const reminderIdsByReference = new Map<string, string>();
+  const reminderContext = reminderRecords.map((reminder, index) => {
+    const ref = `reminder_${index + 1}`;
+    reminderIdsByReference.set(ref, reminder.id);
+    const recurrence: ThoughtContext["reminders"][number]["recurrence"] =
+      reminder.recurrenceRule === "daily" ||
+      reminder.recurrenceRule === "weekly" ||
+      reminder.recurrenceRule === "monthly"
+        ? reminder.recurrenceRule
+        : null;
+    return {
+      ref,
+      title: reminder.title,
+      status: reminder.status,
+      scheduledForLocal: localTime(prepared.timezone, reminder.scheduledFor),
+      recurrence,
+    };
+  });
 
   const orderedRecentMessages = orderRecentContextMessages(recentMessages);
   const summaryCursorIndex = summaryRetrieval.latestEndMessageId
@@ -297,11 +332,13 @@ async function loadThoughtContext(
       recentConversation,
       conversationSummary: formatSummaryContext(summaryRetrieval),
       memories: memoryRecords.map((memory) => memory.canonicalText),
+      reminders: reminderContext,
       localTime: localTime(prepared.timezone, referenceMessage.createdAt),
     },
     sourceMessageId: referenceMessage.id,
     referenceAt: referenceMessage.createdAt,
     originalRequest: batchMessages.map((message) => message.content).join("\n"),
+    reminderIdsByReference,
   };
 }
 
@@ -399,6 +436,7 @@ export function createTurnProcessor(dependencies: {
         sourceMessageId,
         referenceAt,
         originalRequest,
+        reminderIdsByReference,
       } = await loadThoughtContext(
         prepared,
         memoryRetriever,
@@ -421,7 +459,7 @@ export function createTurnProcessor(dependencies: {
           job,
           phase: "thought",
           model: environment.THOUGHT_MODEL,
-          promptVersion: "thought-v9",
+          promptVersion: "thought-v10",
           personaVersion: prepared.persona.version,
           inputJson: { ...attemptContext, generationAttempt },
         });
@@ -455,8 +493,21 @@ export function createTurnProcessor(dependencies: {
         };
 
         if (thoughtGeneration.thought.reminderAction) {
+          const requestedAction = thoughtGeneration.thought.reminderAction;
+          const resolvedReminderId = requestedAction.targetReminderRef
+            ? (reminderIdsByReference.get(requestedAction.targetReminderRef) ??
+              null)
+            : null;
+          if (requestedAction.targetReminderRef && !resolvedReminderId) {
+            throw new Error(
+              `Reminder reference ${requestedAction.targetReminderRef} was not resolved.`,
+            );
+          }
           reminderActionResult = await executeReminderAction({
-            action: thoughtGeneration.thought.reminderAction,
+            action: {
+              ...requestedAction,
+              targetReminderRef: resolvedReminderId,
+            },
             turnId: prepared.turnId,
             userId: prepared.userId,
             conversationId: prepared.conversationId,
@@ -492,7 +543,9 @@ export function createTurnProcessor(dependencies: {
             currentMessages: context.currentMessages,
             personaVersion: prepared.persona.version,
             generationAttempt,
-            reminderId: reminderActionResult?.reminder.id ?? null,
+            reminderId: reminderActionResult?.primaryReminder?.id ?? null,
+            reminderIds:
+              reminderActionResult?.reminders.map((reminder) => reminder.id) ?? [],
           },
         });
 

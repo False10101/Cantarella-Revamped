@@ -7,7 +7,6 @@ import type { AuthenticatedIdentity } from "../../auth/identity.js";
 import { database } from "../../db/client.js";
 import {
   conversations,
-  reminderDeliveries,
   reminders,
   users,
   userSettings,
@@ -273,32 +272,24 @@ export function createReminderService(): ReminderService {
             and(
               eq(reminders.id, reminderId),
               eq(reminders.userId, owner.userId),
-              ne(reminders.status, "cancelled"),
             ),
           )
           .limit(1)
           .for("update");
         if (!existing) throw reminderNotFound();
 
-        const now = new Date();
-        const [cancelled] = await transaction
-          .update(reminders)
-          .set({ status: "cancelled", nextRunAt: null, updatedAt: now })
-          .where(eq(reminders.id, reminderId))
-          .returning();
-        if (!cancelled) throw reminderNotFound();
-
-        await transaction
-          .update(reminderDeliveries)
-          .set({ status: "cancelled", updatedAt: now })
+        const [deleted] = await transaction
+          .delete(reminders)
           .where(
             and(
-              eq(reminderDeliveries.reminderId, reminderId),
-              eq(reminderDeliveries.status, "pending"),
+              eq(reminders.id, reminderId),
+              eq(reminders.userId, owner.userId),
             ),
-          );
+          )
+          .returning();
+        if (!deleted) throw reminderNotFound();
 
-        return toSnapshot(cancelled);
+        return toSnapshot(deleted);
       });
     },
   };

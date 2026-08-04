@@ -25,20 +25,100 @@ const replyPointSchema = z
     message: `Reply points must contain at most ${MAX_REPLY_POINT_WORDS} words.`,
   });
 
+const reminderOperationSchema = z.enum([
+  "create",
+  "update",
+  "reschedule",
+  "pause",
+  "resume",
+  "cancel",
+  "delete",
+  "list",
+]);
+const reminderReferenceSchema = z
+  .string()
+  .regex(/^reminder_[1-9]\d*$/, "must reference a supplied reminder");
+const reminderRecurrenceChangeSchema = z.enum([
+  "unchanged",
+  "none",
+  "daily",
+  "weekly",
+  "monthly",
+]);
+
 export const reminderActionSchema = z
   .object({
-    title: z.string().trim().min(1).max(300),
-    scheduleKind: z.enum(["at", "after"]),
+    operation: reminderOperationSchema,
+    targetReminderRef: reminderReferenceSchema.nullable(),
+    title: z.string().trim().min(1).max(300).nullable(),
+    scheduleKind: z.enum(["at", "after"]).nullable(),
     localDateTime: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
       .nullable(),
     delayAmount: z.number().int().min(1).max(525_600).nullable(),
     delayUnit: z.enum(["minutes", "hours", "days"]).nullable(),
-    recurrence: z.enum(["daily", "weekly", "monthly"]).nullable(),
+    recurrence: reminderRecurrenceChangeSchema,
   })
   .strict()
   .superRefine((action, context) => {
+    const hasSchedule = action.operation === "create" || action.operation === "reschedule";
+    const needsTarget = [
+      "update",
+      "reschedule",
+      "pause",
+      "resume",
+      "cancel",
+      "delete",
+    ].includes(action.operation);
+
+    if (needsTarget !== (action.targetReminderRef !== null)) {
+      context.addIssue({
+        code: "custom",
+        path: ["targetReminderRef"],
+        message: needsTarget
+          ? "This reminder operation requires a supplied reminder reference."
+          : "This reminder operation cannot target an existing reminder.",
+      });
+    }
+    if (action.operation === "create" && action.title === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["title"],
+        message: "Creating a reminder requires a title.",
+      });
+    }
+    if (action.operation === "create" && action.recurrence === "unchanged") {
+      context.addIssue({
+        code: "custom",
+        path: ["recurrence"],
+        message: "A new reminder recurrence cannot be unchanged.",
+      });
+    }
+    if (
+      action.operation === "update" &&
+      action.title === null &&
+      action.recurrence === "unchanged"
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Updating a reminder requires a title or recurrence change.",
+      });
+    }
+    if (!hasSchedule && action.scheduleKind !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["scheduleKind"],
+        message: "Only create and reschedule operations accept a schedule.",
+      });
+    }
+    if (hasSchedule && action.scheduleKind === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["scheduleKind"],
+        message: "Create and reschedule operations require a schedule.",
+      });
+    }
     if (
       action.scheduleKind === "at" &&
       (action.localDateTime === null ||
@@ -59,6 +139,28 @@ export const reminderActionSchema = z
       context.addIssue({
         code: "custom",
         message: "A relative reminder needs only delayAmount and delayUnit.",
+      });
+    }
+    if (
+      action.scheduleKind === null &&
+      (action.localDateTime !== null ||
+        action.delayAmount !== null ||
+        action.delayUnit !== null)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Schedule values require a scheduleKind.",
+      });
+    }
+    if (
+      ["pause", "resume", "cancel", "delete", "list"].includes(
+        action.operation,
+      ) &&
+      (action.title !== null || action.recurrence !== "unchanged")
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "This reminder operation cannot modify reminder fields.",
       });
     }
   });
@@ -84,6 +186,13 @@ export interface ThoughtContext {
   }>;
   conversationSummary: string | null;
   memories: string[];
+  reminders: Array<{
+    ref: string;
+    title: string;
+    status: "scheduled" | "paused" | "completed" | "cancelled";
+    scheduledForLocal: string;
+    recurrence: "daily" | "weekly" | "monthly" | null;
+  }>;
   localTime: string;
   rejectedResponse?: Thought;
 }
@@ -131,8 +240,28 @@ export const thoughtJsonSchema: Record<string, unknown> = {
           type: "object",
           additionalProperties: false,
           properties: {
-            title: { type: "string", minLength: 1, maxLength: 300 },
-            scheduleKind: { type: "string", enum: ["at", "after"] },
+            operation: {
+              type: "string",
+              enum: [
+                "create",
+                "update",
+                "reschedule",
+                "pause",
+                "resume",
+                "cancel",
+                "delete",
+                "list",
+              ],
+            },
+            targetReminderRef: {
+              type: ["string", "null"],
+              pattern: "^reminder_[1-9][0-9]*$",
+            },
+            title: { type: ["string", "null"], maxLength: 300 },
+            scheduleKind: {
+              type: ["string", "null"],
+              enum: ["at", "after", null],
+            },
             localDateTime: {
               type: ["string", "null"],
               pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
@@ -147,11 +276,13 @@ export const thoughtJsonSchema: Record<string, unknown> = {
               enum: ["minutes", "hours", "days", null],
             },
             recurrence: {
-              type: ["string", "null"],
-              enum: ["daily", "weekly", "monthly", null],
+              type: "string",
+              enum: ["unchanged", "none", "daily", "weekly", "monthly"],
             },
           },
           required: [
+            "operation",
+            "targetReminderRef",
             "title",
             "scheduleKind",
             "localDateTime",
@@ -216,13 +347,17 @@ Rules:
 - A task label such as client update, email, assignment, application, or report does not prove that anyone is actively waiting or that a deadline exists. Those facts must be explicit in context; otherwise treat them as unknown and make the recommendation conditional.
 - Distinguish meaningful resisted work from small relief work when the conversation supports that inference, while labeling uncertainty honestly.
 - question is null unless a visible question genuinely needs an answer from the user. A useful direct or conditional answer does not require a question.
-- Always return reminderAction. Use null unless the current user messages explicitly ask Cantarella to set a reminder or countdown timer.
-- A reminderAction is an actual requested application action, not conversational wording. Never create one merely because the user mentions a future plan, deadline, habit, or event.
+- Always return reminderAction. Use null unless the current user messages explicitly ask Cantarella to create, inspect, change, pause, resume, cancel, or permanently delete reminders.
+- reminderAction is an actual requested application action, not conversational wording. Never create or mutate one merely because the user mentions a future plan, deadline, habit, or event.
+- The supplied reminders use typed reminder_* references. targetReminderRef must use an exact supplied reference. Never invent a reference.
+- Qwen must decide the operation from the user's actual meaning: update changes title or recurrence; reschedule changes its time; pause temporarily disables it; resume re-enables it; cancel retains a cancelled record; delete permanently removes it; list reports current reminders.
+- "Delete", "remove permanently", and equivalent requests normally mean delete. "Cancel", "stop this reminder", and equivalent requests normally mean cancel. Use the conversation's wording and intent rather than forcing either behavior.
+- If no supplied reminder uniquely matches the request, reminderAction must be null and question must ask one short clarification. Never guess which reminder to mutate.
 - For an exact reminder, set scheduleKind to "at" and localDateTime to YYYY-MM-DDTHH:mm in the timezone shown by localTime. Set both delay fields to null.
 - For "in N minutes/hours/days", set scheduleKind to "after", set the integer delayAmount and delayUnit, and set localDateTime to null. Do not calculate the resulting timestamp yourself.
-- Supported recurrence values are daily, weekly, and monthly. Use null for a one-time reminder.
-- The reminder title must be a concise standalone description of what the user wants to remember. Preserve names, actions, and concrete details.
-- If the requested time is missing or genuinely ambiguous, reminderAction must be null and question must ask for the one missing scheduling detail. Never guess what "later", "morning", or an AM/PM-ambiguous hour means.
+- recurrence is none/daily/weekly/monthly when creating, and unchanged unless a mutation explicitly changes it. Use none to remove recurrence.
+- A created or changed reminder title must be concise and standalone. Preserve names, actions, and concrete details.
+- If a required time is missing or genuinely ambiguous, reminderAction must be null and question must ask for the one missing scheduling detail. Never guess what "later", "morning", or an AM/PM-ambiguous hour means.
 - When reminderAction is non-null, replyPoints are temporary internal acknowledgment meaning only. The backend replaces them with the confirmed stored result before voice rendering.
 - When reminderAction is null, never claim a reminder was created, scheduled, saved, or will fire.
 - Return at most one reminderAction. If the user requests multiple distinct reminders at once, ask them to set one at a time.
@@ -238,7 +373,7 @@ function contextMessage(context: ThoughtContext): ModelMessage {
   };
 }
 
-function parseThought(rawOutput: string): Thought {
+function parseThought(rawOutput: string, context: ThoughtContext): Thought {
   const normalized = rawOutput
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
@@ -263,6 +398,18 @@ function parseThought(rawOutput: string): Thought {
       `The Thought model violated its schema: ${result.error.issues
         .map((issue) => issue.path.join("."))
         .join(", ")}`,
+      null,
+      true,
+    );
+  }
+
+  const reminderReference = result.data.reminderAction?.targetReminderRef;
+  if (
+    reminderReference &&
+    !context.reminders.some((reminder) => reminder.ref === reminderReference)
+  ) {
+    throw new OpenRouterError(
+      `The Thought model referenced unavailable reminder ${reminderReference}.`,
       null,
       true,
     );
@@ -330,7 +477,7 @@ export function createThoughtGenerator(
       const completion = await requestCompletion(null);
 
       try {
-        return { thought: parseThought(completion.content), completion };
+        return { thought: parseThought(completion.content, context), completion };
       } catch (error) {
         if (!(error instanceof OpenRouterError)) throw error;
 
@@ -339,7 +486,10 @@ export function createThoughtGenerator(
         );
 
         try {
-          return { thought: parseThought(retried.content), completion: retried };
+          return {
+            thought: parseThought(retried.content, context),
+            completion: retried,
+          };
         } catch {
           throw new OpenRouterError(
             "The Thought model returned invalid JSON or violated its schema twice.",

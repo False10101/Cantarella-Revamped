@@ -68,12 +68,14 @@ describe("two-pass model contracts", () => {
       replyPoints: ["The requested reminder should be scheduled."],
       question: null,
       reminderAction: {
+        operation: "create",
+        targetReminderRef: null,
         title: "Look at the banking app",
         scheduleKind: "after",
         localDateTime: null,
         delayAmount: 5,
         delayUnit: "minutes",
-        recurrence: null,
+        recurrence: "none",
       },
     });
 
@@ -85,15 +87,120 @@ describe("two-pass model contracts", () => {
         replyPoints: ["The requested reminder should be scheduled."],
         question: null,
         reminderAction: {
+          operation: "create",
+          targetReminderRef: null,
           title: "Look at the banking app",
           scheduleKind: "after",
           localDateTime: "2026-08-04T10:30",
           delayAmount: 5,
           delayUnit: "minutes",
-          recurrence: null,
+          recurrence: "none",
         },
       }).success,
     ).toBe(false);
+  });
+
+  it("distinguishes permanent deletion from cancellation and listing", () => {
+    const inertFields = {
+      title: null,
+      scheduleKind: null,
+      localDateTime: null,
+      delayAmount: null,
+      delayUnit: null,
+      recurrence: "unchanged" as const,
+    };
+    const permanentDelete = thoughtSchema.parse({
+      ...validThought,
+      reminderAction: {
+        operation: "delete",
+        targetReminderRef: "reminder_1",
+        ...inertFields,
+      },
+    });
+    const cancellation = thoughtSchema.parse({
+      ...validThought,
+      reminderAction: {
+        operation: "cancel",
+        targetReminderRef: "reminder_1",
+        ...inertFields,
+      },
+    });
+    const list = thoughtSchema.parse({
+      ...validThought,
+      reminderAction: {
+        operation: "list",
+        targetReminderRef: null,
+        ...inertFields,
+      },
+    });
+
+    expect(permanentDelete.reminderAction?.operation).toBe("delete");
+    expect(cancellation.reminderAction?.operation).toBe("cancel");
+    expect(list.reminderAction?.operation).toBe("list");
+  });
+
+  it("retries an unavailable reminder reference from the original context", async () => {
+    const requests: CompletionRequest[] = [];
+    const actionFields = {
+      title: null,
+      scheduleKind: null,
+      localDateTime: null,
+      delayAmount: null,
+      delayUnit: null,
+      recurrence: "unchanged",
+    };
+    const outputs = [
+      JSON.stringify({
+        ...validThought,
+        reminderAction: {
+          operation: "delete",
+          targetReminderRef: "reminder_2",
+          ...actionFields,
+        },
+      }),
+      JSON.stringify({
+        ...validThought,
+        reminderAction: {
+          operation: "delete",
+          targetReminderRef: "reminder_1",
+          ...actionFields,
+        },
+      }),
+    ];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: outputs[requests.length - 1] ?? outputs[1]!,
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      currentMessages: ["delete the mailbox reminder"],
+      recentConversation: [],
+      conversationSummary: null,
+      memories: [],
+      reminders: [
+        {
+          ref: "reminder_1",
+          title: "Check the mailbox",
+          status: "scheduled",
+          scheduledForLocal: "Tuesday, August 4, 2026 at 7:00 PM GMT+7",
+          recurrence: null,
+        },
+      ],
+      localTime: "Tuesday, August 4, 2026 at 6:00 PM GMT+7",
+    });
+
+    expect(result.thought.reminderAction?.targetReminderRef).toBe(
+      "reminder_1",
+    );
+    expect(requests).toHaveLength(2);
   });
 
   it("retries malformed Thought JSON from the original context", async () => {
@@ -121,6 +228,7 @@ describe("two-pass model contracts", () => {
       recentConversation: [],
       conversationSummary: null,
       memories: [],
+      reminders: [],
       localTime: "Monday, August 3, 2026 at 8:30 PM GMT+7",
     });
 

@@ -73,12 +73,14 @@ describe("reminder recurrence", () => {
     const reference = new Date("2026-08-04T03:18:51.000Z");
     const scheduled = resolveReminderActionTime(
       {
+        operation: "create",
+        targetReminderRef: null,
         title: "Look at the banking app",
         scheduleKind: "after",
         localDateTime: null,
         delayAmount: 5,
         delayUnit: "minutes",
-        recurrence: null,
+        recurrence: "none",
       },
       "Asia/Bangkok",
       reference,
@@ -90,12 +92,14 @@ describe("reminder recurrence", () => {
   it("resolves exact chat reminders in the account timezone", () => {
     const scheduled = resolveReminderActionTime(
       {
+        operation: "create",
+        targetReminderRef: null,
         title: "Join class",
         scheduleKind: "at",
         localDateTime: "2026-08-05T09:00",
         delayAmount: null,
         delayUnit: null,
-        recurrence: null,
+        recurrence: "none",
       },
       "Asia/Bangkok",
       new Date("2026-08-04T03:00:00.000Z"),
