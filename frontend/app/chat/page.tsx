@@ -3,95 +3,485 @@ import { useAuth0 } from "@auth0/auth0-react";
 import Navbar from "../navbar";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
-import { Send } from "lucide-react";
+import { Check, CheckCheck, LoaderCircle, Send } from "lucide-react";
+
+type ChatMessage = {
+    id: string;
+    turnId: string | null;
+    clientMessageId: string | null;
+    content: string;
+    sender: "user" | "assistant" | "system";
+    createdAt: string;
+    source: "web" | "android" | "ios" | "system";
+    messageKind: "chat" | "reminder";
+    partIndex: number | null;
+    status: "sending" | "sent" | "seen" | "delivered";
+};
+
+type PrimaryConversation = {
+    id: string;
+    title: "Cantarella";
+    lastMessageAt: string | null;
+    unreadCount: number;
+};
+
+type MessageHistoryPage = {
+    messages: ChatMessage[];
+    nextCursor: string | null;
+    hasMore: boolean;
+};
+
+type ApiError = {
+    error?: {
+        message?: string;
+    };
+};
+
+type ConversationEvent =
+    | { type: "turn.status"; data: { turnId: string; status: "thinking" | "voicing" } }
+    | { type: "typing.started" | "typing.stopped"; data: { conversationId: string; sender: "assistant" } }
+    | { type: "message.created"; data: { message: ChatMessage } }
+    | { type: "turn.completed"; data: { turnId: string } }
+    | { type: "turn.failed"; data: { turnId: string; code: string; message: string; retryable: boolean } }
+    | { type: "connected"; data: { conversationId: string } };
+
+async function readApiError(response: Response, fallback: string) {
+    const payload = await response.json().catch(() => null) as ApiError | null;
+    return payload?.error?.message ?? fallback;
+}
+
+function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]) {
+    const incomingClientIds = new Set(
+        incoming.map((message) => message.clientMessageId).filter(Boolean),
+    );
+    const byId = new Map<string, ChatMessage>();
+
+    for (const message of current) {
+        if (
+            message.id.startsWith("pending-") &&
+            message.clientMessageId &&
+            incomingClientIds.has(message.clientMessageId)
+        ) continue;
+
+        byId.set(message.id, message);
+    }
+
+    for (const message of incoming) byId.set(message.id, message);
+
+    return [...byId.values()].sort(compareChatMessages);
+}
+
+function compareChatMessages(left: ChatMessage, right: ChatMessage) {
+    const timeDifference = new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+    if (timeDifference !== 0) return timeDifference;
+
+    const senderOrder = { user: 0, assistant: 1, system: 2 } as const;
+    const senderDifference = senderOrder[left.sender] - senderOrder[right.sender];
+    if (senderDifference !== 0) return senderDifference;
+
+    if (
+        left.turnId &&
+        left.turnId === right.turnId &&
+        left.partIndex !== null &&
+        right.partIndex !== null
+    ) {
+        const partDifference = left.partIndex - right.partIndex;
+        if (partDifference !== 0) return partDifference;
+    }
+
+    return left.id.localeCompare(right.id);
+}
+
+function stagedBubbleDelay(message: ChatMessage) {
+    return Math.min(1_300, Math.max(550, 350 + message.content.length * 12));
+}
+
+async function consumeEventStream(
+    response: Response,
+    onEvent: (event: ConversationEvent) => void,
+) {
+    if (!response.body) throw new Error("Conversation event stream is unavailable");
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+        const frames = buffer.split("\n\n");
+        buffer = frames.pop() ?? "";
+
+        for (const frame of frames) {
+            const lines = frame.split("\n");
+            const eventType = lines.find((line) => line.startsWith("event:"))?.slice(6).trim();
+            const data = lines
+                .filter((line) => line.startsWith("data:"))
+                .map((line) => line.slice(5).trim())
+                .join("\n");
+
+            if (!eventType || !data) continue;
+            onEvent({ type: eventType, data: JSON.parse(data) } as ConversationEvent);
+        }
+    }
+}
+
+function getSafeDate(timeStr: string) {
+    if (!timeStr) return new Date();
+    let normalized = timeStr.trim();
+    if (normalized.includes(" ")) normalized = normalized.replace(" ", "T");
+    if (!normalized.endsWith("Z")) normalized += "Z";
+    return new Date(normalized);
+}
+
+function getBKK(date: Date) {
+    return date.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok" });
+}
+
+function formatDateDivider(timeStr: string) {
+    const date = getSafeDate(timeStr);
+    const now = new Date();
+    if (getBKK(date) === getBKK(now)) return "Today";
+    if (getBKK(date) === getBKK(new Date(now.getTime() - 86400000))) return "Yesterday";
+    return date.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", weekday: "long", month: "short", day: "numeric" });
+}
+
+function formatMessageTime(timeStr: string) {
+    if (!timeStr) return "";
+    return getSafeDate(timeStr).toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" });
+}
+
+function MessageStatus({ status }: { status: ChatMessage["status"] }) {
+    if (status === "sending") {
+        return (
+            <span aria-label="Sending" title="Sending" className="inline-flex text-[var(--text-dim)]">
+                <LoaderCircle className="h-3 w-3 animate-spin" strokeWidth={1.7} />
+            </span>
+        );
+    }
+
+    if (status === "seen") {
+        return (
+            <span aria-label="Seen" title="Seen" className="inline-flex text-[var(--amber-soft)]">
+                <CheckCheck className="h-3.5 w-3.5" strokeWidth={1.7} />
+            </span>
+        );
+    }
+
+    return (
+        <span aria-label="Sent" title="Sent" className="inline-flex text-[var(--text-dim)]">
+            <Check className="h-3 w-3" strokeWidth={1.7} />
+        </span>
+    );
+}
 
 export default function Page() {
     const { getAccessTokenSilently, isAuthenticated } = useAuth0();
     const [message, setMessage] = useState("");
-    const [messageList, setMessageList] = useState<any[]>([]);
+    const [messageList, setMessageList] = useState<ChatMessage[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [isInitialLoaded, setIsInitialLoaded] = useState(false);
-    const [cursorId, setCursorId] = useState<any>(Infinity);
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [conversationId, setConversationId] = useState<string | null>(null);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [hasMore, setHasMore] = useState(false);
+    const isLoadingMoreRef = useRef(false);
     const START_INDEX = 100000;
     const [firstItemIndex, setFirstItemIndex] = useState(START_INDEX);
     const firstItemIndexRef = useRef(START_INDEX);
     const virtuoso = useRef<VirtuosoHandle>(null);
-    const messageListRef = useRef<any[]>([]);
+    const isAtBottomRef = useRef(true);
+    const shouldRevealTypingRef = useRef(false);
+    const typingRevealTimerRef = useRef<number | null>(null);
+    const stagedMessagesRef = useRef<ChatMessage[]>([]);
+    const stagedDeliveryTimerRef = useRef<number | null>(null);
+    const backendTypingActiveRef = useRef(false);
+    const messageListRef = useRef<ChatMessage[]>([]);
+    const seenTurnIdsRef = useRef(new Set<string>());
     messageListRef.current = messageList;
-
-    const getSafeDate = (timeStr: string) => {
-        if (!timeStr) return new Date();
-        if (typeof timeStr !== "string") return new Date(timeStr);
-        let s = timeStr.trim();
-        if (s.includes(" ")) s = s.replace(" ", "T");
-        if (!s.endsWith("Z")) s += "Z";
-        return new Date(s);
-    };
-
-    const getBKK = (date: Date) =>
-        date.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok" });
-
-    const formatDateDivider = (timeStr: string) => {
-        const d = getSafeDate(timeStr);
-        const now = new Date();
-        if (getBKK(d) === getBKK(now)) return "Today";
-        if (getBKK(d) === getBKK(new Date(now.getTime() - 86400000))) return "Yesterday";
-        return d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", weekday: "long", month: "short", day: "numeric" });
-    };
-
-    const formatMessageTime = (timeStr: string) => {
-        if (!timeStr) return "";
-        return getSafeDate(timeStr).toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" });
-    };
 
     useEffect(() => {
         if (!isAuthenticated) return;
 
+        let cancelled = false;
+
         const run = async () => {
-            if (isLoadingMore) return;
-            setIsLoadingMore(true);
             try {
                 const token = await getAccessTokenSilently();
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/message/history?cursorId=${cursorId}`, {
+                const conversationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/conversations/primary`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                const data = await res.json();
-                const batch = [...data.history].reverse();
 
-                if (cursorId === Infinity) {
-                    setMessageList(batch);
-                    setFirstItemIndex(START_INDEX);
-                    firstItemIndexRef.current = START_INDEX;
-                    setTimeout(() => {
-                        setIsInitialLoaded(true);
-                        virtuoso.current?.scrollToIndex({ index: batch.length - 1, align: "end" });
-                    }, 50);
-                } else {
-                    const next = firstItemIndexRef.current - batch.length;
-                    firstItemIndexRef.current = next;
-                    setFirstItemIndex(next);
-                    setMessageList((prev) => [...batch, ...prev]);
+                if (!conversationResponse.ok) {
+                    throw new Error(await readApiError(conversationResponse, "Failed to open conversation"));
                 }
+
+                const conversationPayload = await conversationResponse.json() as { data: PrimaryConversation };
+                const historyResponse = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/conversations/${conversationPayload.data.id}/messages?limit=50`,
+                    { headers: { Authorization: `Bearer ${token}` } },
+                );
+
+                if (!historyResponse.ok) {
+                    throw new Error(await readApiError(historyResponse, "Failed to load messages"));
+                }
+
+                const historyPayload = await historyResponse.json() as { data: MessageHistoryPage };
+
+                if (cancelled) return;
+
+                const batch = historyPayload.data.messages;
+                setConversationId(conversationPayload.data.id);
+                setMessageList(batch);
+                setNextCursor(historyPayload.data.nextCursor);
+                setHasMore(historyPayload.data.hasMore);
+                setFirstItemIndex(START_INDEX);
+                firstItemIndexRef.current = START_INDEX;
+                setTimeout(() => {
+                    if (cancelled) return;
+                    setIsInitialLoaded(true);
+                    if (batch.length > 0) {
+                        virtuoso.current?.scrollToIndex({ index: batch.length - 1, align: "end" });
+                    }
+                }, 50);
             } catch (e) {
                 console.error(e);
-            } finally {
-                setIsLoadingMore(false);
+                if (!cancelled) setIsInitialLoaded(true);
             }
         };
 
         run();
-    }, [isAuthenticated, cursorId]);
 
-    const loadMore = useCallback(() => {
-        if (isLoadingMore || messageListRef.current.length === 0) return;
-        setCursorId(messageListRef.current[0].createdAt);
-    }, [isLoadingMore]);
+        return () => {
+            cancelled = true;
+        };
+    }, [getAccessTokenSilently, isAuthenticated]);
 
-    const itemContent = useCallback((index: number, msg: any) => {
+    useEffect(() => {
+        if (!isAuthenticated || !conversationId) return;
+
+        const controller = new AbortController();
+        let cancelled = false;
+
+        const clearTypingRevealTimer = () => {
+            if (typingRevealTimerRef.current === null) return;
+            window.clearTimeout(typingRevealTimerRef.current);
+            typingRevealTimerRef.current = null;
+        };
+
+        const finishTypingWhenSettled = () => {
+            if (
+                !backendTypingActiveRef.current &&
+                stagedMessagesRef.current.length === 0
+            ) {
+                setIsTyping(false);
+            }
+        };
+
+        const scheduleStagedMessage = () => {
+            if (
+                stagedDeliveryTimerRef.current !== null ||
+                stagedMessagesRef.current.length === 0
+            ) return;
+
+            setIsTyping(true);
+            const nextMessage = stagedMessagesRef.current[0];
+            if (!nextMessage) return;
+
+            stagedDeliveryTimerRef.current = window.setTimeout(() => {
+                stagedDeliveryTimerRef.current = null;
+                const deliveredMessage = stagedMessagesRef.current.shift();
+                if (deliveredMessage) {
+                    setMessageList((current) => mergeMessages(current, [deliveredMessage]));
+                }
+
+                if (stagedMessagesRef.current.length > 0) {
+                    scheduleStagedMessage();
+                } else {
+                    finishTypingWhenSettled();
+                }
+            }, stagedBubbleDelay(nextMessage));
+        };
+
+        const handleEvent = (event: ConversationEvent) => {
+            if (event.type === "turn.status") {
+                seenTurnIdsRef.current.add(event.data.turnId);
+                setMessageList((current) => current.map((message) =>
+                    message.sender === "user" && message.turnId === event.data.turnId
+                        ? { ...message, status: "seen" }
+                        : message
+                ));
+                if (event.data.status === "thinking") {
+                    backendTypingActiveRef.current = true;
+                    clearTypingRevealTimer();
+                    shouldRevealTypingRef.current = isAtBottomRef.current;
+                    typingRevealTimerRef.current = window.setTimeout(() => {
+                        typingRevealTimerRef.current = null;
+                        setIsTyping(true);
+                    }, 120);
+                }
+            }
+            if (event.type === "typing.started") {
+                backendTypingActiveRef.current = true;
+                clearTypingRevealTimer();
+                shouldRevealTypingRef.current = isAtBottomRef.current;
+                setIsTyping(true);
+            }
+            if (
+                event.type === "typing.stopped" ||
+                event.type === "turn.completed"
+            ) {
+                backendTypingActiveRef.current = false;
+                clearTypingRevealTimer();
+                finishTypingWhenSettled();
+            }
+            if (event.type === "message.created") {
+                const createdMessage = event.data.message;
+                if (
+                    createdMessage.sender === "assistant" &&
+                    createdMessage.partIndex !== null &&
+                    createdMessage.partIndex > 0
+                ) {
+                    stagedMessagesRef.current.push(createdMessage);
+                    stagedMessagesRef.current.sort(compareChatMessages);
+                    scheduleStagedMessage();
+                } else {
+                    setMessageList((current) => mergeMessages(current, [createdMessage]));
+                }
+            }
+            if (event.type === "turn.failed") {
+                backendTypingActiveRef.current = false;
+                clearTypingRevealTimer();
+                if (stagedDeliveryTimerRef.current !== null) {
+                    window.clearTimeout(stagedDeliveryTimerRef.current);
+                    stagedDeliveryTimerRef.current = null;
+                }
+                stagedMessagesRef.current = [];
+                setIsTyping(false);
+                console.error(`${event.data.code}: ${event.data.message}`);
+            }
+        };
+
+        const synchronizeLatest = async (token: string) => {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/conversations/${conversationId}/messages?limit=50`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    signal: controller.signal,
+                },
+            );
+
+            if (!response.ok) return;
+            const payload = await response.json() as { data: MessageHistoryPage };
+            if (!cancelled) {
+                setMessageList((current) => mergeMessages(current, payload.data.messages));
+            }
+        };
+
+        const connect = async () => {
+            let retryDelay = 500;
+
+            while (!cancelled) {
+                try {
+                    const token = await getAccessTokenSilently();
+                    await synchronizeLatest(token);
+                    const response = await fetch(
+                        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/conversations/${conversationId}/events`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                Accept: "text/event-stream",
+                            },
+                            signal: controller.signal,
+                        },
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(await readApiError(response, "Conversation events disconnected"));
+                    }
+
+                    retryDelay = 500;
+                    await consumeEventStream(response, handleEvent);
+                } catch (error) {
+                    if (cancelled || controller.signal.aborted) return;
+                    console.error(error);
+                }
+
+                await new Promise((resolve) => setTimeout(resolve, retryDelay));
+                retryDelay = Math.min(retryDelay * 2, 5_000);
+            }
+        };
+
+        void connect();
+
+        return () => {
+            cancelled = true;
+            clearTypingRevealTimer();
+            if (stagedDeliveryTimerRef.current !== null) {
+                window.clearTimeout(stagedDeliveryTimerRef.current);
+                stagedDeliveryTimerRef.current = null;
+            }
+            stagedMessagesRef.current = [];
+            backendTypingActiveRef.current = false;
+            controller.abort();
+        };
+    }, [conversationId, getAccessTokenSilently, isAuthenticated]);
+
+    useEffect(() => {
+        if (!isTyping || !shouldRevealTypingRef.current) return;
+
+        const animationFrame = window.requestAnimationFrame(() => {
+            virtuoso.current?.scrollTo({
+                top: Number.MAX_SAFE_INTEGER,
+                behavior: "smooth",
+            });
+        });
+
+        return () => window.cancelAnimationFrame(animationFrame);
+    }, [isTyping]);
+
+    const loadMore = useCallback(async () => {
+        if (
+            !isInitialLoaded ||
+            !conversationId ||
+            !hasMore ||
+            !nextCursor ||
+            isLoadingMoreRef.current
+        ) return;
+
+        isLoadingMoreRef.current = true;
+
+        try {
+            const token = await getAccessTokenSilently();
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/conversations/${conversationId}/messages?before=${nextCursor}&limit=50`,
+                { headers: { Authorization: `Bearer ${token}` } },
+            );
+
+            if (!response.ok) {
+                throw new Error(await readApiError(response, "Failed to load older messages"));
+            }
+
+            const payload = await response.json() as { data: MessageHistoryPage };
+            const batch = payload.data.messages;
+            const nextIndex = firstItemIndexRef.current - batch.length;
+            firstItemIndexRef.current = nextIndex;
+            setFirstItemIndex(nextIndex);
+            setMessageList((current) => [...batch, ...current]);
+            setNextCursor(payload.data.nextCursor);
+            setHasMore(payload.data.hasMore);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            isLoadingMoreRef.current = false;
+        }
+    }, [conversationId, getAccessTokenSilently, hasMore, isInitialLoaded, nextCursor]);
+
+    const itemContent = useCallback((index: number, msg: ChatMessage) => {
         const arrayIndex = index - firstItemIndexRef.current;
         const prevMsg = arrayIndex > 0 ? messageListRef.current[arrayIndex - 1] : null;
-        const isAssistant = msg.role === "assistant";
+        const isAssistant = msg.sender === "assistant";
         const showDivider = !prevMsg || getBKK(getSafeDate(msg.createdAt)) !== getBKK(getSafeDate(prevMsg.createdAt));
 
         return (
@@ -112,9 +502,12 @@ export default function Page() {
                         {isAssistant ? "C" : "I"}
                     </div>
                     <div className={`flex flex-col max-w-[68%] gap-1 ${isAssistant ? "items-start" : "items-end"}`}>
-                        <div className={`flex items-baseline gap-2 px-1 ${isAssistant ? "flex-row" : "flex-row-reverse"}`}>
+                        <div className={`flex items-center gap-2 px-1 ${isAssistant ? "flex-row" : "flex-row-reverse"}`}>
                             {isAssistant && <span className="font-[family-name:var(--font-display)] italic text-[var(--amber)] text-[11px] tracking-wide">Cantarella</span>}
-                            <span className="text-[var(--text-dim)] font-light text-[10px]">{formatMessageTime(msg.createdAt)}</span>
+                            <span className="inline-flex items-center gap-1 text-[var(--text-dim)] font-light text-[10px]">
+                                {formatMessageTime(msg.createdAt)}
+                                {!isAssistant && <MessageStatus status={msg.status} />}
+                            </span>
                         </div>
                         <div className={`relative px-4 py-3 text-[14px] leading-[1.65] font-light tracking-wide border-[1px] border-[var(--border)] shadow-sm ${isAssistant ? "bg-[var(--surface)] text-[var(--text)] rounded-2xl rounded-bl-sm" : "bg-[var(--surface2)] text-[var(--text)] rounded-2xl rounded-br-sm"}`}>
                             {isAssistant && <div className="absolute inset-0 pointer-events-none rounded-2xl bg-gradient-to-br from-[rgba(201,147,90,0.04)] to-transparent" />}
@@ -127,32 +520,62 @@ export default function Page() {
     }, []);
 
     const handleSend = async () => {
-        if (!message.trim()) return;
-        const userContent = message;
+        const userContent = message.trim();
+        if (!userContent || !conversationId) return;
+
+        const clientMessageId = crypto.randomUUID();
         setMessage("");
-        const userMsg = { id: Date.now(), content: userContent, role: "user", createdAt: new Date().toISOString() };
+        const userMsg: ChatMessage = {
+            id: `pending-${clientMessageId}`,
+            turnId: null,
+            clientMessageId,
+            content: userContent,
+            sender: "user",
+            createdAt: new Date().toISOString(),
+            source: "web",
+            messageKind: "chat",
+            partIndex: null,
+            status: "sending",
+        };
         setMessageList((prev) => [...prev, userMsg]);
-        setIsTyping(true);
+
         try {
             const token = await getAccessTokenSilently();
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/message/send`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/conversations/${conversationId}/messages`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ content: userContent, platform: "web" }),
+                body: JSON.stringify({
+                    clientMessageId,
+                    content: userContent,
+                    source: "web",
+                    replyToMessageId: null,
+                }),
             });
-            const data = await res.json();
-            setMessageList((prev) => [...prev, { id: Date.now() + 1, content: data.response, role: "assistant", createdAt: new Date().toISOString() }]);
+
+            if (!res.ok) {
+                throw new Error(await readApiError(res, "Failed to send message"));
+            }
+
+            const payload = await res.json() as { data: { message: ChatMessage } };
+            const savedMessage = payload.data.message;
+            const resolvedMessage =
+                savedMessage.turnId && seenTurnIdsRef.current.has(savedMessage.turnId)
+                    ? { ...savedMessage, status: "seen" as const }
+                    : savedMessage;
+            setMessageList((current) => current.map((item) =>
+                item.clientMessageId === clientMessageId ? resolvedMessage : item
+            ));
         } catch (e) {
             console.error(e);
-        } finally {
-            setIsTyping(false);
+            setMessageList((prev) => prev.filter((msg) => msg.id !== userMsg.id));
+            setMessage((current) => current || userContent);
         }
     };
 
     return (
-        <div className="w-full h-screen bg-[var(--bg)] grid grid-cols-[260px_1fr]">
-            <Navbar status={true} />
-            <div className="main-window w-full h-full flex flex-col">
+        <div className="grid h-dvh w-full grid-cols-[260px_1fr] overflow-hidden bg-[var(--bg)] max-[820px]:grid-cols-[76px_1fr]">
+            <Navbar />
+            <main className="main-window flex min-h-0 min-w-0 flex-col overflow-hidden">
                 <div className="relative z-20 flex shrink-0 chat-header w-full px-[28px] py-[18px] border-b-[1px] border-[var(--border)] bg-[rgba(12,10,9,0.8)] backdrop-blur-md">
                     <div className="flex flex-col">
                         <span className="font-[family-name:var(--font-display)] text-[clamp(10px,3vw,20px)] tracking-wider text-[var(--text)] font-light">
@@ -162,7 +585,7 @@ export default function Page() {
                     </div>
                 </div>
 
-                <div className={`w-full flex-col flex-1 transition-opacity duration-500 ${isInitialLoaded ? "opacity-100" : "opacity-0"}`}>
+                <div className={`min-h-0 w-full flex-1 overflow-hidden transition-opacity duration-500 ${isInitialLoaded ? "opacity-100" : "opacity-0"}`}>
                     <Virtuoso
                         ref={virtuoso}
                         style={{ height: "100%" }}
@@ -171,11 +594,15 @@ export default function Page() {
                         initialTopMostItemIndex={messageList.length > 0 ? messageList.length - 1 : 0}
                         startReached={loadMore}
                         followOutput={(isAtBottom) => isAtBottom ? "smooth" : false}
-                        increaseViewportBy={{ top: 999999, bottom: 999999 }}
+                        atBottomThreshold={80}
+                        atBottomStateChange={(isAtBottom) => {
+                            isAtBottomRef.current = isAtBottom;
+                        }}
+                        increaseViewportBy={{ top: 400, bottom: 600 }}
                         itemContent={itemContent}
                         components={{
                             Footer: () => isTyping ? (
-                                <div className="flex w-full gap-3 px-6 py-3 items-end">
+                                <div className="flex w-full items-end gap-3 px-6 py-3 pb-4">
                                     <div className="shrink-0 w-7 h-7 rounded-full border-[1px] border-[var(--border2)] flex items-center justify-center text-[11px] font-[family-name:var(--font-display)] bg-gradient-to-br from-[#2A1F14] to-[#3D2A18] text-[var(--amber)] mb-0.5">C</div>
                                     <div className="bg-[var(--surface)] border-[var(--border)] border-[1px] rounded-2xl rounded-bl-sm px-4 py-[14px] flex gap-1.5 items-center">
                                         <div className="w-[5px] h-[5px] bg-[var(--amber)] rounded-full animate-typing-1" />
@@ -188,9 +615,9 @@ export default function Page() {
                     />
                 </div>
 
-                <div className="w-full h-[13%] bg-linear-to-r from-[var(--surface3)]/15 to-transparent mt-auto flex">
-                    <div className="w-[95%] h-full flex flex-col items-center justify-center mx-auto space-y-2 font-[font-family:var(--font-body)]">
-                        <div className="w-full h-[50%] flex items-center bg-[var(--surface)] border-[var(--border2)] border-[1px] rounded-xl px-3 focus-within:border-[rgba(201,147,90,0.35)] focus-within:shadow-[0_0px_3px_rgba(201,147,90,0.05)] transition-all">
+                <div className="flex w-full shrink-0 bg-linear-to-r from-[var(--surface3)]/15 to-transparent px-[2.5%] py-3">
+                    <div className="mx-auto flex w-full flex-col items-center justify-center space-y-2 font-[font-family:var(--font-body)]">
+                        <div className="flex h-12 w-full items-center rounded-xl border-[1px] border-[var(--border2)] bg-[var(--surface)] px-3 transition-all focus-within:border-[rgba(201,147,90,0.35)] focus-within:shadow-[0_0px_3px_rgba(201,147,90,0.05)]">
                             <input
                                 autoFocus
                                 placeholder="What's on your mind?"
@@ -199,17 +626,16 @@ export default function Page() {
                                 value={message}
                                 className="flex-1 h-full bg-transparent text-[var(--text)] text-[clamp(7px,3vw,14px)] placeholder:text-[var(--text-dim)] placeholder:italic px-2 focus:outline-none"
                             />
-                            <button onClick={handleSend} className="send-box p-2 bg-[var(--amber)] rounded-lg text-[#1A0F08] hover:text-[var(--amber)] transition-colors items-center justify-center flex">
+                            <button disabled={!conversationId || !message.trim()} onClick={handleSend} className="send-box p-2 bg-[var(--amber)] rounded-lg text-[#1A0F08] hover:text-[var(--amber)] transition-colors items-center justify-center flex disabled:opacity-50 disabled:cursor-not-allowed">
                                 <Send className="w-4 h-4" />
                             </button>
                         </div>
                         <div className="helper-text text-[var(--text-dim)] text-[clamp(5px,3vw,10px)] font-medium w-full justify-start item-center">
-                            <span className="bg-[var(--surface2)] text-[var(--text-secondary)] mr-1 px-1 py-0.5 border-[1px] border-[var(--border)] rounded-sm">Enter</span> to send ·{" "}
-                            <span className="bg-[var(--surface2)] text-[var(--text-secondary)] mr-1 px-1 py-0.5 border-[1px] border-[var(--border)] rounded-sm">Shift Enter</span> for new line
+                            <span className="bg-[var(--surface2)] text-[var(--text-secondary)] mr-1 px-1 py-0.5 border-[1px] border-[var(--border)] rounded-sm">Enter</span> to send
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

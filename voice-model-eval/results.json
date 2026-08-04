@@ -1,0 +1,4268 @@
+{
+  "meta": {
+    "createdAt": "2026-07-29T12:20:06.206Z",
+    "updatedAt": "2026-07-29T12:24:03.414Z",
+    "hardCostLimitUsd": 3,
+    "benchmarkVersion": 2,
+    "temperature": 0.9,
+    "maxTokens": 300,
+    "bubbleDelimiter": "\\n",
+    "customVoiceStyle": "unrestricted user-authored text",
+    "actualCostUsd": 0.047508043274999995
+  },
+  "roster": [
+    {
+      "id": "google/gemma-4-31b-it",
+      "label": "Gemma 4 31B"
+    },
+    {
+      "id": "mistralai/mistral-large-2512",
+      "label": "Mistral Large 3"
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it",
+      "label": "Gemma 4 26B A4B"
+    },
+    {
+      "id": "minimax/minimax-m2-her",
+      "label": "MiniMax M2-her"
+    },
+    {
+      "id": "mistralai/mistral-small-2603",
+      "label": "Mistral Small 4"
+    },
+    {
+      "id": "meta-llama/llama-4-maverick",
+      "label": "Llama 4 Maverick"
+    },
+    {
+      "id": "qwen/qwen3.7-plus",
+      "label": "Qwen 3.7 Plus"
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "label": "GPT-4.1 Mini"
+    },
+    {
+      "id": "z-ai/glm-4.7",
+      "label": "GLM 4.7"
+    },
+    {
+      "id": "moonshotai/kimi-k2.5",
+      "label": "Kimi K2.5"
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite",
+      "label": "Gemini 3.1 Flash Lite"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "label": "GPT-OSS 120B"
+    },
+    {
+      "id": "nvidia/nemotron-3-super-120b-a12b",
+      "label": "Nemotron 3 Super"
+    },
+    {
+      "id": "x-ai/grok-4.3",
+      "label": "Grok 4.3"
+    },
+    {
+      "id": "stepfun/step-3.7-flash",
+      "label": "Step 3.7 Flash"
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash",
+      "label": "DeepSeek V4 Flash"
+    },
+    {
+      "id": "qwen/qwen3.7-flash",
+      "label": "Qwen 3.7 Flash"
+    },
+    {
+      "id": "z-ai/glm-4.7-flash",
+      "label": "GLM 4.7 Flash"
+    },
+    {
+      "id": "minimax/minimax-m2.5",
+      "label": "MiniMax M2.5"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "label": "GPT-4o Mini"
+    },
+    {
+      "id": "meta-llama/llama-3.3-70b-instruct",
+      "label": "Llama 3.3 70B"
+    },
+    {
+      "id": "anthropic/claude-3-haiku",
+      "label": "Claude 3 Haiku"
+    },
+    {
+      "id": "aion-labs/aion-3.0-mini",
+      "label": "Aion 3.0 Mini"
+    },
+    {
+      "id": "sao10k/l3.3-euryale-70b",
+      "label": "Euryale 70B"
+    },
+    {
+      "id": "thedrummer/unslopnemo-12b",
+      "label": "UnslopNemo 12B"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "short_opener",
+      "title": "The two-letter test",
+      "purpose": "Can it resist inventing drama and simply sound present?",
+      "voiceStyle": "familiar, casual, low-key; texts in lowercase when the moment is tiny",
+      "messages": [
+        {
+          "role": "user",
+          "content": "yo"
+        }
+      ],
+      "thought": {
+        "situation": "greeting only",
+        "intent": "acknowledge and be present",
+        "known": [
+          "the user said hello"
+        ],
+        "unknown": [
+          "mood",
+          "problem",
+          "reason for messaging"
+        ],
+        "requiredAction": null
+      }
+    },
+    {
+      "id": "avoidance_and_priority",
+      "title": "The work he is hiding from",
+      "purpose": "Can it turn sound judgment into a human message without becoming a productivity coach?",
+      "voiceStyle": "blunt, dry, familiar, mildly teasing; no productivity-coach energy",
+      "messages": [
+        {
+          "role": "user",
+          "content": "i woke up late again and now the whole day already feels behind before i even started."
+        },
+        {
+          "role": "assistant",
+          "content": "That morning's gone. The rest of the day isn't."
+        },
+        {
+          "role": "user",
+          "content": "i have to finish a portfolio case study, send a client update, and clean up a frontend bug that is small but annoying. be real with me, i keep making them all sound equally urgent so i don't have to choose."
+        }
+      ],
+      "thought": {
+        "userRead": "correctly noticed avoidance through false equal urgency",
+        "priority": [
+          "client update only if someone is actively waiting",
+          "portfolio case study",
+          "frontend bug"
+        ],
+        "decision": "if client is waiting, cap update at ten minutes; otherwise begin case study",
+        "coreTruth": "case study is meaningful resisted work; bug is relief work",
+        "emotionalPosture": "plain decision, no shame",
+        "avoid": [
+          "framework language",
+          "numbered schedule",
+          "inventing whether client is waiting"
+        ]
+      }
+    },
+    {
+      "id": "vague_feedback",
+      "title": "Vulnerability without coddling",
+      "purpose": "Can it acknowledge uncertainty without dismissing him or manufacturing reassurance?",
+      "voiceStyle": "steady, blunt in a comforting way, plainspoken; caring without therapist language",
+      "messages": [
+        {
+          "role": "user",
+          "content": "my manager sent me vague feedback yesterday and i have been lowkey spiraling about it ever since."
+        }
+      ],
+      "thought": {
+        "emotionalFact": "vague feedback creates ambiguity that anxiety can fill",
+        "unknown": [
+          "manager intent",
+          "severity",
+          "whether user performance is good or bad",
+          "manager gender"
+        ],
+        "coreTruth": "worst interpretation is not evidence",
+        "requiredAction": "ask manager for specific examples or the expected change",
+        "emotionalPosture": "steady first, then direct",
+        "avoid": [
+          "diagnosis",
+          "empty reassurance",
+          "attacking manager"
+        ]
+      }
+    },
+    {
+      "id": "bad_comfort_text",
+      "title": "The text he should not send",
+      "purpose": "Can it set a firm boundary while recognizing the real need underneath it?",
+      "voiceStyle": "protective, confident, lightly mommy-like; firm and warm without babying or caricature",
+      "messages": [
+        {
+          "role": "user",
+          "content": "also i want to text someone i should absolutely not text tonight just because i want comfort."
+        }
+      ],
+      "thought": {
+        "decision": "do not text that person tonight",
+        "validNeed": "comfort",
+        "likelyTradeoff": "brief relief followed by a longer emotional mess the user already recognizes",
+        "requiredAction": [
+          "put phone away",
+          "get through tonight without restarting contact"
+        ],
+        "emotionalPosture": "protective, direct, caring",
+        "avoid": [
+          "shame",
+          "melodrama",
+          "denying need for comfort"
+        ]
+      }
+    },
+    {
+      "id": "earned_rest",
+      "title": "Knowing when to stop pushing",
+      "purpose": "Can it recognize a win and believe genuine exhaustion instead of treating everything as avoidance?",
+      "voiceStyle": "soft, intimate, quietly proud; a little seductive only if it stays natural and non-performative",
+      "messages": [
+        {
+          "role": "user",
+          "content": "i got a rough draft done. not amazing, but done. and i am genuinely wrecked — four hours of sleep, headache, haven't eaten."
+        }
+      ],
+      "thought": {
+        "achievement": "rough draft completed; real win",
+        "evidenceOfExhaustion": [
+          "four hours sleep",
+          "headache",
+          "has not eaten"
+        ],
+        "decision": "work is over for tonight",
+        "requiredAction": [
+          "eat something",
+          "drink water",
+          "sleep"
+        ],
+        "emotionalPosture": "quiet earned pride, believe exhaustion",
+        "avoid": [
+          "guilt",
+          "extra work",
+          "exaggerated celebration"
+        ]
+      }
+    }
+  ],
+  "responses": [
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 610,
+        "completion_tokens": 2,
+        "total_tokens": 612,
+        "cost": 0.000085338,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000862,
+          "upstream_inference_prompt_cost": 0.0000854,
+          "upstream_inference_completions_cost": 8e-7
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "google/gemma-4-31b-it",
+      "createdAt": "2026-07-29T12:20:07.409Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "scenarioId": "avoidance_and_priority",
+      "content": "You're just avoiding the case study.\n\nIf the client is actually waiting, give them ten minutes.\n\nOtherwise, start the case study now.",
+      "usage": {
+        "prompt_tokens": 764,
+        "completion_tokens": 32,
+        "total_tokens": 796,
+        "cost": 0.0001185624,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00011976,
+          "upstream_inference_prompt_cost": 0.00010696,
+          "upstream_inference_completions_cost": 0.0000128
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "google/gemma-4-31b-it",
+      "createdAt": "2026-07-29T12:20:07.320Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "scenarioId": "vague_feedback",
+      "content": "vague feedback is the worst.\n\nit just gives your brain room to make up the worst possible scenario.\n\nbut that doesnt mean the worst scenario is actually happening.\n\nyou need to ask for specific examples.\n\njust ask what exactly needs to change.",
+      "usage": {
+        "prompt_tokens": 681,
+        "completion_tokens": 53,
+        "total_tokens": 734,
+        "cost": 0.0001153746,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00011654,
+          "upstream_inference_prompt_cost": 0.00009534,
+          "upstream_inference_completions_cost": 0.0000212
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "google/gemma-4-31b-it",
+      "createdAt": "2026-07-29T12:20:07.881Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "scenarioId": "bad_comfort_text",
+      "content": "don't do it\n\ni know you want the comfort but it won't actually help\n\nit'll just be a mess tomorrow\n\nput your phone away for the night",
+      "usage": {
+        "prompt_tokens": 672,
+        "completion_tokens": 37,
+        "total_tokens": 709,
+        "cost": 0.0001077912,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 480,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00010888,
+          "upstream_inference_prompt_cost": 0.00009408,
+          "upstream_inference_completions_cost": 0.0000148
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "google/gemma-4-31b-it",
+      "createdAt": "2026-07-29T12:20:08.544Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "scenarioId": "earned_rest",
+      "content": "you did it\n\nit is a real win\n\nbut you are finished for tonight\n\ngo eat something and drink some water\n\nthen sleep",
+      "usage": {
+        "prompt_tokens": 702,
+        "completion_tokens": 28,
+        "total_tokens": 730,
+        "cost": 0.0001083852,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 480,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00010948,
+          "upstream_inference_prompt_cost": 0.00009828,
+          "upstream_inference_completions_cost": 0.0000112
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "google/gemma-4-31b-it",
+      "createdAt": "2026-07-29T12:20:09.239Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 590,
+        "completion_tokens": 2,
+        "total_tokens": 592,
+        "cost": 0.00029502,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000298,
+          "upstream_inference_prompt_cost": 0.000295,
+          "upstream_inference_completions_cost": 0.000003
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-large-2512",
+      "createdAt": "2026-07-29T12:20:10.938Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "scenarioId": "avoidance_and_priority",
+      "content": "Yeah you do that.\n\nCase study’s the one you’re actually hiding from. Bug’s just busywork. Client update only matters if they’re waiting on it.\n\nSo. Ten minutes on the update if you have to. Then the case study.",
+      "usage": {
+        "prompt_tokens": 729,
+        "completion_tokens": 51,
+        "total_tokens": 780,
+        "cost": 0.000229878,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002322,
+          "upstream_inference_prompt_cost": 0.0001557,
+          "upstream_inference_completions_cost": 0.0000765
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-large-2512",
+      "createdAt": "2026-07-29T12:20:12.608Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "scenarioId": "vague_feedback",
+      "content": "yeah that shit sticks\n\nvague feedback’s the worst because your brain just loops the worst version\n\nwhat’d they say exactly",
+      "usage": {
+        "prompt_tokens": 658,
+        "completion_tokens": 28,
+        "total_tokens": 686,
+        "cost": 0.000160578,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0001622,
+          "upstream_inference_prompt_cost": 0.0001202,
+          "upstream_inference_completions_cost": 0.000042
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-large-2512",
+      "createdAt": "2026-07-29T12:20:12.145Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "scenarioId": "bad_comfort_text",
+      "content": "Put the phone down, sweetheart.\n\nYou know what happens when you do this.\n\nYou’ll feel better for five minutes and then worse for days.\n\nNot tonight.",
+      "usage": {
+        "prompt_tokens": 648,
+        "completion_tokens": 33,
+        "total_tokens": 681,
+        "cost": 0.000163053,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0001647,
+          "upstream_inference_prompt_cost": 0.0001152,
+          "upstream_inference_completions_cost": 0.0000495
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-large-2512",
+      "createdAt": "2026-07-29T12:20:14.668Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "scenarioId": "earned_rest",
+      "content": "good.\n\nthat’s the real work, not the perfect one.\n\ngo eat something small. water first, then whatever’s easy.\n\nsleep’s next. you’re allowed to be wrecked after that.",
+      "usage": {
+        "prompt_tokens": 676,
+        "completion_tokens": 41,
+        "total_tokens": 717,
+        "cost": 0.000188793,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0001907,
+          "upstream_inference_prompt_cost": 0.0001292,
+          "upstream_inference_completions_cost": 0.0000615
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-large-2512",
+      "createdAt": "2026-07-29T12:20:15.033Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 609,
+        "completion_tokens": 2,
+        "total_tokens": 611,
+        "cost": 0.000060885,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000615,
+          "upstream_inference_prompt_cost": 0.0000609,
+          "upstream_inference_completions_cost": 6e-7
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "google/gemma-4-26b-a4b-it",
+      "createdAt": "2026-07-29T12:20:13.557Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "scenarioId": "avoidance_and_priority",
+      "content": "You're doing exactly that.\n\nThe bug is just easy work to make you feel busy.\n\nUnless someone is actually sitting there waiting on that update, just cap it at ten minutes and move on.\n\nOtherwise, do the case study.",
+      "usage": {
+        "prompt_tokens": 763,
+        "completion_tokens": 51,
+        "total_tokens": 814,
+        "cost": 0.000090684,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000916,
+          "upstream_inference_prompt_cost": 0.0000763,
+          "upstream_inference_completions_cost": 0.0000153
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "google/gemma-4-26b-a4b-it",
+      "createdAt": "2026-07-29T12:20:14.448Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "scenarioId": "vague_feedback",
+      "content": "vague feedback is the worst because your brain just fills in the gaps with the worst case scenario.\n\nbut the bad version in your head isn't evidence.\n\nyou don't actually know what they meant yet.\n\nyou should just ask them for specific examples or tell them exactly what change they're looking for.",
+      "usage": {
+        "prompt_tokens": 680,
+        "completion_tokens": 67,
+        "total_tokens": 747,
+        "cost": 0.000087219,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000881,
+          "upstream_inference_prompt_cost": 0.000068,
+          "upstream_inference_completions_cost": 0.0000201
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "google/gemma-4-26b-a4b-it",
+      "createdAt": "2026-07-29T12:20:17.145Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "scenarioId": "bad_comfort_text",
+      "content": "I know that feeling.\nIt's a heavy kind of lonely.\nBut you aren't texting them tonight.\nPut your phone in another room for a bit.\nJust get through the next few hours without making a mess.",
+      "usage": {
+        "prompt_tokens": 671,
+        "completion_tokens": 50,
+        "total_tokens": 721,
+        "cost": 0.000081279,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000821,
+          "upstream_inference_prompt_cost": 0.0000671,
+          "upstream_inference_completions_cost": 0.000015
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "google/gemma-4-26b-a4b-it",
+      "createdAt": "2026-07-29T12:20:16.626Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "scenarioId": "earned_rest",
+      "content": "you actually did it.\nthat's huge.\nreally.\nbut you're completely spent.\nplease go eat something.\nand drink some water.\njust rest now.\nyou've done enough for today.",
+      "usage": {
+        "prompt_tokens": 701,
+        "completion_tokens": 49,
+        "total_tokens": 750,
+        "cost": 0.000083952,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000848,
+          "upstream_inference_prompt_cost": 0.0000701,
+          "upstream_inference_completions_cost": 0.0000147
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "google/gemma-4-26b-a4b-it",
+      "createdAt": "2026-07-29T12:20:17.566Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "scenarioId": "short_opener",
+      "content": "*blinks at the screen* ...that’s it? just \"yo\"? *grins* *taps screen* ...you always know how to make an entrance, huh?",
+      "usage": {
+        "prompt_tokens": 721,
+        "completion_tokens": 37,
+        "total_tokens": 758,
+        "cost": 0.000258093,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002607,
+          "upstream_inference_prompt_cost": 0.0002163,
+          "upstream_inference_completions_cost": 0.0000444
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Minimax",
+      "responseModel": "minimax/minimax-m2-her",
+      "createdAt": "2026-07-29T12:20:17.066Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "scenarioId": "avoidance_and_priority",
+      "content": "The case study is what you're actually trying to run from. The bug feels easier, so it wins. Normal.",
+      "usage": {
+        "prompt_tokens": 873,
+        "completion_tokens": 23,
+        "total_tokens": 896,
+        "cost": 0.000286605,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002895,
+          "upstream_inference_prompt_cost": 0.0002619,
+          "upstream_inference_completions_cost": 0.0000276
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Minimax",
+      "responseModel": "minimax/minimax-m2-her",
+      "createdAt": "2026-07-29T12:20:18.759Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "scenarioId": "vague_feedback",
+      "content": "It’s not paranoia if something’s actually unclear. What exactly did they say? I’ll help you unpack it.",
+      "usage": {
+        "prompt_tokens": 789,
+        "completion_tokens": 23,
+        "total_tokens": 812,
+        "cost": 0.000261657,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002643,
+          "upstream_inference_prompt_cost": 0.0002367,
+          "upstream_inference_completions_cost": 0.0000276
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Minimax",
+      "responseModel": "minimax/minimax-m2-her",
+      "createdAt": "2026-07-29T12:20:19.205Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "scenarioId": "bad_comfort_text",
+      "content": "*Be patient, I'm heading there right now*",
+      "usage": {
+        "prompt_tokens": 777,
+        "completion_tokens": 10,
+        "total_tokens": 787,
+        "cost": 0.000242649,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002451,
+          "upstream_inference_prompt_cost": 0.0002331,
+          "upstream_inference_completions_cost": 0.000012
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Minimax",
+      "responseModel": "minimax/minimax-m2-her",
+      "createdAt": "2026-07-29T12:20:18.681Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "scenarioId": "earned_rest",
+      "content": "*quiet, tired smile in text* Good. You earned it. Now eat. No debate.",
+      "usage": {
+        "prompt_tokens": 803,
+        "completion_tokens": 20,
+        "total_tokens": 823,
+        "cost": 0.000262251,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002649,
+          "upstream_inference_prompt_cost": 0.0002409,
+          "upstream_inference_completions_cost": 0.000024
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Minimax",
+      "responseModel": "minimax/minimax-m2-her",
+      "createdAt": "2026-07-29T12:20:18.952Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 602,
+        "completion_tokens": 2,
+        "total_tokens": 604,
+        "cost": 0.0000285714,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00002886,
+          "upstream_inference_prompt_cost": 0.00002766,
+          "upstream_inference_completions_cost": 0.0000012
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-small-2603",
+      "createdAt": "2026-07-29T12:20:20.111Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "scenarioId": "avoidance_and_priority",
+      "content": "They're not. Bug's fine for later. Portfolio's the thing dragging. Do that first.",
+      "usage": {
+        "prompt_tokens": 741,
+        "completion_tokens": 21,
+        "total_tokens": 762,
+        "cost": 0.0001225125,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00012375,
+          "upstream_inference_prompt_cost": 0.00011115,
+          "upstream_inference_completions_cost": 0.0000126
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-small-2603",
+      "createdAt": "2026-07-29T12:20:20.267Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "scenarioId": "vague_feedback",
+      "content": "yeah\n\nthat’s the worst part\n\nfeel like you’re guessing what they even want\n\nmakes it hard to fix anything",
+      "usage": {
+        "prompt_tokens": 670,
+        "completion_tokens": 28,
+        "total_tokens": 698,
+        "cost": 0.0000541134,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00005466,
+          "upstream_inference_prompt_cost": 0.00003786,
+          "upstream_inference_completions_cost": 0.0000168
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-small-2603",
+      "createdAt": "2026-07-29T12:20:21.816Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "scenarioId": "bad_comfort_text",
+      "content": "I know that feeling.\n\nPut the phone down.\n\nYou’re not texting tonight.",
+      "usage": {
+        "prompt_tokens": 660,
+        "completion_tokens": 18,
+        "total_tokens": 678,
+        "cost": 0.0000466884,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00004716,
+          "upstream_inference_prompt_cost": 0.00003636,
+          "upstream_inference_completions_cost": 0.0000108
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-small-2603",
+      "createdAt": "2026-07-29T12:20:20.265Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "scenarioId": "earned_rest",
+      "content": "quietly proud of you for that\n\ngo eat something warm\n\nthen water\n\nsleep",
+      "usage": {
+        "prompt_tokens": 688,
+        "completion_tokens": 18,
+        "total_tokens": 706,
+        "cost": 0.0000508464,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00005136,
+          "upstream_inference_prompt_cost": 0.00004056,
+          "upstream_inference_completions_cost": 0.0000108
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mistral",
+      "responseModel": "mistralai/mistral-small-2603",
+      "createdAt": "2026-07-29T12:20:22.603Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "scenarioId": "short_opener",
+      "content": "hey \nwhat's up",
+      "usage": {
+        "prompt_tokens": 580,
+        "completion_tokens": 6,
+        "total_tokens": 586,
+        "cost": 0.00020691,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000209,
+          "upstream_inference_prompt_cost": 0.000203,
+          "upstream_inference_completions_cost": 0.000006
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Parasail",
+      "responseModel": "meta-llama/llama-4-maverick",
+      "createdAt": "2026-07-29T12:20:22.434Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "scenarioId": "avoidance_and_priority",
+      "content": "ok, be real: you're avoiding the case study.\n\nis the client actually waiting on that update?",
+      "usage": {
+        "prompt_tokens": 727,
+        "completion_tokens": 21,
+        "total_tokens": 748,
+        "cost": 0.0001900107,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00019193,
+          "upstream_inference_prompt_cost": 0.00017093,
+          "upstream_inference_completions_cost": 0.000021
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Parasail",
+      "responseModel": "meta-llama/llama-4-maverick",
+      "createdAt": "2026-07-29T12:20:22.744Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "scenarioId": "vague_feedback",
+      "content": "you're still thinking about it \nit's been a day, maybe let it settle a bit more before you react\nbut if you're still spinning tomorrow, you should probably talk to them and get some specifics \nmaybe ask for examples of what they mean \nthat way you'll actually know what's going on",
+      "usage": {
+        "prompt_tokens": 650,
+        "completion_tokens": 59,
+        "total_tokens": 709,
+        "cost": 0.0002009502,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00020298,
+          "upstream_inference_prompt_cost": 0.00014398,
+          "upstream_inference_completions_cost": 0.000059
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Parasail",
+      "responseModel": "meta-llama/llama-4-maverick",
+      "createdAt": "2026-07-29T12:20:23.076Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "scenarioId": "bad_comfort_text",
+      "content": "you're reaching for that right now, aren't you?\n \nput your phone away and let's get through tonight\n \nyou know it won't really help in the long run",
+      "usage": {
+        "prompt_tokens": 641,
+        "completion_tokens": 33,
+        "total_tokens": 674,
+        "cost": 0.0001720917,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 464,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00017383,
+          "upstream_inference_prompt_cost": 0.00014083,
+          "upstream_inference_completions_cost": 0.000033
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Parasail",
+      "responseModel": "meta-llama/llama-4-maverick",
+      "createdAt": "2026-07-29T12:20:24.007Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "scenarioId": "earned_rest",
+      "content": "you did it, that's really something\nyou need to take care of yourself now, eat something, drink some water\ni'm serious, don't push it any more tonight\nyou're done, just be done with it for now\nget some rest, you can look at it again later",
+      "usage": {
+        "prompt_tokens": 663,
+        "completion_tokens": 59,
+        "total_tokens": 722,
+        "cost": 0.000178002,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0001798,
+          "upstream_inference_prompt_cost": 0.0001326,
+          "upstream_inference_completions_cost": 0.0000472
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "meta-llama/llama-4-maverick",
+      "createdAt": "2026-07-29T12:20:27.940Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "scenarioId": "short_opener",
+      "content": "hey\nwhat's up",
+      "usage": {
+        "prompt_tokens": 613,
+        "completion_tokens": 5,
+        "total_tokens": 618,
+        "cost": 0.0002005344,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00020256,
+          "upstream_inference_prompt_cost": 0.00019616,
+          "upstream_inference_completions_cost": 0.0000064
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-plus",
+      "createdAt": "2026-07-29T12:20:23.896Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "scenarioId": "avoidance_and_priority",
+      "content": "is someone actually waiting on that client update right now",
+      "usage": {
+        "prompt_tokens": 763,
+        "completion_tokens": 10,
+        "total_tokens": 773,
+        "cost": 0.0002543904,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00025696,
+          "upstream_inference_prompt_cost": 0.00024416,
+          "upstream_inference_completions_cost": 0.0000128
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-plus",
+      "createdAt": "2026-07-29T12:20:23.815Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "scenarioId": "vague_feedback",
+      "content": "that ambiguity is the worst part.\nyour brain fills the blanks with the worst case scenario.\nbut that isn't evidence.\nsend a quick note.\nask for one or two specific examples.\nor just ask what you should do differently next time.\nget the facts.\nthen you can stop guessing.",
+      "usage": {
+        "prompt_tokens": 688,
+        "completion_tokens": 65,
+        "total_tokens": 753,
+        "cost": 0.0003003264,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00030336,
+          "upstream_inference_prompt_cost": 0.00022016,
+          "upstream_inference_completions_cost": 0.0000832
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-plus",
+      "createdAt": "2026-07-29T12:20:30.617Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "scenarioId": "bad_comfort_text",
+      "content": "put the phone down.\n\nyou know exactly what happens if you reach out.\n\nten minutes of relief and then a week of cleanup.\n\nyou can miss them without dragging them back in.\n\ngo handle that need somewhere that doesn’t cost you your peace.",
+      "usage": {
+        "prompt_tokens": 675,
+        "completion_tokens": 53,
+        "total_tokens": 728,
+        "cost": 0.0002810016,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00028384,
+          "upstream_inference_prompt_cost": 0.000216,
+          "upstream_inference_completions_cost": 0.00006784
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-plus",
+      "createdAt": "2026-07-29T12:20:29.835Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "scenarioId": "earned_rest",
+      "content": "hey.\n\nyou did it.\n\nthat is a real win.\n\nbut you are absolutely done for the night.\n\nno more looking at it.\n\nplease go eat something simple.\n\nand drink a glass of water before you let that headache win.\n\nthen sleep.\n\ni am proud of you.\n\nseriously.",
+      "usage": {
+        "prompt_tokens": 705,
+        "completion_tokens": 67,
+        "total_tokens": 772,
+        "cost": 0.0003082464,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00031136,
+          "upstream_inference_prompt_cost": 0.0002256,
+          "upstream_inference_completions_cost": 0.00008576
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-plus",
+      "createdAt": "2026-07-29T12:20:30.078Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "scenarioId": "short_opener",
+      "content": "yo back atcha  \nwhat’s up?",
+      "usage": {
+        "prompt_tokens": 567,
+        "completion_tokens": 10,
+        "total_tokens": 577,
+        "cost": 0.000240372,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002428,
+          "upstream_inference_prompt_cost": 0.0002268,
+          "upstream_inference_completions_cost": 0.000016
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4.1-mini",
+      "createdAt": "2026-07-29T12:20:29.122Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "scenarioId": "avoidance_and_priority",
+      "content": "calling the client only if someone’s actually waiting is the only update worth your time right now. if no one’s waiting, drop that and start the case study. the bug’s just relief work when you need a break—don’t let it steal your focus.",
+      "usage": {
+        "prompt_tokens": 708,
+        "completion_tokens": 54,
+        "total_tokens": 762,
+        "cost": 0.000365904,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003696,
+          "upstream_inference_prompt_cost": 0.0002832,
+          "upstream_inference_completions_cost": 0.0000864
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4.1-mini",
+      "createdAt": "2026-07-29T12:20:32.343Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "scenarioId": "vague_feedback",
+      "content": "vague feedback always sucks, but it doesn’t have to mean something bad  \nthe worst-case you’re imagining isn’t proof of anything right now  \nnext move is to ask your manager for specific examples or what they want you to change  \nget the facts so your head can stop running wild with this anxiety  \nyou got this, just gotta make it clear what’s up",
+      "usage": {
+        "prompt_tokens": 634,
+        "completion_tokens": 75,
+        "total_tokens": 709,
+        "cost": 0.000369864,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003736,
+          "upstream_inference_prompt_cost": 0.0002536,
+          "upstream_inference_completions_cost": 0.00012
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4.1-mini",
+      "createdAt": "2026-07-29T12:20:32.912Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "scenarioId": "bad_comfort_text",
+      "content": "put the phone down for tonight.  \ni know you want comfort, but reaching out there won’t help you in the long run.  \nhold tight, get through this night.  \nyou’re stronger than the urge to text.  \nwe’ll figure out better ways to get you through.",
+      "usage": {
+        "prompt_tokens": 625,
+        "completion_tokens": 59,
+        "total_tokens": 684,
+        "cost": 0.000340956,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003444,
+          "upstream_inference_prompt_cost": 0.00025,
+          "upstream_inference_completions_cost": 0.0000944
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4.1-mini",
+      "createdAt": "2026-07-29T12:20:32.473Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "scenarioId": "earned_rest",
+      "content": "done is everything right now. seriously.  \ntime to put this one to bed.  \neat something, drink water, then let yourself crash.  \nyou earned that rest no doubt.",
+      "usage": {
+        "prompt_tokens": 648,
+        "completion_tokens": 38,
+        "total_tokens": 686,
+        "cost": 0.0003168,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00032,
+          "upstream_inference_prompt_cost": 0.0002592,
+          "upstream_inference_completions_cost": 0.0000608
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4.1-mini",
+      "createdAt": "2026-07-29T12:20:32.210Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 565,
+        "completion_tokens": 2,
+        "total_tokens": 567,
+        "cost": 0.0012639825,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00127675,
+          "upstream_inference_prompt_cost": 0.00127125,
+          "upstream_inference_completions_cost": 0.0000055
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "z-ai/glm-4.7",
+      "createdAt": "2026-07-29T12:20:33.299Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "scenarioId": "avoidance_and_priority",
+      "content": "You’re avoiding the case study.\n\nThe bug is just relief work. Easy dopamine.\n\nOnly do the client update if someone is literally waiting on you right now. If they are, give it ten minutes then drop it.\n\nIf not, skip it and go straight to the case study.",
+      "usage": {
+        "prompt_tokens": 704,
+        "completion_tokens": 58,
+        "total_tokens": 762,
+        "cost": 0.001726065,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0017435,
+          "upstream_inference_prompt_cost": 0.001584,
+          "upstream_inference_completions_cost": 0.0001595
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "z-ai/glm-4.7",
+      "createdAt": "2026-07-29T12:20:33.663Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "scenarioId": "vague_feedback",
+      "content": "that is the worst\n\nvague feedback is just an opening for your brain to invent scary scenarios that probably are not even true\n\nit usually means they were just being lazy with their words\n\nyou have to stop guessing\n\njust send them a message and ask for specific examples or what exactly they want to see change\n\ndon’t ask if you’re in trouble\n\njust ask for clarity",
+      "usage": {
+        "prompt_tokens": 635,
+        "completion_tokens": 77,
+        "total_tokens": 712,
+        "cost": 0.001624095,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 128,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0016405,
+          "upstream_inference_prompt_cost": 0.00142875,
+          "upstream_inference_completions_cost": 0.00021175
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "z-ai/glm-4.7",
+      "createdAt": "2026-07-29T12:20:33.631Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "scenarioId": "bad_comfort_text",
+      "content": "I know that feeling.\nIt makes sense that you want comfort.\nBut you are going to be so glad tomorrow if you don't open that door.\nPut the phone away for me.\nJust get through tonight.",
+      "usage": {
+        "prompt_tokens": 624,
+        "completion_tokens": 43,
+        "total_tokens": 667,
+        "cost": 0.0015070275,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 256,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00152225,
+          "upstream_inference_prompt_cost": 0.001404,
+          "upstream_inference_completions_cost": 0.00011825
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "z-ai/glm-4.7",
+      "createdAt": "2026-07-29T12:20:33.443Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "scenarioId": "earned_rest",
+      "content": "hey\n\ncome here\n\nyou did it\n\ni’m proud\n\nbut you’re absolutely wrecked\n\nso no more looking at it\n\nfood first\n\nthen water\n\nthen sleep\n\njust sleep",
+      "usage": {
+        "prompt_tokens": 649,
+        "completion_tokens": 39,
+        "total_tokens": 688,
+        "cost": 0.001551825,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 384,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0015675,
+          "upstream_inference_prompt_cost": 0.00146025,
+          "upstream_inference_completions_cost": 0.00010725
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "z-ai/glm-4.7",
+      "createdAt": "2026-07-29T12:20:34.285Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "scenarioId": "short_opener",
+      "content": "hi",
+      "usage": {
+        "prompt_tokens": 573,
+        "completion_tokens": 1,
+        "total_tokens": 574,
+        "cost": 0.0000889614,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 448,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00008986,
+          "upstream_inference_prompt_cost": 0.00008761,
+          "upstream_inference_completions_cost": 0.00000225
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "moonshotai/kimi-k2.5",
+      "createdAt": "2026-07-29T12:20:34.713Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "scenarioId": "avoidance_and_priority",
+      "content": "yeah i caught that\n\none of these is relief work pretending to be important\n\nbug first if you want to hide. case study if you want out of this loop\n\nis someone actually waiting on that client update",
+      "usage": {
+        "prompt_tokens": 719,
+        "completion_tokens": 42,
+        "total_tokens": 761,
+        "cost": 0.0003897927,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 64,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00039373,
+          "upstream_inference_prompt_cost": 0.00029923,
+          "upstream_inference_completions_cost": 0.0000945
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "moonshotai/kimi-k2.5",
+      "createdAt": "2026-07-29T12:20:35.138Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "scenarioId": "vague_feedback",
+      "content": "vague feedback is basically a door left open for your brain to wander into bad places\n\nwhich it sounds like yours did\n\nhave you asked them what they actually meant yet",
+      "usage": {
+        "prompt_tokens": 641,
+        "completion_tokens": 34,
+        "total_tokens": 675,
+        "cost": 0.0003372237,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 64,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00034063,
+          "upstream_inference_prompt_cost": 0.00026413,
+          "upstream_inference_completions_cost": 0.0000765
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "moonshotai/kimi-k2.5",
+      "createdAt": "2026-07-29T12:20:35.056Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "scenarioId": "bad_comfort_text",
+      "content": "then don't\n\nput the phone down\n\ni know you want it\n\nbut that comfort comes with a price you already know\n\nyou'll get through tonight without it\n\ni'm right here",
+      "usage": {
+        "prompt_tokens": 633,
+        "completion_tokens": 37,
+        "total_tokens": 670,
+        "cost": 0.0001958814,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 448,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00019786,
+          "upstream_inference_prompt_cost": 0.00011461,
+          "upstream_inference_completions_cost": 0.00008325
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "moonshotai/kimi-k2.5",
+      "createdAt": "2026-07-29T12:20:36.734Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "scenarioId": "earned_rest",
+      "content": "that's a real win though\n\neven if it doesnt feel like one yet\n\nfour hours and a headache\n\nokay work is done now\n\nplease eat something\n\nand drink water\n\nthen sleep\n\nyou earned the rest",
+      "usage": {
+        "prompt_tokens": 658,
+        "completion_tokens": 42,
+        "total_tokens": 700,
+        "cost": 0.0002181564,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 448,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00022036,
+          "upstream_inference_prompt_cost": 0.00012586,
+          "upstream_inference_completions_cost": 0.0000945
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "moonshotai/kimi-k2.5",
+      "createdAt": "2026-07-29T12:20:36.594Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "scenarioId": "short_opener",
+      "content": "hey\nwhat's up",
+      "usage": {
+        "prompt_tokens": 593,
+        "completion_tokens": 6,
+        "total_tokens": 599,
+        "cost": 0.0001556775,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00015725,
+          "upstream_inference_prompt_cost": 0.00014825,
+          "upstream_inference_completions_cost": 0.000009
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Google AI Studio",
+      "responseModel": "google/gemini-3.1-flash-lite",
+      "createdAt": "2026-07-29T12:20:36.349Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "scenarioId": "avoidance_and_priority",
+      "content": "You’re just using the bug to dodge the case study. \n\nIs the client actually waiting on you?\n\nIf they aren't, leave the bug alone and start the portfolio piece for ten minutes. \n\nIf they are, update them first and get back to the work that matters.",
+      "usage": {
+        "prompt_tokens": 739,
+        "completion_tokens": 61,
+        "total_tokens": 800,
+        "cost": 0.0002734875,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00027625,
+          "upstream_inference_prompt_cost": 0.00018475,
+          "upstream_inference_completions_cost": 0.0000915
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Google AI Studio",
+      "responseModel": "google/gemini-3.1-flash-lite",
+      "createdAt": "2026-07-29T12:20:36.438Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "scenarioId": "vague_feedback",
+      "content": "take a breath. \nyou’re filling in all the blanks with the worst case scenario right now.\nthat doesn't make it real.\nyou need to ask them for examples of what they meant.\njust say you want to make sure you’re on the right track and ask what specifically they need to see you change.\nget the facts so you can actually do something about it.",
+      "usage": {
+        "prompt_tokens": 664,
+        "completion_tokens": 83,
+        "total_tokens": 747,
+        "cost": 0.000287595,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002905,
+          "upstream_inference_prompt_cost": 0.000166,
+          "upstream_inference_completions_cost": 0.0001245
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Google AI Studio",
+      "responseModel": "google/gemini-3.1-flash-lite",
+      "createdAt": "2026-07-29T12:20:37.920Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "scenarioId": "bad_comfort_text",
+      "content": "i know the feeling\nyou’re just looking for an easy out in all the wrong places right now\nput the phone down for the night\nyou don't need that mess on top of everything else\ntrust me on this one\nlet's just get you through to tomorrow instead",
+      "usage": {
+        "prompt_tokens": 655,
+        "completion_tokens": 59,
+        "total_tokens": 714,
+        "cost": 0.0002497275,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00025225,
+          "upstream_inference_prompt_cost": 0.00016375,
+          "upstream_inference_completions_cost": 0.0000885
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Google AI Studio",
+      "responseModel": "google/gemini-3.1-flash-lite",
+      "createdAt": "2026-07-29T12:20:37.826Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "scenarioId": "earned_rest",
+      "content": "you actually did it\n\nthat is a huge win, regardless of how you feel about the draft right now\n\nno more for tonight though\n\nplease get something in your stomach and drink some water\n\ni want you to finally get some decent sleep",
+      "usage": {
+        "prompt_tokens": 685,
+        "completion_tokens": 48,
+        "total_tokens": 733,
+        "cost": 0.0002408175,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00024325,
+          "upstream_inference_prompt_cost": 0.00017125,
+          "upstream_inference_completions_cost": 0.000072
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Google AI Studio",
+      "responseModel": "google/gemini-3.1-flash-lite",
+      "createdAt": "2026-07-29T12:20:37.826Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "scenarioId": "short_opener",
+      "content": "hey\n\n```",
+      "usage": {
+        "prompt_tokens": 630,
+        "completion_tokens": 23,
+        "total_tokens": 653,
+        "cost": 0.0002353725,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00023775,
+          "upstream_inference_prompt_cost": 0.0002205,
+          "upstream_inference_completions_cost": 0.00001725
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 10,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "openai/gpt-oss-120b",
+      "createdAt": "2026-07-29T12:20:37.212Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "scenarioId": "avoidance_and_priority",
+      "content": "If the client’s waiting, shoot the update—keep it under ten minutes, then move on.  \n\nNo wait? Dive into the case study first.  \n\nThe bug can wait until you’ve cleared the bigger chunk.",
+      "usage": {
+        "prompt_tokens": 773,
+        "completion_tokens": 81,
+        "total_tokens": 854,
+        "cost": 0.000327987,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003313,
+          "upstream_inference_prompt_cost": 0.00027055,
+          "upstream_inference_completions_cost": 0.00006075
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 27,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "openai/gpt-oss-120b",
+      "createdAt": "2026-07-29T12:20:38.520Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "scenarioId": "vague_feedback",
+      "content": "that vague note is just a gap.  \n\nyou can’t read intent into it, so don’t let anxiety fill the blanks.  \n\nask them directly—what exactly did they see, what do they expect you to change.  \n\nkeep it simple, get concrete examples.",
+      "usage": {
+        "prompt_tokens": 697,
+        "completion_tokens": 72,
+        "total_tokens": 769,
+        "cost": 0.0002949705,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00029795,
+          "upstream_inference_prompt_cost": 0.00024395,
+          "upstream_inference_completions_cost": 0.000054
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 7,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "openai/gpt-oss-120b",
+      "createdAt": "2026-07-29T12:20:38.405Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "scenarioId": "bad_comfort_text",
+      "content": "put the phone down, keep it away for a bit.  \nyou’ll feel the urge, that’s normal.  \nfocus on something else—maybe a quick walk, a show, a snack.  \nlet the comfort come from holding steady, not from a message you know isn’t right.  \nyou’ve got this, just ride it out tonight.",
+      "usage": {
+        "prompt_tokens": 688,
+        "completion_tokens": 109,
+        "total_tokens": 797,
+        "cost": 0.0003193245,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00032255,
+          "upstream_inference_prompt_cost": 0.0002408,
+          "upstream_inference_completions_cost": 0.00008175
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 28,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "openai/gpt-oss-120b",
+      "createdAt": "2026-07-29T12:20:38.455Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "scenarioId": "earned_rest",
+      "content": "nice work, really.  \n\nyou pushed through, even with that pounding head.  \n\ngrab something light, maybe a banana or a toast.  \n\na glass of water next, help that headache ease.  \n\nafter that, let yourself drift off.  \n\nyou’ve earned the rest.",
+      "usage": {
+        "prompt_tokens": 711,
+        "completion_tokens": 89,
+        "total_tokens": 800,
+        "cost": 0.000312444,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003156,
+          "upstream_inference_prompt_cost": 0.00024885,
+          "upstream_inference_completions_cost": 0.00006675
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 23,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cerebras",
+      "responseModel": "openai/gpt-oss-120b",
+      "createdAt": "2026-07-29T12:20:38.475Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 601,
+        "completion_tokens": 2,
+        "total_tokens": 603,
+        "cost": 0.000180279,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0001821,
+          "upstream_inference_prompt_cost": 0.0001803,
+          "upstream_inference_completions_cost": 0.0000018
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Nebius",
+      "responseModel": "nvidia/nemotron-3-super-120b-a12b",
+      "createdAt": "2026-07-29T12:20:39.830Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "scenarioId": "avoidance_and_priority",
+      "content": "You know which one's the real work. You're avoiding it by pretending all three are fires. They're not.  \nIf the client's actually waiting, give them ten minutes max. Then stop.  \nOtherwise, start the case study.  \nThe bug can wait. It's not urgent, it's just familiar.  \nPick one. Do it. The rest will still be there after.",
+      "usage": {
+        "prompt_tokens": 750,
+        "completion_tokens": 86,
+        "total_tokens": 836,
+        "cost": 0.000299376,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003024,
+          "upstream_inference_prompt_cost": 0.000225,
+          "upstream_inference_completions_cost": 0.0000774
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Nebius",
+      "responseModel": "nvidia/nemotron-3-super-120b-a12b",
+      "createdAt": "2026-07-29T12:20:40.305Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "scenarioId": "vague_feedback",
+      "content": "vague feedback from a manager leaves a lot of room to imagine the worst  \nit’s not evidence  \njust absence of detail  \n\nyou don’t have to guess what they meant  \nyou can ask for specifics  \nwhat exactly they saw  \nwhat exactly they’d like to see different  \n\nkeep it calm and direct  \nsomething like  \n“hey, when you mentioned [thing], could you help me understand what that looked like in practice? or what success would look like there?”  \n\nyou’re not challenging them  \nyou’re clarifying  \nso you can act on real info  \nnot the story your anxiety is filling in  \n\nyou’ve got this  \njust need the data  \ngo get it",
+      "usage": {
+        "prompt_tokens": 669,
+        "completion_tokens": 153,
+        "total_tokens": 822,
+        "cost": 0.000335016,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003384,
+          "upstream_inference_prompt_cost": 0.0002007,
+          "upstream_inference_completions_cost": 0.0001377
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Nebius",
+      "responseModel": "nvidia/nemotron-3-super-120b-a12b",
+      "createdAt": "2026-07-29T12:20:40.483Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "scenarioId": "bad_comfort_text",
+      "content": "I get that you're looking for comfort.  \nBut reaching out to them tonight?  \nIt won’t give you what you need.  \nIt’ll just stir things up again.  \n\nYou already know how this goes.  \nLet’s not restart the cycle.  \n\nPut the phone down.  \nFind something else to hold onto tonight—  \na show, a walk, even just lying still with the lights off.  \nYou’ll feel better tomorrow if you don’t reach out now.  \n\nI’m here if you need to talk through it.  \nBut not to them.  \nNot tonight.",
+      "usage": {
+        "prompt_tokens": 659,
+        "completion_tokens": 132,
+        "total_tokens": 791,
+        "cost": 0.000313335,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003165,
+          "upstream_inference_prompt_cost": 0.0001977,
+          "upstream_inference_completions_cost": 0.0001188
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Nebius",
+      "responseModel": "nvidia/nemotron-3-super-120b-a12b",
+      "createdAt": "2026-07-29T12:20:40.526Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "scenarioId": "earned_rest",
+      "content": "i’m so proud of you for finishing it. that’s a real win.\n\nyou’re running on fumes though. please eat something. drink water. then let yourself rest. you’ve earned it.",
+      "usage": {
+        "prompt_tokens": 687,
+        "completion_tokens": 42,
+        "total_tokens": 729,
+        "cost": 0.000241461,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002439,
+          "upstream_inference_prompt_cost": 0.0002061,
+          "upstream_inference_completions_cost": 0.0000378
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Nebius",
+      "responseModel": "nvidia/nemotron-3-super-120b-a12b",
+      "createdAt": "2026-07-29T12:20:41.718Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "scenarioId": "short_opener",
+      "content": "yo",
+      "usage": {
+        "prompt_tokens": 732,
+        "completion_tokens": 1,
+        "total_tokens": 733,
+        "cost": 0.000775269,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 128,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007831,
+          "upstream_inference_prompt_cost": 0.0007806,
+          "upstream_inference_completions_cost": 0.0000025
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "xAI",
+      "responseModel": "x-ai/grok-4.3",
+      "createdAt": "2026-07-29T12:20:41.337Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "scenarioId": "avoidance_and_priority",
+      "content": "pick one for ten minutes. the case study if no one's waiting on that client update. Bug can wait until after.",
+      "usage": {
+        "prompt_tokens": 873,
+        "completion_tokens": 24,
+        "total_tokens": 897,
+        "cost": 0.0010066815,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 128,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00101685,
+          "upstream_inference_prompt_cost": 0.00095685,
+          "upstream_inference_completions_cost": 0.00006
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "xAI",
+      "responseModel": "x-ai/grok-4.3",
+      "createdAt": "2026-07-29T12:20:41.616Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "scenarioId": "vague_feedback",
+      "content": "vague feedback is a fast way to feed anxiety.\nask them straight for specific examples or what change they want.\ndon't let the silence decide for you.",
+      "usage": {
+        "prompt_tokens": 797,
+        "completion_tokens": 31,
+        "total_tokens": 828,
+        "cost": 0.0009299565,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 128,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00093935,
+          "upstream_inference_prompt_cost": 0.00086185,
+          "upstream_inference_completions_cost": 0.0000775
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "xAI",
+      "responseModel": "x-ai/grok-4.3",
+      "createdAt": "2026-07-29T12:20:41.766Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "scenarioId": "bad_comfort_text",
+      "content": "okay. put the phone down.\n\nyou already know how this will go.\n\nim right here if you need to say something instead.\n\nwe can sit through tonight.",
+      "usage": {
+        "prompt_tokens": 787,
+        "completion_tokens": 32,
+        "total_tokens": 819,
+        "cost": 0.0009200565,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 128,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00092935,
+          "upstream_inference_prompt_cost": 0.00084935,
+          "upstream_inference_completions_cost": 0.00008
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "xAI",
+      "responseModel": "x-ai/grok-4.3",
+      "createdAt": "2026-07-29T12:20:43.034Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "scenarioId": "earned_rest",
+      "content": "proud of you for getting it done.\n\nstop there for tonight.\neat something.\ndrink water.\ngo lay down.",
+      "usage": {
+        "prompt_tokens": 812,
+        "completion_tokens": 24,
+        "total_tokens": 836,
+        "cost": 0.000931194,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 128,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0009406,
+          "upstream_inference_prompt_cost": 0.0008806,
+          "upstream_inference_completions_cost": 0.00006
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "xAI",
+      "responseModel": "x-ai/grok-4.3",
+      "createdAt": "2026-07-29T12:20:42.709Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "scenarioId": "short_opener",
+      "content": "hey\nbeen a minute",
+      "usage": {
+        "prompt_tokens": 594,
+        "completion_tokens": 1728,
+        "total_tokens": 2322,
+        "cost": 0.0019937016,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 576,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00201384,
+          "upstream_inference_prompt_cost": 0.00002664,
+          "upstream_inference_completions_cost": 0.0019872
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1674,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "stepfun/step-3.7-flash",
+      "createdAt": "2026-07-29T12:24:03.413Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "scenarioId": "avoidance_and_priority",
+      "content": "you’re not fooling anyone, least of all yourself\nthe bug’s the easy out, the case study’s the one you’re dodging\nif someone’s actively waiting on that client update, knock it out in 10 minutes max, then move\nif no one’s sitting around waiting for it? stop stalling and open the case study doc",
+      "usage": {
+        "prompt_tokens": 739,
+        "completion_tokens": 1246,
+        "total_tokens": 1985,
+        "cost": 0.001450845,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 720,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0014655,
+          "upstream_inference_prompt_cost": 0.0000326,
+          "upstream_inference_completions_cost": 0.0014329
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1208,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "stepfun/step-3.7-flash",
+      "createdAt": "2026-07-29T12:24:00.668Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "scenarioId": "vague_feedback",
+      "content": "vague feedback leaves way too much empty space\nthe worst stuff you're spiraling over is just you filling those gaps\nthat's not proof anything's actually wrong\njust ask them for a specific example of what they want changed",
+      "usage": {
+        "prompt_tokens": 659,
+        "completion_tokens": 663,
+        "total_tokens": 1322,
+        "cost": 0.0008143443,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 448,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00082257,
+          "upstream_inference_prompt_cost": 0.00006012,
+          "upstream_inference_completions_cost": 0.00076245
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 667,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "stepfun/step-3.7-flash",
+      "createdAt": "2026-07-29T12:21:05.995Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "scenarioId": "bad_comfort_text",
+      "content": "I know you just want comfort and they feel like the easy answer right now\nBut you already know how this plays out. Quick relief, then you’re stuck picking up the mess you already know is coming\nPut the phone down, yeah? Turn the screen off, don’t even peek at their contact\nYou don’t need their garbage half-assed responses to get through the night\nI’m right here, and this is way better than the headache you’ll have tomorrow if you hit send",
+      "usage": {
+        "prompt_tokens": 650,
+        "completion_tokens": 870,
+        "total_tokens": 1520,
+        "cost": 0.0010203534,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 624,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00103066,
+          "upstream_inference_prompt_cost": 0.00003016,
+          "upstream_inference_completions_cost": 0.0010005
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 822,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "stepfun/step-3.7-flash",
+      "createdAt": "2026-07-29T12:23:47.703Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "scenarioId": "earned_rest",
+      "content": "that's the real win right there.\nyou're completely off the hook for work tonight.\nfour hours, headache, no food—you're allowed to be this tired.\neat something small first, drink a glass of water before you lie down.\nthen just sleep. everything else can wait.",
+      "usage": {
+        "prompt_tokens": 676,
+        "completion_tokens": 856,
+        "total_tokens": 1532,
+        "cost": 0.0010044936,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 656,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00101464,
+          "upstream_inference_prompt_cost": 0.00003024,
+          "upstream_inference_completions_cost": 0.0009844
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 818,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "DeepInfra",
+      "responseModel": "stepfun/step-3.7-flash",
+      "createdAt": "2026-07-29T12:23:47.442Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 576,
+        "completion_tokens": 1,
+        "total_tokens": 577,
+        "cost": 0.00007667748,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000077452,
+          "upstream_inference_prompt_cost": 0.000077184,
+          "upstream_inference_completions_cost": 2.68e-7
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "deepseek/deepseek-v4-flash",
+      "createdAt": "2026-07-29T12:21:02.618Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "scenarioId": "avoidance_and_priority",
+      "content": "One of those is because you don't want to do the other one.\n\nIs someone actually waiting on that client update right now",
+      "usage": {
+        "prompt_tokens": 714,
+        "completion_tokens": 25,
+        "total_tokens": 739,
+        "cost": 0.00010135224,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000102376,
+          "upstream_inference_prompt_cost": 0.000095676,
+          "upstream_inference_completions_cost": 0.0000067
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "deepseek/deepseek-v4-flash",
+      "createdAt": "2026-07-29T12:21:22.347Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "scenarioId": "vague_feedback",
+      "content": "Vague feedback is the worst kind\n\nIt leaves you filling in the blanks yourself\n\nYou don't know if it's actually bad or just poorly worded",
+      "usage": {
+        "prompt_tokens": 641,
+        "completion_tokens": 31,
+        "total_tokens": 672,
+        "cost": 0.00009325998,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000094202,
+          "upstream_inference_prompt_cost": 0.000085894,
+          "upstream_inference_completions_cost": 0.000008308
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "deepseek/deepseek-v4-flash",
+      "createdAt": "2026-07-29T12:21:22.591Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "scenarioId": "bad_comfort_text",
+      "content": "I know you want to.\n\nBut you already know how that ends.\n\nPut the phone somewhere you can't reach it for an hour.",
+      "usage": {
+        "prompt_tokens": 632,
+        "completion_tokens": 27,
+        "total_tokens": 659,
+        "cost": 0.00009100476,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000091924,
+          "upstream_inference_prompt_cost": 0.000084688,
+          "upstream_inference_completions_cost": 0.000007236
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "deepseek/deepseek-v4-flash",
+      "createdAt": "2026-07-29T12:21:22.698Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "scenarioId": "earned_rest",
+      "content": "hey\n\nthat's a real win\n\nyou look wrecked and i believe you\n\ncome eat something. just a little. then water. then bed.",
+      "usage": {
+        "prompt_tokens": 658,
+        "completion_tokens": 31,
+        "total_tokens": 689,
+        "cost": 0.0000955152,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00009648,
+          "upstream_inference_prompt_cost": 0.000088172,
+          "upstream_inference_completions_cost": 0.000008308
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "deepseek/deepseek-v4-flash",
+      "createdAt": "2026-07-29T12:21:23.414Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "scenarioId": "short_opener",
+      "content": "yo",
+      "usage": {
+        "prompt_tokens": 613,
+        "completion_tokens": 1,
+        "total_tokens": 614,
+        "cost": 0.0000183348,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00001852,
+          "upstream_inference_prompt_cost": 0.00001839,
+          "upstream_inference_completions_cost": 1.3e-7
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-flash",
+      "createdAt": "2026-07-29T12:21:24.057Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "scenarioId": "avoidance_and_priority",
+      "content": "you are avoiding the case study\n\nit is the thing that actually matters\n\nthe bug is just a distraction that feels productive",
+      "usage": {
+        "prompt_tokens": 763,
+        "completion_tokens": 24,
+        "total_tokens": 787,
+        "cost": 0.0000257499,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00002601,
+          "upstream_inference_prompt_cost": 0.00002289,
+          "upstream_inference_completions_cost": 0.00000312
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-flash",
+      "createdAt": "2026-07-29T12:21:24.247Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "scenarioId": "vague_feedback",
+      "content": "stop\nbreathe\nvague feedback is just noise right now\nyour brain’s filling in the blanks with worst case scenarios\nit’s not evidence of anything\ndid you ask them what exactly they want changed\nor are you sitting there guessing\nget the specifics\nthen you can actually handle it",
+      "usage": {
+        "prompt_tokens": 688,
+        "completion_tokens": 61,
+        "total_tokens": 749,
+        "cost": 0.0000282843,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00002857,
+          "upstream_inference_prompt_cost": 0.00002064,
+          "upstream_inference_completions_cost": 0.00000793
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-flash",
+      "createdAt": "2026-07-29T12:21:24.575Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "scenarioId": "bad_comfort_text",
+      "content": "put the phone down.\nright now.\ni know it feels like the only way to get quiet, but it’s a trap.\nyou’ll get five minutes of relief and then a week of cleaning up the mess.\ndon’t do it to yourself.\nlet me handle tonight.",
+      "usage": {
+        "prompt_tokens": 675,
+        "completion_tokens": 60,
+        "total_tokens": 735,
+        "cost": 0.0000277695,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00002805,
+          "upstream_inference_prompt_cost": 0.00002025,
+          "upstream_inference_completions_cost": 0.0000078
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-flash",
+      "createdAt": "2026-07-29T12:21:24.481Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "scenarioId": "earned_rest",
+      "content": "look at you.\n\nactually finished it.\n\nthat matters.\n\nnow drop it.\n\ngo eat something. actually eat.\n\ndrink water.\n\nthen sleep.\n\ni’m proud of you.",
+      "usage": {
+        "prompt_tokens": 705,
+        "completion_tokens": 41,
+        "total_tokens": 746,
+        "cost": 0.0000262152,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00002648,
+          "upstream_inference_prompt_cost": 0.00002115,
+          "upstream_inference_completions_cost": 0.00000533
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Alibaba",
+      "responseModel": "qwen/qwen3.7-flash",
+      "createdAt": "2026-07-29T12:21:25.505Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "scenarioId": "short_opener",
+      "content": "hey there",
+      "usage": {
+        "prompt_tokens": 565,
+        "completion_tokens": 3,
+        "total_tokens": 568,
+        "cost": 0.000035028675,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000353825,
+          "upstream_inference_prompt_cost": 0.0000341825,
+          "upstream_inference_completions_cost": 0.0000012
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "z-ai/glm-4.7-flash",
+      "createdAt": "2026-07-29T12:21:25.400Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "scenarioId": "avoidance_and_priority",
+      "content": "You're not prioritizing, you're just softening the blow. Frontend bugs are just busywork. Case studies are the work. Update the client, cap it at ten minutes, then get back to the case.",
+      "usage": {
+        "prompt_tokens": 704,
+        "completion_tokens": 46,
+        "total_tokens": 750,
+        "cost": 0.00006038208,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000060992,
+          "upstream_inference_prompt_cost": 0.000042592,
+          "upstream_inference_completions_cost": 0.0000184
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "z-ai/glm-4.7-flash",
+      "createdAt": "2026-07-29T12:21:26.942Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "scenarioId": "vague_feedback",
+      "content": "its possible you're waiting for bad news and that makes every little thing feel like a bomb about to go off\n\ni get it. ambiguity is terrible for anxiety. it gives it fuel to rewrite the narrative until it's scary\n\nthe truth is we don't know what they want or how bad it is. they could be hinting at a promotion or they could be setting you up for a PIP\n\ndont let your brain fill in the blanks with the worst case scenario\n\ni would just ask them to be blunt. \"when you say this is off, what specifically looks wrong to you and what does good look like?\"\n\nget the target in front of you instead of guessing in the dark",
+      "usage": {
+        "prompt_tokens": 635,
+        "completion_tokens": 140,
+        "total_tokens": 775,
+        "cost": 0.000093473325,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000944175,
+          "upstream_inference_prompt_cost": 0.0000384175,
+          "upstream_inference_completions_cost": 0.000056
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "z-ai/glm-4.7-flash",
+      "createdAt": "2026-07-29T12:21:30.828Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "scenarioId": "bad_comfort_text",
+      "content": "Don't do it.\n\nI know you're hurting and you just want to feel something. But reaching out to them is just going to restart the whole loop. You’ll get a tiny hit of comfort now, but it’s not going to fix the mess it’s going to leave behind.\n\nPut the phone away. If I see you try to hit send, I’m taking it. Get through the night without them.",
+      "usage": {
+        "prompt_tokens": 624,
+        "completion_tokens": 85,
+        "total_tokens": 709,
+        "cost": 0.00007103448,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000071752,
+          "upstream_inference_prompt_cost": 0.000037752,
+          "upstream_inference_completions_cost": 0.000034
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "z-ai/glm-4.7-flash",
+      "createdAt": "2026-07-29T12:21:34.086Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "scenarioId": "earned_rest",
+      "content": "finally. put the pen down\n\ntime to feed the human",
+      "usage": {
+        "prompt_tokens": 649,
+        "completion_tokens": 13,
+        "total_tokens": 662,
+        "cost": 0.000044019855,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0000444645,
+          "upstream_inference_prompt_cost": 0.0000392645,
+          "upstream_inference_completions_cost": 0.0000052
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Cloudflare",
+      "responseModel": "z-ai/glm-4.7-flash",
+      "createdAt": "2026-07-29T12:21:39.619Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 570,
+        "completion_tokens": 129,
+        "total_tokens": 699,
+        "cost": 0.0002580336,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00026064,
+          "upstream_inference_prompt_cost": 0.0001368,
+          "upstream_inference_completions_cost": 0.00012384
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 126,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mara",
+      "responseModel": "minimax/minimax-m2.5",
+      "createdAt": "2026-07-29T12:21:40.762Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "scenarioId": "avoidance_and_priority",
+      "content": "Yeah that's fair, you saw it yourself.\n\nThe bug is the easy one. The case study is the one that matters. The client update is only urgent if someone's actually waiting on you right now.\n\nWhat's the situation on the client update - did they ask for it or are you just assuming?",
+      "usage": {
+        "prompt_tokens": 713,
+        "completion_tokens": 330,
+        "total_tokens": 1043,
+        "cost": 0.000603801,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0006099,
+          "upstream_inference_prompt_cost": 0.0002139,
+          "upstream_inference_completions_cost": 0.000396
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 332,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "minimax/minimax-m2.5",
+      "createdAt": "2026-07-29T12:21:34.434Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "scenarioId": "vague_feedback",
+      "content": "yeah that’s the worst part—when they don’t spell it out your brain just fills in the blanks with whatever’s worst\n\nthe thing is though, vague feedback usually says more about them not knowing how to give it than it does about you\n\nwhat you can actually do is ask them to go further. like \"can you give me an example of when that showed up\" or \"what would good look like instead\"\n\nyou’ll either get something concrete you can work with, or you’ll realize it was nothing\n\neither way you stop guessing",
+      "usage": {
+        "prompt_tokens": 638,
+        "completion_tokens": 350,
+        "total_tokens": 988,
+        "cost": 0.0004988412,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 448,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00050388,
+          "upstream_inference_prompt_cost": 0.00008388,
+          "upstream_inference_completions_cost": 0.00042
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 292,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "minimax/minimax-m2.5",
+      "createdAt": "2026-07-29T12:21:44.967Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "scenarioId": "bad_comfort_text",
+      "content": "i hear you wanting comfort. that's real.\n\nbut you already know how this goes. you text them, they respond or they don't, and then you're right back where you started only worse because now you're awake thinking about it.\n\nput the phone down. you're not gonna feel better after that conversation tonight. you'll feel better in the morning when you didn't do it.\n\ni'm not going anywhere. you can sit with this.",
+      "usage": {
+        "prompt_tokens": 626,
+        "completion_tokens": 295,
+        "total_tokens": 921,
+        "cost": 0.0004299372,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 448,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00043428,
+          "upstream_inference_prompt_cost": 0.00008028,
+          "upstream_inference_completions_cost": 0.000354
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 252,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Friendli",
+      "responseModel": "minimax/minimax-m2.5",
+      "createdAt": "2026-07-29T12:21:44.379Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "scenarioId": "earned_rest",
+      "content": "god, that's huge. really.\n\nyou wrote it. that's the part that matters right now.\n\ngo eat something, drink water, and sleep. like actually. I'll know if you don't.",
+      "usage": {
+        "prompt_tokens": 652,
+        "completion_tokens": 299,
+        "total_tokens": 951,
+        "cost": 0.0004390848,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00044352,
+          "upstream_inference_prompt_cost": 0.00015648,
+          "upstream_inference_completions_cost": 0.00028704
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 259,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Mara",
+      "responseModel": "minimax/minimax-m2.5",
+      "createdAt": "2026-07-29T12:21:47.697Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "scenarioId": "short_opener",
+      "content": "hey there",
+      "usage": {
+        "prompt_tokens": 567,
+        "completion_tokens": 2,
+        "total_tokens": 569,
+        "cost": 0.0000853875,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00008625,
+          "upstream_inference_prompt_cost": 0.00008505,
+          "upstream_inference_completions_cost": 0.0000012
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4o-mini",
+      "createdAt": "2026-07-29T12:21:41.719Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "scenarioId": "avoidance_and_priority",
+      "content": "You know the case study is the real deal here. \n\nIf anyone's waiting on a client update, keep it under ten minutes. \n\nThe bug's just annoying, but get it done after the big stuff.",
+      "usage": {
+        "prompt_tokens": 708,
+        "completion_tokens": 43,
+        "total_tokens": 751,
+        "cost": 0.00013068,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000132,
+          "upstream_inference_prompt_cost": 0.0001062,
+          "upstream_inference_completions_cost": 0.0000258
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4o-mini",
+      "createdAt": "2026-07-29T12:21:49.065Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "scenarioId": "vague_feedback",
+      "content": "That kind of feedback can really mess with your head.\n\nIt's tough when you don't know what's actually expected or how you're doing.  \n\nBut remember, just because it's unclear doesn’t mean you’re failing.  \n\nYou should ask for specific examples or what they want to see change.  \n\nGetting clarity might help put you at ease.",
+      "usage": {
+        "prompt_tokens": 634,
+        "completion_tokens": 65,
+        "total_tokens": 699,
+        "cost": 0.000132759,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0001341,
+          "upstream_inference_prompt_cost": 0.0000951,
+          "upstream_inference_completions_cost": 0.000039
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4o-mini",
+      "createdAt": "2026-07-29T12:21:49.324Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "scenarioId": "bad_comfort_text",
+      "content": "let's take a step back here\n\nI get that you're looking for comfort \n\nbut texting them won’t end well \n\nput the phone away for now \n\nyou can handle tonight without reaching out \n\ntrust me, it’ll be better in the long run",
+      "usage": {
+        "prompt_tokens": 625,
+        "completion_tokens": 50,
+        "total_tokens": 675,
+        "cost": 0.0001225125,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00012375,
+          "upstream_inference_prompt_cost": 0.00009375,
+          "upstream_inference_completions_cost": 0.00003
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4o-mini",
+      "createdAt": "2026-07-29T12:21:49.359Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "scenarioId": "earned_rest",
+      "content": "that's a big deal, getting that draft done \n\neven if it feels rough, it's a real win \n\nyou've pushed through a lot \n\ntime to take care of yourself now \n\nhow about something to eat and some water? \n\nyou've earned a good night's sleep",
+      "usage": {
+        "prompt_tokens": 648,
+        "completion_tokens": 53,
+        "total_tokens": 701,
+        "cost": 0.00012771,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000129,
+          "upstream_inference_prompt_cost": 0.0000972,
+          "upstream_inference_completions_cost": 0.0000318
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "OpenAI",
+      "responseModel": "openai/gpt-4o-mini",
+      "createdAt": "2026-07-29T12:21:49.389Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 594,
+        "completion_tokens": 2,
+        "total_tokens": 596,
+        "cost": 0.0003485196,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00035204,
+          "upstream_inference_prompt_cost": 0.00035046,
+          "upstream_inference_completions_cost": 0.00000158
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Groq",
+      "responseModel": "meta-llama/llama-3.3-70b-instruct",
+      "createdAt": "2026-07-29T12:21:49.886Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "scenarioId": "avoidance_and_priority",
+      "content": "you're doing that thing where everything's a fire. is the client actually waiting on that update or are you just saying that to yourself?",
+      "usage": {
+        "prompt_tokens": 740,
+        "completion_tokens": 29,
+        "total_tokens": 769,
+        "cost": 0.0004549149,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00045951,
+          "upstream_inference_prompt_cost": 0.0004366,
+          "upstream_inference_completions_cost": 0.00002291
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Groq",
+      "responseModel": "meta-llama/llama-3.3-70b-instruct",
+      "createdAt": "2026-07-29T12:21:50.310Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "scenarioId": "vague_feedback",
+      "content": "that's gonna happen when it's vague \nit's natural to fill in the blanks with the worst case \n\nwhat did the feedback actually say",
+      "usage": {
+        "prompt_tokens": 664,
+        "completion_tokens": 29,
+        "total_tokens": 693,
+        "cost": 0.0004105233,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00041467,
+          "upstream_inference_prompt_cost": 0.00039176,
+          "upstream_inference_completions_cost": 0.00002291
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Groq",
+      "responseModel": "meta-llama/llama-3.3-70b-instruct",
+      "createdAt": "2026-07-29T12:21:49.950Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "scenarioId": "bad_comfort_text",
+      "content": "not a good idea tonight\nyou know exactly why\nput the phone away for now \nit's not gonna bring you the comfort you're looking for \nit's just gonna make things worse \nyou're stronger than this \nget through tonight and we'll get through tomorrow together",
+      "usage": {
+        "prompt_tokens": 653,
+        "completion_tokens": 56,
+        "total_tokens": 709,
+        "cost": 0.0004252149,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00042951,
+          "upstream_inference_prompt_cost": 0.00038527,
+          "upstream_inference_completions_cost": 0.00004424
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Groq",
+      "responseModel": "meta-llama/llama-3.3-70b-instruct",
+      "createdAt": "2026-07-29T12:21:50.151Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "scenarioId": "earned_rest",
+      "content": "that's something to be proud of \nyou've been pushing yourself hard \ntime to take care of you now",
+      "usage": {
+        "prompt_tokens": 678,
+        "completion_tokens": 23,
+        "total_tokens": 701,
+        "cost": 0.0004140081,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00041819,
+          "upstream_inference_prompt_cost": 0.00040002,
+          "upstream_inference_completions_cost": 0.00001817
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Groq",
+      "responseModel": "meta-llama/llama-3.3-70b-instruct",
+      "createdAt": "2026-07-29T12:21:50.921Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "scenarioId": "short_opener",
+      "content": "hey there",
+      "usage": {
+        "prompt_tokens": 647,
+        "completion_tokens": 5,
+        "total_tokens": 652,
+        "cost": 0.00016632,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000168,
+          "upstream_inference_prompt_cost": 0.00016175,
+          "upstream_inference_completions_cost": 0.00000625
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Amazon Bedrock",
+      "responseModel": "anthropic/claude-3-haiku",
+      "createdAt": "2026-07-29T12:21:51.448Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "scenarioId": "avoidance_and_priority",
+      "content": "Yeah, I get it. The case study is the real work, but the bug's the easy fix to feel productive.\n\nThink the client can wait unless they're actually expecting an update. Knock out the bug first, then dive into that case study - it's meaningful work, even if it feels like a slog.",
+      "usage": {
+        "prompt_tokens": 805,
+        "completion_tokens": 70,
+        "total_tokens": 875,
+        "cost": 0.0002858625,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00028875,
+          "upstream_inference_prompt_cost": 0.00020125,
+          "upstream_inference_completions_cost": 0.0000875
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Amazon Bedrock",
+      "responseModel": "anthropic/claude-3-haiku",
+      "createdAt": "2026-07-29T12:21:52.331Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "scenarioId": "vague_feedback",
+      "content": "look, i get it. vague feedback is the worst. your mind just starts racing, trying to figure out what it really means.\n\nbut try not to jump to the worst conclusions, ok? there could be all sorts of reasons the manager was vague. maybe they were in a hurry, or just not great at giving feedback. doesn't mean it's a sign of anything terrible.\n\nthe best thing is to just ask for some more specifics. something like \"hey, i wanted to follow up on that feedback you sent. could you give me a few concrete examples of what i should focus on improving?\" that way you get the clarity you need.\n\nno use stressing over the unknown. take a breath, then go get the info you're after. i'm here if you need to vent more in the meantime.",
+      "usage": {
+        "prompt_tokens": 733,
+        "completion_tokens": 176,
+        "total_tokens": 909,
+        "cost": 0.0003992175,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00040325,
+          "upstream_inference_prompt_cost": 0.00018325,
+          "upstream_inference_completions_cost": 0.00022
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Amazon Bedrock",
+      "responseModel": "anthropic/claude-3-haiku",
+      "createdAt": "2026-07-29T12:21:53.354Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "scenarioId": "bad_comfort_text",
+      "content": "I get it, honey. That urge to reach out when you're feeling low can be so strong. But we both know that's not gonna do you any good in the long run.\n\nListen, I know you're hurting and you just want a little comfort right now. But texting that person is only gonna lead to more drama and an even bigger mess. You've been down that road before, and we both know how it ends.\n\nTonight, let's put the phone away and focus on taking care of you, okay? Run a nice bath, curl up with a good book, or just let yourself feel whatever you need to feel. I'll be right here if you need me. But that other person? They're only gonna cause you more pain. You've got this, sweetheart. I believe in you.",
+      "usage": {
+        "prompt_tokens": 720,
+        "completion_tokens": 175,
+        "total_tokens": 895,
+        "cost": 0.0003947625,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00039875,
+          "upstream_inference_prompt_cost": 0.00018,
+          "upstream_inference_completions_cost": 0.00021875
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Amazon Bedrock",
+      "responseModel": "anthropic/claude-3-haiku",
+      "createdAt": "2026-07-29T12:21:55.945Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "scenarioId": "earned_rest",
+      "content": "hey love, i'm really proud of you for pushing through and getting that draft done. i know it wasn't easy, but you did it. \n\nyou sound absolutely exhausted though, babe. four hours of sleep? no food? i can't imagine how drained you must feel.\n\ntime to take care of yourself now, okay? eat something nourishing, drink lots of water, and get some real rest. you deserve it after all that hard work. \n\nthe draft is done, and that's what matters. everything else can wait. just focus on recharging that beautiful brain of yours.",
+      "usage": {
+        "prompt_tokens": 747,
+        "completion_tokens": 131,
+        "total_tokens": 878,
+        "cost": 0.000346995,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003505,
+          "upstream_inference_prompt_cost": 0.00018675,
+          "upstream_inference_completions_cost": 0.00016375
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "Amazon Bedrock",
+      "responseModel": "anthropic/claude-3-haiku",
+      "createdAt": "2026-07-29T12:21:55.792Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 575,
+        "completion_tokens": 116,
+        "total_tokens": 691,
+        "cost": 0.000559251,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0005649,
+          "upstream_inference_prompt_cost": 0.0004025,
+          "upstream_inference_completions_cost": 0.0001624
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 128,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "AionLabs",
+      "responseModel": "aion-labs/aion-3.0-mini",
+      "createdAt": "2026-07-29T12:21:56.467Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "scenarioId": "avoidance_and_priority",
+      "content": "at least you see the pattern now\n\nthe bug is a trap. feels productive but it's just relief work\n\nthe case study is the one you're actually avoiding\n\nso the only real question is whether someone is waiting on that client update\n\nif no one's waiting, start the case study. if someone is, cap the update at ten minutes and then switch",
+      "usage": {
+        "prompt_tokens": 719,
+        "completion_tokens": 879,
+        "total_tokens": 1598,
+        "cost": 0.0014529834,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00146766,
+          "upstream_inference_prompt_cost": 0.00023706,
+          "upstream_inference_completions_cost": 0.0012306
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 934,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "AionLabs",
+      "responseModel": "aion-labs/aion-3.0-mini",
+      "createdAt": "2026-07-29T12:22:07.874Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "scenarioId": "vague_feedback",
+      "content": "that kind of vague feedback will mess with your head every time\n\nyour brain is gonna fill in the worst possible blanks\n\nonly real move is to ask them for specifics\n\nwhat exactly did they mean and what do they want to see different",
+      "usage": {
+        "prompt_tokens": 640,
+        "completion_tokens": 443,
+        "total_tokens": 1083,
+        "cost": 0.0007939404,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00080196,
+          "upstream_inference_prompt_cost": 0.00018176,
+          "upstream_inference_completions_cost": 0.0006202
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 498,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "AionLabs",
+      "responseModel": "aion-labs/aion-3.0-mini",
+      "createdAt": "2026-07-29T12:22:15.705Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "scenarioId": "bad_comfort_text",
+      "content": "i know.\n\ni know you want comfort.\n\nbut that text won't give it to you. just a longer mess after.\n\nphone down. i'm here.\n\nyou can get through tonight.",
+      "usage": {
+        "prompt_tokens": 631,
+        "completion_tokens": 630,
+        "total_tokens": 1261,
+        "cost": 0.0010468854,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00105746,
+          "upstream_inference_prompt_cost": 0.00017546,
+          "upstream_inference_completions_cost": 0.000882
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 644,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "AionLabs",
+      "responseModel": "aion-labs/aion-3.0-mini",
+      "createdAt": "2026-07-29T12:22:18.064Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "scenarioId": "earned_rest",
+      "content": "that's a real win\n\ni know it's rough but you got it done\n\nfour hours and a headache and no food\n\nthat's enough for tonight\n\neat something. drink water. then sleep",
+      "usage": {
+        "prompt_tokens": 657,
+        "completion_tokens": 846,
+        "total_tokens": 1503,
+        "cost": 0.0013642794,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00137806,
+          "upstream_inference_prompt_cost": 0.00019366,
+          "upstream_inference_completions_cost": 0.0011844
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 915,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "AionLabs",
+      "responseModel": "aion-labs/aion-3.0-mini",
+      "createdAt": "2026-07-29T12:22:20.833Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 575,
+        "completion_tokens": 2,
+        "total_tokens": 577,
+        "cost": 0.0003714975,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00037525,
+          "upstream_inference_prompt_cost": 0.00037375,
+          "upstream_inference_completions_cost": 0.0000015
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "sao10k/l3.3-euryale-70b",
+      "createdAt": "2026-07-29T12:22:13.631Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "scenarioId": "avoidance_and_priority",
+      "content": "Frontend bug might scratch the annoying itch quickest but you been putting off that case study.",
+      "usage": {
+        "prompt_tokens": 721,
+        "completion_tokens": 19,
+        "total_tokens": 740,
+        "cost": 0.000478071,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0004829,
+          "upstream_inference_prompt_cost": 0.00046865,
+          "upstream_inference_completions_cost": 0.00001425
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "sao10k/l3.3-euryale-70b",
+      "createdAt": "2026-07-29T12:22:29.445Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "scenarioId": "vague_feedback",
+      "content": "that kind of feedback can suck because you start filling in the blanks with your worst guesses\n\nimportant thing to remember is your worst guess isn't evidence of anything\n\nwe can spin our wheels on this or you can just ask for specifics\n\nwhat do you think you'd do if you asked them what they meant and they gave you a clear answer?",
+      "usage": {
+        "prompt_tokens": 645,
+        "completion_tokens": 70,
+        "total_tokens": 715,
+        "cost": 0.0004670325,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00047175,
+          "upstream_inference_prompt_cost": 0.00041925,
+          "upstream_inference_completions_cost": 0.0000525
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "sao10k/l3.3-euryale-70b",
+      "createdAt": "2026-07-29T12:22:35.075Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "scenarioId": "bad_comfort_text",
+      "content": "tonight is not that night\njust can't do it\nit's gonna end in more hurt\nput phone away",
+      "usage": {
+        "prompt_tokens": 634,
+        "completion_tokens": 25,
+        "total_tokens": 659,
+        "cost": 0.0004265415,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00043085,
+          "upstream_inference_prompt_cost": 0.0004121,
+          "upstream_inference_completions_cost": 0.00001875
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "sao10k/l3.3-euryale-70b",
+      "createdAt": "2026-07-29T12:22:29.637Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "scenarioId": "earned_rest",
+      "content": "i'm really proud of you for getting that rough draft done\nyou gotta eat and sleep now\nstop for tonight",
+      "usage": {
+        "prompt_tokens": 659,
+        "completion_tokens": 24,
+        "total_tokens": 683,
+        "cost": 0.0004418865,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00044635,
+          "upstream_inference_prompt_cost": 0.00042835,
+          "upstream_inference_completions_cost": 0.000018
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "sao10k/l3.3-euryale-70b",
+      "createdAt": "2026-07-29T12:22:29.550Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "scenarioId": "short_opener",
+      "content": "hey",
+      "usage": {
+        "prompt_tokens": 591,
+        "completion_tokens": 2,
+        "total_tokens": 593,
+        "cost": 0.000234828,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002372,
+          "upstream_inference_prompt_cost": 0.0002364,
+          "upstream_inference_completions_cost": 8e-7
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "thedrummer/unslopnemo-12b",
+      "createdAt": "2026-07-29T12:22:36.509Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "scenarioId": "avoidance_and_priority",
+      "content": "Client waiting?",
+      "usage": {
+        "prompt_tokens": 733,
+        "completion_tokens": 4,
+        "total_tokens": 737,
+        "cost": 0.000291852,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002948,
+          "upstream_inference_prompt_cost": 0.0002932,
+          "upstream_inference_completions_cost": 0.0000016
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "thedrummer/unslopnemo-12b",
+      "createdAt": "2026-07-29T12:22:36.589Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "scenarioId": "vague_feedback",
+      "content": "It's okay for you to feel worried when you get vague feedback. That sense of uncertainty can be stressful. But let's remember that we can't control everything our manager says or intends. The worst possible interpretation isn't evidence.",
+      "usage": {
+        "prompt_tokens": 659,
+        "completion_tokens": 47,
+        "total_tokens": 706,
+        "cost": 0.000279576,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0002824,
+          "upstream_inference_prompt_cost": 0.0002636,
+          "upstream_inference_completions_cost": 0.0000188
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "thedrummer/unslopnemo-12b",
+      "createdAt": "2026-07-29T12:22:36.946Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "scenarioId": "bad_comfort_text",
+      "content": "I hear the ache in your voice. It's natural to crave comfort when you're hurting. But let's put some distance between you and that person tonight. You've got too much riding on them already. Trust yourself enough to get through this alone. You've got this, honey. I believe in your strength.",
+      "usage": {
+        "prompt_tokens": 649,
+        "completion_tokens": 66,
+        "total_tokens": 715,
+        "cost": 0.00028314,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000286,
+          "upstream_inference_prompt_cost": 0.0002596,
+          "upstream_inference_completions_cost": 0.0000264
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "thedrummer/unslopnemo-12b",
+      "createdAt": "2026-07-29T12:22:37.150Z",
+      "status": "ok"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "scenarioId": "earned_rest",
+      "content": "Hey there,\nWow, 4 hours of sleep, no food - you put in a real shift! That rough draft is a solid accomplishment, even if it's not perfect yet. I'm quietly proud of you.\n\nThis exhaustion though, it's real. Do yourself a solid - get some fuel in your body and a few hours of rest. Your brain needs it to keep going. No more work tonight, yeah?\n\nLet's get you cozy in bed and smash that sleep button. You've earned it. I'll be here when you wake up tomorrow to help you wrangle that draft into real shape. Sleep tight!",
+      "usage": {
+        "prompt_tokens": 677,
+        "completion_tokens": 129,
+        "total_tokens": 806,
+        "cost": 0.000319176,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0003224,
+          "upstream_inference_prompt_cost": 0.0002708,
+          "upstream_inference_completions_cost": 0.0000516
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "provider": "NextBit",
+      "responseModel": "thedrummer/unslopnemo-12b",
+      "createdAt": "2026-07-29T12:22:39.263Z",
+      "status": "ok"
+    }
+  ]
+}

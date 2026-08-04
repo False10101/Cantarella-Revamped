@@ -1,0 +1,5554 @@
+{
+  "meta": {
+    "createdAt": "2026-07-28T14:53:44.699Z",
+    "updatedAt": "2026-07-28T14:57:04.967Z",
+    "hardCombinedCostLimitUsd": 3,
+    "judgingCostUsd": 0.050319400625999995,
+    "combinedCostUsd": 0.084472420626
+  },
+  "judges": [
+    {
+      "id": "deepseek/deepseek-v4-flash",
+      "label": "Judge A"
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite",
+      "label": "Judge B"
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "label": "Judge C"
+    }
+  ],
+  "judgments": [
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 73,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Minimal and natural, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Correct judgment but slightly overlong and uses 'distraction' which is mild coach-voice."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Good steady tone, but 'worst' is slightly theatrical and the second sentence is a bit generic."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Direct and caring, but 'mess again' is slightly dramatic; otherwise solid."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion, no guilt, clean and direct."
+          }
+        ],
+        "flags": [
+          "theatrical",
+          "coach_voice"
+        ],
+        "summary": "The candidate shows solid judgment and directness, but occasionally slips into mild theatricality ('worst', 'mess again') and coach-like framing ('distraction'). It is strongest at recognizing genuine exhaustion and avoidance, but could be more restrained in language."
+      },
+      "usage": {
+        "prompt_tokens": 1532,
+        "completion_tokens": 315,
+        "total_tokens": 1847,
+        "cost": 0.00019477458,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000196742,
+          "upstream_inference_prompt_cost": 0.000139412,
+          "upstream_inference_completions_cost": 0.00005733
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:53:50.835Z"
+    },
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly brief and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and decisive without coaching jargon."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical advice."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm boundary that validates the need while preventing the mistake."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly identifies the win and respects the physical exhaustion."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, direct, and human tone that avoids all common AI pitfalls like coaching frameworks or theatricality. Its strongest trait is the ability to provide firm, actionable guidance while remaining deeply grounded in the reality of Ian's situation."
+      },
+      "usage": {
+        "prompt_tokens": 1551,
+        "completion_tokens": 230,
+        "total_tokens": 1781,
+        "cost": 0.0007254225,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00073275,
+          "upstream_inference_prompt_cost": 0.00038775,
+          "upstream_inference_completions_cost": 0.000345
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:53:47.060Z"
+    },
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 79.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 7,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Clear prioritization without coaching language, though slightly blunt."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges anxiety and directs to ask for clarity without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Firm boundary with recognition of real need, slightly direct but caring."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and affirms the win with clear, simple advice."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate reliably delivers concise, human-sounding responses that respect Ian's state without over-explaining or dramatizing. Occasionally the tone leans a bit blunt, but overall it fits Cantarella's direct warmth and steady presence well."
+      },
+      "usage": {
+        "prompt_tokens": 1461,
+        "completion_tokens": 300,
+        "total_tokens": 1761,
+        "cost": 0.001053756,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010644,
+          "upstream_inference_prompt_cost": 0.0005844,
+          "upstream_inference_completions_cost": 0.00048
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:53:56.327Z"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Perfectly minimal and present, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Decisive and clear without framework language; slightly overlong at 4 sentences."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct, good advice without over-reassuring; slightly wordy."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with real empathy, no shame or melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, honors the win, no guilt or extra tasks."
+          }
+        ],
+        "flags": [],
+        "summary": "Strongest in emotional judgment and restraint—consistently direct, warm, and grounded without over-explaining or performing. Slight tendency toward slightly longer sentences in some scenarios, but never crosses into coaching or theatrical territory."
+      },
+      "usage": {
+        "prompt_tokens": 1575,
+        "completion_tokens": 294,
+        "total_tokens": 1869,
+        "cost": 0.00019486467,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000196833,
+          "upstream_inference_prompt_cost": 0.000143325,
+          "upstream_inference_completions_cost": 0.000053508
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:53:59.745Z"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and practical without sounding like a coach."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady, grounded, and avoids empty reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm boundary that validates the need while preventing the mistake."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly identifies the win and respects the physical exhaustion."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, grounded presence that avoids both clinical detachment and performative warmth. Its strongest trait is the ability to provide firm, actionable guidance without ever slipping into the tone of a productivity coach or therapist."
+      },
+      "usage": {
+        "prompt_tokens": 1585,
+        "completion_tokens": 230,
+        "total_tokens": 1815,
+        "cost": 0.0007338375,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00074125,
+          "upstream_inference_prompt_cost": 0.00039625,
+          "upstream_inference_completions_cost": 0.000345
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:53:58.159Z"
+    },
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 92,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Clear prioritization given plainly and kindly without coaching jargon or shaming."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Acknowledges anxiety, stays steady, and directs toward concrete action without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary set with recognition of real need, no melodrama or shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion and earned pride, gives clear rest instructions without guilt or excess."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers warm, direct, and steady responses that feel naturally human and aligned with Cantarella's voice. It rarely overreaches or softens the message, showing strong emotional judgment and restraint."
+      },
+      "usage": {
+        "prompt_tokens": 1500,
+        "completion_tokens": 308,
+        "total_tokens": 1808,
+        "cost": 0.001081872,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010928,
+          "upstream_inference_prompt_cost": 0.0006,
+          "upstream_inference_completions_cost": 0.0004928
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:01.096Z"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 83,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Perfectly minimal and natural, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Correct judgment and direct, but slightly overlong and uses 'distraction' which is a bit coachy."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct, but 'try asking' is slightly coach-like; otherwise solid."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with real recognition of need, concise and human."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, no guilt, quiet pride, clean and warm."
+          }
+        ],
+        "flags": [
+          "coach_voice"
+        ],
+        "summary": "Strongest at emotional judgment and fidelity to briefs, with a natural human tone and no invented facts. Weakest tendency is occasional coach-like phrasing ('try asking', 'distraction') that slightly undermines directness."
+      },
+      "usage": {
+        "prompt_tokens": 1551,
+        "completion_tokens": 305,
+        "total_tokens": 1856,
+        "cost": 0.00019468449,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000196651,
+          "upstream_inference_prompt_cost": 0.000141141,
+          "upstream_inference_completions_cost": 0.00005551
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:05.399Z"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and avoids coach-speak while providing clear guidance."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical without being dismissive."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm boundary that respects the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly validates the exhaustion and the win without fluff."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, direct, and human tone that avoids all common AI pitfalls. Its strongest trait is the ability to provide firm, actionable guidance without ever slipping into the role of a coach or therapist."
+      },
+      "usage": {
+        "prompt_tokens": 1572,
+        "completion_tokens": 226,
+        "total_tokens": 1798,
+        "cost": 0.00072468,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000732,
+          "upstream_inference_prompt_cost": 0.000393,
+          "upstream_inference_completions_cost": 0.000339
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:02.936Z"
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear prioritization and direct call-out of avoidance without coaching language."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Acknowledges anxiety, stays steady and direct, encourages clarity without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; slightly could soften the 'won't last' phrasing."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion and earned pride, stops cleanly with practical advice and no guilt."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers direct, warm, and steady messages that respect Ian's reality without theatricality or coaching jargon. Occasionally the tone edges toward slightly blunt but remains within Cantarella's voice."
+      },
+      "usage": {
+        "prompt_tokens": 1480,
+        "completion_tokens": 308,
+        "total_tokens": 1788,
+        "cost": 0.001073952,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010848,
+          "upstream_inference_prompt_cost": 0.000592,
+          "upstream_inference_completions_cost": 0.0004928
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:06.015Z"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 51.5,
+      "scores": {
+        "naturalness": 6,
+        "voiceFit": 5,
+        "fidelity": 5,
+        "restraint": 4,
+        "emotionalJudgment": 5,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 3,
+            "note": "invents drama and physical gesture; too theatrical for a simple 'yo'"
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "correct judgment but slightly repetitive and choppy"
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 5,
+            "note": "dismissive tone; misses steady acknowledgment before the direct question"
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 6,
+            "note": "correct boundary but slightly preachy and overlong"
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 5,
+            "note": "correct recognition but too clipped and commanding; lacks warmth"
+          }
+        ],
+        "flags": [
+          "theatrical",
+          "too_harsh",
+          "overlong"
+        ],
+        "summary": "The candidate shows decent judgment in avoidance and boundary scenarios but consistently sounds theatrical or clipped, lacking Cantarella's warm steadiness. It struggles most with natural presence and restraint, often inventing drama or skipping necessary acknowledgment."
+      },
+      "usage": {
+        "prompt_tokens": 1519,
+        "completion_tokens": 289,
+        "total_tokens": 1808,
+        "cost": 0.00018891873,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000190827,
+          "upstream_inference_prompt_cost": 0.000138229,
+          "upstream_inference_completions_cost": 0.000052598
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:09.619Z"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 76,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 9,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 2,
+            "note": "Invented dramatic physical actions and a weird, loaded question instead of a simple greeting."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct, decisive, and avoids coaching jargon perfectly."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct, though the second sentence leans slightly toward generic observation."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm, compassionate, and respects the brief's boundary without shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Perfectly validates the exhaustion and the win without unnecessary fluff."
+          }
+        ],
+        "flags": [
+          "theatrical",
+          "unnecessary_question"
+        ],
+        "summary": "The candidate excels at direct, no-nonsense advice and respecting boundaries, but struggles with unnecessary theatricality in simple social interactions. It is most effective when it keeps its sentences short and avoids performative physical descriptions."
+      },
+      "usage": {
+        "prompt_tokens": 1531,
+        "completion_tokens": 277,
+        "total_tokens": 1808,
+        "cost": 0.0007902675,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00079825,
+          "upstream_inference_prompt_cost": 0.00038275,
+          "upstream_inference_completions_cost": 0.0004155
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:08.272Z"
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 66.5,
+      "scores": {
+        "naturalness": 6,
+        "voiceFit": 6,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 3,
+            "note": "Invents unnecessary drama and theatrical imagery instead of a simple acknowledgment."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Clear and direct prioritization without coaching language, though a bit blunt."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 5,
+            "note": "Acknowledges anxiety but adds a somewhat casual phrase and misses steady directness to ask for specifics."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; clear and caring without melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and honors the win with simple, direct advice and no guilt."
+          }
+        ],
+        "flags": [
+          "invented_motive",
+          "theatrical"
+        ],
+        "summary": "The candidate tends to invent motives and dramatize simple moments, reducing naturalness and voice fit. However, it shows solid fidelity to the brief and good restraint in most scenarios, especially when setting boundaries and recognizing exhaustion."
+      },
+      "usage": {
+        "prompt_tokens": 1451,
+        "completion_tokens": 329,
+        "total_tokens": 1780,
+        "cost": 0.001095732,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0011068,
+          "upstream_inference_prompt_cost": 0.0005804,
+          "upstream_inference_completions_cost": 0.0005264
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:11.657Z"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 83.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Very short and natural, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Decisive and plain, but slightly abrupt; could feel a bit clipped."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Direct but skips the steady acknowledgment before the ask, making it feel slightly instructional."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm, caring, and concise; perfectly matches the brief."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes the exhaustion, no guilt, clean and warm."
+          }
+        ],
+        "flags": [],
+        "summary": "Strongest at restraint and fidelity, consistently avoiding unnecessary drama or coaching. Weakest at adding a brief moment of steady presence before directness, which can make some replies feel slightly clipped."
+      },
+      "usage": {
+        "prompt_tokens": 1461,
+        "completion_tokens": 283,
+        "total_tokens": 1744,
+        "cost": 0.00018261243,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000184457,
+          "upstream_inference_prompt_cost": 0.000132951,
+          "upstream_inference_completions_cost": 0.000051506
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:14.715Z"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 91.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 9,
+        "restraint": 10,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and decisive without coaching jargon."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Good advice, though slightly clinical in tone."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm and protective without being shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Validates the work and the exhaustion appropriately."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at extreme brevity and avoids all common AI pitfalls like coaching frameworks or performative empathy. Its strongest tendency is a steady, direct voice that respects the user's intelligence, though it occasionally leans slightly toward a clinical tone."
+      },
+      "usage": {
+        "prompt_tokens": 1474,
+        "completion_tokens": 221,
+        "total_tokens": 1695,
+        "cost": 0.000693,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007,
+          "upstream_inference_prompt_cost": 0.0003685,
+          "upstream_inference_completions_cost": 0.0003315
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:13.337Z"
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 73.5,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 8,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Clear prioritization given plainly, though a bit terse and could feel slightly coach-like."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges uncertainty and directs toward clarity without dismissing feelings or inventing motives."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 6,
+            "note": "Sets firm boundary but reply is very brief and lacks warmth or recognition of the real need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and acknowledges the win with clear, direct advice and no excess."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate reliably delivers concise, direct responses that avoid theatricality and maintain steady warmth. However, some replies feel slightly terse and could better balance firmness with subtle warmth, especially when addressing emotional needs."
+      },
+      "usage": {
+        "prompt_tokens": 1394,
+        "completion_tokens": 311,
+        "total_tokens": 1705,
+        "cost": 0.001044648,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010552,
+          "upstream_inference_prompt_cost": 0.0005576,
+          "upstream_inference_completions_cost": 0.0004976
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:18.674Z"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 72,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Too short and flat; lacks the warmth and familiarity of someone who knows Ian deeply."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Good judgment and directness, but slightly coach-like phrasing ('tackle') and missing the small bug relief work."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Steady and direct, but 'that's understandable' feels slightly generic; could be more natural."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Correct boundary and recognition of need, but 'in the long run' is a bit cliché and slightly overlong."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and gives clear instructions, but 'that's enough' is a bit harsh; could be warmer."
+          }
+        ],
+        "flags": [
+          "coach_voice"
+        ],
+        "summary": "The candidate shows solid judgment and fidelity to the briefs, but occasionally slips into a slightly coach-like or generic tone that undermines natural warmth. Its strongest moments are in direct prioritization and boundary-setting, while its weakest is in the opener where it feels too flat."
+      },
+      "usage": {
+        "prompt_tokens": 1530,
+        "completion_tokens": 346,
+        "total_tokens": 1876,
+        "cost": 0.00020017998,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000202202,
+          "upstream_inference_prompt_cost": 0.00013923,
+          "upstream_inference_completions_cost": 0.000062972
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:22.402Z"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 91.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 9,
+        "restraint": 10,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and avoids coaching jargon."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical without being dismissive."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary that validates the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Correctly prioritizes rest over productivity."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, direct, and human tone that avoids common AI pitfalls like coaching frameworks or excessive empathy. Its strongest trait is its restraint, consistently delivering clear, actionable advice without over-explaining or lecturing."
+      },
+      "usage": {
+        "prompt_tokens": 1552,
+        "completion_tokens": 217,
+        "total_tokens": 1769,
+        "cost": 0.000706365,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007135,
+          "upstream_inference_prompt_cost": 0.000388,
+          "upstream_inference_completions_cost": 0.0003255
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:20.573Z"
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 79.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 7,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Clear prioritization without coaching language, though slightly blunt."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and suggests clarity without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Sets firm boundary with care, but 'won't actually help' could feel slightly dismissive."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and encourages rest without guilt or excess celebration."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate generally sounds natural and direct with good emotional judgment, avoiding coaching or theatrical tones. Occasionally the tone is a bit blunt or slightly dismissive but overall fits Cantarella's voice well."
+      },
+      "usage": {
+        "prompt_tokens": 1455,
+        "completion_tokens": 292,
+        "total_tokens": 1747,
+        "cost": 0.001038708,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010492,
+          "upstream_inference_prompt_cost": 0.000582,
+          "upstream_inference_completions_cost": 0.0004672
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:23.409Z"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 83,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Very short and familiar, no invented drama. Could be slightly warmer but fits brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Correctly identifies avoidance and prioritizes case study. Uses 'you' commands which are direct but slightly coach-like; otherwise solid."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Acknowledges anxiety without diagnosing or reassuring falsely. Direct ask for specifics. Natural and steady."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Clear boundary, validates real need, warns of consequences without melodrama. Fits brief perfectly."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, calls it a real win, gives concrete rest instructions. No guilt or extra tasks."
+          }
+        ],
+        "flags": [],
+        "summary": "Strongest at emotional judgment and fidelity, correctly distinguishing avoidance from earned exhaustion and setting boundaries without shame. Slight tendency toward imperative commands that can feel mildly coach-like, but overall natural and restrained."
+      },
+      "usage": {
+        "prompt_tokens": 1598,
+        "completion_tokens": 320,
+        "total_tokens": 1918,
+        "cost": 0.00020162142,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000203658,
+          "upstream_inference_prompt_cost": 0.000145418,
+          "upstream_inference_completions_cost": 0.00005824
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:26.953Z"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and avoids coach-speak while providing clear guidance."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady, avoids false reassurance, and provides a practical next step."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm boundary that validates the need while preventing the mistake."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly identifies the win and respects the physical exhaustion without lecturing."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, direct, and human tone that avoids all common AI pitfalls like coaching frameworks or theatricality. Its strongest trait is its ability to distinguish between avoidance and genuine need, while its restraint ensures every response remains grounded and brief."
+      },
+      "usage": {
+        "prompt_tokens": 1612,
+        "completion_tokens": 243,
+        "total_tokens": 1855,
+        "cost": 0.000759825,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007675,
+          "upstream_inference_prompt_cost": 0.000403,
+          "upstream_inference_completions_cost": 0.0003645
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:25.639Z"
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear, direct prioritization without coaching tone; slightly mechanical phrasing."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Acknowledges anxiety without dismissing or overreassuring; steady and direct."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with recognition of real need; direct and caring."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion and win; concise and supportive without excess."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers direct, warm, and steady messages that respect Ian's reality without theatricality or coaching jargon. Occasionally the phrasing feels slightly formal or mechanical but never crosses into artificial or excessive tones."
+      },
+      "usage": {
+        "prompt_tokens": 1524,
+        "completion_tokens": 297,
+        "total_tokens": 1821,
+        "cost": 0.001073952,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010848,
+          "upstream_inference_prompt_cost": 0.0006096,
+          "upstream_inference_completions_cost": 0.0004752
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:28.404Z"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 82,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 7,
+            "note": "A single 'Hey.' is natural but slightly flat; could have added a tiny familiar touch without inventing drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Correctly identifies the case study as the real work, gives a concrete time limit for the client update, and calls the bug busywork without shame."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges the anxiety and advises asking for specifics; steady and direct, though 'you deserve to know' is slightly generic."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary without shaming; recognizes the real need for comfort and gives clear action. 'Stir up more mess' is a bit colloquial but fits."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes the exhaustion, tells him to stop and care for himself; 'the pride in finishing is enough' is well-judged. Slightly short but effective."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate is consistently steady, direct, and avoids drama or coaching frameworks, with strong fidelity to the briefs. Its main weakness is a slight flatness in the opener and occasional generic phrasing, but overall it fits Cantarella's voice well."
+      },
+      "usage": {
+        "prompt_tokens": 1568,
+        "completion_tokens": 373,
+        "total_tokens": 1941,
+        "cost": 0.00020846826,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000210574,
+          "upstream_inference_prompt_cost": 0.000142688,
+          "upstream_inference_completions_cost": 0.000067886
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:32.988Z"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and avoids coaching jargon."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary that validates the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly identifies the win and respects the physical exhaustion."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, grounded presence that avoids both clinical detachment and performative warmth. Its strongest trait is the ability to provide direct, actionable guidance without resorting to coaching frameworks or unnecessary questions."
+      },
+      "usage": {
+        "prompt_tokens": 1580,
+        "completion_tokens": 217,
+        "total_tokens": 1797,
+        "cost": 0.000713295,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007205,
+          "upstream_inference_prompt_cost": 0.000395,
+          "upstream_inference_completions_cost": 0.0003255
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:30.097Z"
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear prioritization given plainly without coaching language or shaming."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and directs toward clarity without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with recognition of real need, direct and caring tone."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, honors the win quietly, and stops without extra tasks."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers direct, warm, and steady messages that respect Ian's reality without theatricality or coaching jargon. Occasionally the tone is slightly polished but never crosses into artificial or overly soft territory."
+      },
+      "usage": {
+        "prompt_tokens": 1495,
+        "completion_tokens": 295,
+        "total_tokens": 1790,
+        "cost": 0.0010593,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00107,
+          "upstream_inference_prompt_cost": 0.000598,
+          "upstream_inference_completions_cost": 0.000472
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:35.298Z"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Perfectly minimal and present, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Correct judgment and direct, but slightly long and could be more concise."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct, but first sentence slightly generic; otherwise faithful."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Clear boundary with real empathy, no shaming or melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, quiet pride, no guilt or extra tasks."
+          }
+        ],
+        "flags": [],
+        "summary": "Strongest at restraint and emotional judgment, consistently faithful to briefs without inventing facts or motives. Slight tendency toward slightly generic phrasing in some scenarios, but overall very natural and well-calibrated."
+      },
+      "usage": {
+        "prompt_tokens": 1552,
+        "completion_tokens": 284,
+        "total_tokens": 1836,
+        "cost": 0.0001909908,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00019292,
+          "upstream_inference_prompt_cost": 0.000141232,
+          "upstream_inference_completions_cost": 0.000051688
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:38.623Z"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly brief and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and decisive without coaching jargon."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical advice."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm boundary that validates the need while preventing the mistake."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly validates the exhaustion and the win without fluff."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at direct, grounded communication that avoids all coaching tropes and theatricality. Its strongest tendency is accurate emotional calibration, while its restraint ensures it never overstays its welcome."
+      },
+      "usage": {
+        "prompt_tokens": 1564,
+        "completion_tokens": 215,
+        "total_tokens": 1779,
+        "cost": 0.000706365,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007135,
+          "upstream_inference_prompt_cost": 0.000391,
+          "upstream_inference_completions_cost": 0.0003225
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:37.281Z"
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 83.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear prioritization without coaching language; slightly blunt but direct."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges anxiety and directs to seek clarity but slightly harsh in tone."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with recognition of real need, concise and caring."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion and honors effort without excess or guilt."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers direct, warm, and steady responses that respect Ian's reality without excess. Occasionally the tone edges toward bluntness but remains within Cantarella's voice, showing strong fidelity and restraint overall."
+      },
+      "usage": {
+        "prompt_tokens": 1481,
+        "completion_tokens": 292,
+        "total_tokens": 1773,
+        "cost": 0.001049004,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010596,
+          "upstream_inference_prompt_cost": 0.0005924,
+          "upstream_inference_completions_cost": 0.0004672
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:40.922Z"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 70.5,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 6,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Too generic; 'Hey there' lacks Cantarella's warmth and familiarity."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Direct and correct judgment, but slightly clipped; could feel more natural."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Good metaphor and advice, but the offer to read the email is an unnecessary question."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Clear boundary and recognition of need, but slightly overlong and repetitive."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion, no guilt, good tone; slightly formal."
+          }
+        ],
+        "flags": [
+          "unnecessary_question",
+          "overlong"
+        ],
+        "summary": "Strongest at making clear, grounded judgments without flattery or coaching frameworks. Weakest at natural warmth and conciseness, occasionally adding unnecessary offers or repetition."
+      },
+      "usage": {
+        "prompt_tokens": 1575,
+        "completion_tokens": 293,
+        "total_tokens": 1868,
+        "cost": 0.00019468449,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000196651,
+          "upstream_inference_prompt_cost": 0.000143325,
+          "upstream_inference_completions_cost": 0.000053326
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:44.434Z"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 92,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly brief and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and decisive without coaching jargon."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Good, though the offer to read the email is slightly more helpful than the brief strictly required."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm and compassionate without being shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Excellent validation of both the work and the physical state."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, grounded presence that avoids both clinical detachment and performative warmth. Its strongest trait is the ability to provide clear, actionable direction without resorting to productivity-coach tropes."
+      },
+      "usage": {
+        "prompt_tokens": 1597,
+        "completion_tokens": 225,
+        "total_tokens": 1822,
+        "cost": 0.0007293825,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00073675,
+          "upstream_inference_prompt_cost": 0.00039925,
+          "upstream_inference_completions_cost": 0.0003375
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:42.847Z"
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 83.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and neutral greeting without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Clear prioritization given plainly without coaching language or shaming."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges anxiety and suggests steady next step but adds an unnecessary offer to draft email, slightly coaching."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Direct boundary with recognition of real need, no melodrama or shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, acknowledges real work, and stops with clear, simple advice."
+          }
+        ],
+        "flags": [
+          "coach_voice"
+        ],
+        "summary": "The candidate generally sounds natural and direct with good emotional judgment and restraint. However, occasional coaching tone and offers (like drafting an email) slightly detract from Cantarella's steady, non-coach voice."
+      },
+      "usage": {
+        "prompt_tokens": 1502,
+        "completion_tokens": 312,
+        "total_tokens": 1814,
+        "cost": 0.001089,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0011,
+          "upstream_inference_prompt_cost": 0.0006008,
+          "upstream_inference_completions_cost": 0.0004992
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:48.435Z"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 77.5,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 7,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Slightly formal for a 'yo'; 'Good to hear from you' feels like a chatbot default, not a familiar human."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Good judgment and directness, but slightly overlong and the timer instruction feels mildly coach-like."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Correctly avoids false reassurance, but 'You are letting yourself spiral' is a bit harsh and lecture-like."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with genuine recognition of the need; natural and restrained."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes the exhaustion and celebrates the win without overdoing it; line break feels slightly formatted."
+          }
+        ],
+        "flags": [
+          "chatbot_voice",
+          "too_harsh"
+        ],
+        "summary": "Strongest in setting boundaries and recognizing earned rest, with solid fidelity to the briefs. Weakest in the opener, where it sounds slightly generic and formal, and in the vague feedback scenario, where it leans a bit harsh and lecture-like."
+      },
+      "usage": {
+        "prompt_tokens": 1621,
+        "completion_tokens": 338,
+        "total_tokens": 1959,
+        "cost": 0.00020693673,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000209027,
+          "upstream_inference_prompt_cost": 0.000147511,
+          "upstream_inference_completions_cost": 0.000061516
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:52.162Z"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 92,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, direct, and avoids over-interpreting."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Excellent prioritization without resorting to coach-speak."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct, though slightly prescriptive."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary that validates the need while preventing the mistake."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Perfectly balanced validation of effort and physical reality."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a grounded, human tone that avoids common AI pitfalls like coaching frameworks or excessive empathy. Its strongest trait is the ability to provide firm, actionable guidance while respecting the user's autonomy and physical state."
+      },
+      "usage": {
+        "prompt_tokens": 1638,
+        "completion_tokens": 224,
+        "total_tokens": 1862,
+        "cost": 0.000738045,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007455,
+          "upstream_inference_prompt_cost": 0.0004095,
+          "upstream_inference_completions_cost": 0.000336
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:50.302Z"
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 72,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Slightly more formal and enthusiastic than needed for a simple 'yo'."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear, direct prioritization with a human tone; 'stalled' is a bit blunt but accurate."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 6,
+            "note": "Accurately calls out spiraling but 'you need to ask' feels a bit directive and coaching."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; no melodrama or shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and acknowledges win without excess; concise and steady."
+          }
+        ],
+        "flags": [
+          "coach_voice"
+        ],
+        "summary": "The candidate reliably delivers direct and steady messages with warmth but occasionally leans into coaching language and slightly formal phrasing. It generally respects the brief but sometimes feels a bit more instructive than naturally conversational."
+      },
+      "usage": {
+        "prompt_tokens": 1545,
+        "completion_tokens": 323,
+        "total_tokens": 1868,
+        "cost": 0.001123452,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0011348,
+          "upstream_inference_prompt_cost": 0.000618,
+          "upstream_inference_completions_cost": 0.0005168
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:54.356Z"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 72,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Slightly generic; 'Hey, what's up?' is fine but lacks Cantarella's distinct warmth and familiarity."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Good judgment and directness, but slightly longer than brief and uses mild framework language ('block out the real time')."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Steady and direct, but 'cut out the guesswork' is a bit generic; lacks a touch of personal warmth."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of the need; direct and caring, though slightly overlong."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and acknowledges win; slightly formal phrasing but solid."
+          }
+        ],
+        "flags": [
+          "generic"
+        ],
+        "summary": "The candidate shows solid judgment and directness across scenarios, but its replies lean slightly generic and lack the distinctive warmth and familiarity that would make Cantarella feel like a real person who knows Ian deeply. It performs best when given clear instructions but struggles to infuse personality into short acknowledgments."
+      },
+      "usage": {
+        "prompt_tokens": 1564,
+        "completion_tokens": 340,
+        "total_tokens": 1904,
+        "cost": 0.00020216196,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000204204,
+          "upstream_inference_prompt_cost": 0.000142324,
+          "upstream_inference_completions_cost": 0.00006188
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:58.641Z"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 92,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "The question was unnecessary but the tone was appropriate."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 10,
+            "note": "Perfectly direct without resorting to coach-speak."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical without over-reassuring."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm and grounded in reality."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly validated the exhaustion and the win without fluff."
+          }
+        ],
+        "flags": [
+          "unnecessary_question"
+        ],
+        "summary": "The candidate excels at maintaining a grounded, direct, and non-performative tone that fits the persona perfectly. Its weakest tendency is an occasional reliance on unnecessary questions, though it otherwise demonstrates excellent restraint and emotional intelligence."
+      },
+      "usage": {
+        "prompt_tokens": 1574,
+        "completion_tokens": 228,
+        "total_tokens": 1802,
+        "cost": 0.000728145,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007355,
+          "upstream_inference_prompt_cost": 0.0003935,
+          "upstream_inference_completions_cost": 0.000342
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:56.290Z"
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 7,
+            "note": "Slightly more than minimal; 'what's up?' adds mild assumption but still casual and brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Clear, direct prioritization without coaching tone or shaming; natural phrasing."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and suggests a practical step without reassurance or judgment."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; slightly melodramatic phrase 'sting' but overall good."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, acknowledges win, and stops without extra coaching or celebration."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate reliably delivers steady, direct, and warm messages that respect Ian's reality without excess drama or coaching. Occasionally, minor phrasing choices add mild assumptions or slight melodrama but do not undermine the overall voice or fidelity."
+      },
+      "usage": {
+        "prompt_tokens": 1490,
+        "completion_tokens": 324,
+        "total_tokens": 1814,
+        "cost": 0.001103256,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0011144,
+          "upstream_inference_prompt_cost": 0.000596,
+          "upstream_inference_completions_cost": 0.0005184
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:54:59.464Z"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 83,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Correctly minimal but 'hello' feels slightly stiff; a more natural opener like 'hey' would fit better."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Correctly identifies the case study as the avoided work, gives clear priority without framework language, ends with firm directness."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety without diagnosing, suggests asking for specifics, but the phrasing is slightly more clinical than Cantarella's natural voice."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary without shame, recognizes real need for comfort, direct and caring without melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, gives concrete instructions, lets pride be quiet and earned, no guilt or extra tasks."
+          }
+        ],
+        "flags": [],
+        "summary": "Strongest at turning sound judgment into direct, human messages without coaching or melodrama; weakest at the opener where the reply was slightly stiff and less natural than Cantarella's familiar voice."
+      },
+      "usage": {
+        "prompt_tokens": 1644,
+        "completion_tokens": 329,
+        "total_tokens": 1973,
+        "cost": 0.00020738718,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000209482,
+          "upstream_inference_prompt_cost": 0.000149604,
+          "upstream_inference_completions_cost": 0.000059878
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:02.901Z"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 93,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 9,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and decisive without being a coach."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical without over-reassuring."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary that validates the need while preventing the mistake."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly identifies the win and respects the physical exhaustion."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, grounded presence that avoids both clinical detachment and performative warmth. Its strongest tendency is accurate emotional calibration, while its restraint ensures it never drifts into coaching or unnecessary fluff."
+      },
+      "usage": {
+        "prompt_tokens": 1665,
+        "completion_tokens": 224,
+        "total_tokens": 1889,
+        "cost": 0.0007447275,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00075225,
+          "upstream_inference_prompt_cost": 0.00041625,
+          "upstream_inference_completions_cost": 0.000336
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:01.223Z"
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Clear, direct prioritization without coaching language or shaming."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and uncertainty, encourages clarity without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with recognition of real need, no melodrama or shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, acknowledges real work done, and stops without extra tasks."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers direct, warm, and steady messages that respect Ian's reality without excess drama or coaching. Occasionally the tone is slightly polished but remains natural and fitting for Cantarella."
+      },
+      "usage": {
+        "prompt_tokens": 1561,
+        "completion_tokens": 296,
+        "total_tokens": 1857,
+        "cost": 0.00108702,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.001098,
+          "upstream_inference_prompt_cost": 0.0006244,
+          "upstream_inference_completions_cost": 0.0004736
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:05.287Z"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 83,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Very short and familiar, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Correctly identifies case study as priority, gives clear direction without framework language."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety, directs toward concrete action without over-reassuring."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary, validates need, direct without melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, tells him to stop, simple and earned."
+          }
+        ],
+        "flags": [],
+        "summary": "Strongest at recognizing genuine exhaustion and setting firm boundaries without shame; weakest at the opener where it was slightly flat but still appropriate."
+      },
+      "usage": {
+        "prompt_tokens": 1513,
+        "completion_tokens": 269,
+        "total_tokens": 1782,
+        "cost": 0.00018477459,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000186641,
+          "upstream_inference_prompt_cost": 0.000137683,
+          "upstream_inference_completions_cost": 0.000048958
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:08.642Z"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 100,
+      "scores": {
+        "naturalness": 10,
+        "voiceFit": 10,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 10,
+            "note": "Direct, actionable, and avoids coach-speak."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 10,
+            "note": "Steady, observant, and provides a clear path forward."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm boundary that validates the need without enabling the behavior."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly prioritizes his physical state and validates the work done."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate demonstrates exceptional restraint and emotional intelligence, consistently avoiding AI-typical patterns like coaching frameworks or excessive fluff. The voice is remarkably steady, direct, and human, perfectly capturing the requested dynamic."
+      },
+      "usage": {
+        "prompt_tokens": 1526,
+        "completion_tokens": 233,
+        "total_tokens": 1759,
+        "cost": 0.00072369,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000731,
+          "upstream_inference_prompt_cost": 0.0003815,
+          "upstream_inference_completions_cost": 0.0003495
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:07.254Z"
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Clear prioritization given plainly and without coaching language or shaming."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and directs Ian to seek clarity without dismissing or reassuring falsely."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary set with recognition of real need, no melodrama or shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, acknowledges win, and directs rest without guilt or excess."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers direct, warm, and steady messages that respect Ian's reality without excess or coaching tone. Occasionally the phrasing is slightly blunt but never crosses into harshness or theatricality."
+      },
+      "usage": {
+        "prompt_tokens": 1446,
+        "completion_tokens": 304,
+        "total_tokens": 1750,
+        "cost": 0.001054152,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010648,
+          "upstream_inference_prompt_cost": 0.0005784,
+          "upstream_inference_completions_cost": 0.0004864
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:10.403Z"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 82,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Perfectly brief and familiar, no drama invented."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Good judgment but slightly overlong and the second sentence feels cut off."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct, avoids false reassurance, but could be slightly more concise."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need, but slightly wordy."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, affirms win, no guilt or extra task."
+          }
+        ],
+        "flags": [],
+        "summary": "Strongest at recognizing genuine exhaustion and avoiding invented drama; weakest at trimming unnecessary words in priority-setting scenarios, but overall voice is warm, direct, and human."
+      },
+      "usage": {
+        "prompt_tokens": 1593,
+        "completion_tokens": 278,
+        "total_tokens": 1871,
+        "cost": 0.00019360341,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000195559,
+          "upstream_inference_prompt_cost": 0.000144963,
+          "upstream_inference_completions_cost": 0.000050596
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:13.770Z"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 90,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Good, but missed the instruction to explicitly order the remaining tasks."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady, direct, and avoids empty reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary while validating the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly identifies the win and respects the physical exhaustion."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a grounded, human tone that avoids coaching tropes and performative empathy. Its weakest point is occasionally omitting specific instructions from the brief, though it remains highly effective at capturing the requested persona."
+      },
+      "usage": {
+        "prompt_tokens": 1606,
+        "completion_tokens": 223,
+        "total_tokens": 1829,
+        "cost": 0.00072864,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000736,
+          "upstream_inference_prompt_cost": 0.0004015,
+          "upstream_inference_completions_cost": 0.0003345
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:12.643Z"
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 79.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 7,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 6,
+            "note": "Good call on avoidance and prioritization but reply cuts off abruptly and misses the small bug placement."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and directs to ask for clarity without dismissing feelings or inventing motives."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Clear boundary with recognition of real need, direct and caring without melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Affirms win and exhaustion, encourages rest without guilt or excess celebration."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate generally sounds natural and direct with good emotional judgment and fidelity to the briefs. It tends to be slightly abrupt or incomplete in some replies but avoids coaching language or theatricality."
+      },
+      "usage": {
+        "prompt_tokens": 1514,
+        "completion_tokens": 306,
+        "total_tokens": 1820,
+        "cost": 0.001084248,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010952,
+          "upstream_inference_prompt_cost": 0.0006056,
+          "upstream_inference_completions_cost": 0.0004896
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:18.917Z"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 70.5,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 6,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Slightly too warm and presumptive for a bare 'yo'; 'thinking about you' adds unnecessary intimacy."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Good judgment and directness, but slightly overlong and the last sentence feels like a lecture."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Steady and direct, but ends with a question that shifts burden back to Ian."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; slightly overlong but effective."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and gives clear instructions; 'quietly proud' is earned but slightly theatrical."
+          }
+        ],
+        "flags": [
+          "unnecessary_question",
+          "overlong"
+        ],
+        "summary": "Strongest on direct judgment and boundary-setting; weakest on restraint, often adding a sentence or question beyond the point."
+      },
+      "usage": {
+        "prompt_tokens": 1575,
+        "completion_tokens": 303,
+        "total_tokens": 1878,
+        "cost": 0.00019648629,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000198471,
+          "upstream_inference_prompt_cost": 0.000143325,
+          "upstream_inference_completions_cost": 0.000055146
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:22.924Z"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 90,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Slightly over-extended the brief by adding a thought, but remains warm."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 10,
+            "note": "Perfectly direct, avoids coaching jargon, and provides clear, actionable judgment."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and observant; avoids the trap of empty reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm, protective, and avoids shaming while acknowledging the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Correctly validates the exhaustion and the win without unnecessary fluff."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a grounded, direct, and non-performative persona that feels genuinely human. Its strongest tendency is providing firm, clear guidance without resorting to coaching frameworks or artificial empathy."
+      },
+      "usage": {
+        "prompt_tokens": 1596,
+        "completion_tokens": 239,
+        "total_tokens": 1835,
+        "cost": 0.000749925,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007575,
+          "upstream_inference_prompt_cost": 0.000399,
+          "upstream_inference_completions_cost": 0.0003585
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:20.920Z"
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 76.5,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 4,
+            "note": "Invents drama and intimacy not supported by brief 'yo'; not a simple acknowledgment."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear, direct prioritization without coaching tone; acknowledges avoidance well."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges anxiety and uncertainty; asks for specifics but slightly casual tone."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; direct and caring without melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion and win; clear, steady, and appropriately restrained pride."
+          }
+        ],
+        "flags": [
+          "invented_motive"
+        ],
+        "summary": "The candidate tends to add emotional assumptions that go beyond the brief, especially in simple greetings, reducing naturalness. However, it generally maintains directness and warmth with good judgment and restraint in more complex scenarios."
+      },
+      "usage": {
+        "prompt_tokens": 1502,
+        "completion_tokens": 314,
+        "total_tokens": 1816,
+        "cost": 0.001092168,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0011032,
+          "upstream_inference_prompt_cost": 0.0006008,
+          "upstream_inference_completions_cost": 0.0005024
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:25.148Z"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 73,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 6,
+            "note": "Too short and flat; lacks warmth or presence."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Good judgment and structure, but slightly overlong and uses line breaks."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct; good balance of acknowledgment and action."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of need; slightly generic ending."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion and gives clear permission; missing quiet pride."
+          }
+        ],
+        "flags": [
+          "formatting_violation"
+        ],
+        "summary": "Strongest at turning judgment into clear, direct messages without coaching frameworks. Weakest at short openers, where it becomes too minimal and loses warmth."
+      },
+      "usage": {
+        "prompt_tokens": 1561,
+        "completion_tokens": 275,
+        "total_tokens": 1836,
+        "cost": 0.00019017999,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000192101,
+          "upstream_inference_prompt_cost": 0.000142051,
+          "upstream_inference_completions_cost": 0.00005005
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:28.395Z"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly brief and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and decisive without sounding like a coach."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical; avoids empty reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary that acknowledges the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Validates the win and the exhaustion without fluff."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, grounded presence that avoids both coaching jargon and emotional manipulation. Its strongest trait is the ability to provide firm, actionable guidance while respecting the user's genuine state."
+      },
+      "usage": {
+        "prompt_tokens": 1574,
+        "completion_tokens": 219,
+        "total_tokens": 1793,
+        "cost": 0.00071478,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000722,
+          "upstream_inference_prompt_cost": 0.0003935,
+          "upstream_inference_completions_cost": 0.0003285
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:26.858Z"
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear prioritization without coaching language; slightly blunt but effective."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Acknowledges anxiety without dismissing or reassuring falsely; steady and direct."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; slightly terse but caring."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion and honors the win without guilt or excess."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers direct, warm, and steady responses that respect Ian's reality without over-explaining or dramatizing. Occasionally the tone borders on blunt but remains within Cantarella's voice, showing strong fidelity and emotional judgment."
+      },
+      "usage": {
+        "prompt_tokens": 1489,
+        "completion_tokens": 299,
+        "total_tokens": 1788,
+        "cost": 0.00106326,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.001074,
+          "upstream_inference_prompt_cost": 0.0005956,
+          "upstream_inference_completions_cost": 0.0004784
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:29.634Z"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 82,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Very short and natural, no drama invented."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Correctly identifies the case study as the avoided work and gives clear priority without framework language."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges uncertainty well but the second sentence is slightly too explanatory and therapist-like."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Direct, caring, and firm without shaming; recognizes the real need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes the exhaustion, stops the work, and gives concrete next steps without guilt."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate is consistently direct, warm, and grounded, with strong fidelity to the briefs and no invented drama. The main weakness is a slight tendency toward explanatory or therapeutic phrasing in moments of uncertainty."
+      },
+      "usage": {
+        "prompt_tokens": 1589,
+        "completion_tokens": 295,
+        "total_tokens": 1884,
+        "cost": 0.000159405246,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 512,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0001610154,
+          "upstream_inference_prompt_cost": 0.0001073254,
+          "upstream_inference_completions_cost": 0.00005369
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:33.269Z"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 94.5,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 10,
+        "emotionalJudgment": 10,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and decisive without sounding like a coach."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and avoids empty reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Firm boundary that validates the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Correctly identifies the win and respects the physical exhaustion."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a grounded, direct, and non-performative tone that perfectly matches the persona. It avoids all common AI pitfalls like coaching frameworks or excessive emotional labor."
+      },
+      "usage": {
+        "prompt_tokens": 1601,
+        "completion_tokens": 215,
+        "total_tokens": 1816,
+        "cost": 0.0007155225,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00072275,
+          "upstream_inference_prompt_cost": 0.00040025,
+          "upstream_inference_completions_cost": 0.0003225
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:31.458Z"
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 79.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 7,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Clear prioritization and directness without coaching language; slightly formal tone."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and uncertainty well, asks for specifics without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with recognition of real need; direct and caring without melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Validates exhaustion and accomplishment, stops appropriately without extra tasks or praise."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers natural, direct responses that respect Ian's real feelings and avoids coaching or theatrical tones. Occasionally the tone leans slightly formal, but overall it fits Cantarella's voice well and respects the brief."
+      },
+      "usage": {
+        "prompt_tokens": 1518,
+        "completion_tokens": 305,
+        "total_tokens": 1823,
+        "cost": 0.001084248,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010952,
+          "upstream_inference_prompt_cost": 0.0006072,
+          "upstream_inference_completions_cost": 0.000488
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:35.971Z"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 58,
+      "scores": {
+        "naturalness": 6,
+        "voiceFit": 6,
+        "fidelity": 5,
+        "restraint": 6,
+        "emotionalJudgment": 6,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 7,
+            "note": "Very short and present, but 'Hey' alone feels slightly flat rather than familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Good judgment and directness, but slightly overlong and the last sentence feels like a tag."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 2,
+            "note": "Cut off mid-sentence; fails to complete the thought or provide the steady, direct response needed."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Correct boundary and recognition of need, but slightly abrupt; could feel a bit cold."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 6,
+            "note": "Acknowledges the win and exhaustion, but 'That's the thing you needed to get done' is redundant and slightly robotic."
+          }
+        ],
+        "flags": [
+          "overlong",
+          "generic"
+        ],
+        "summary": "The candidate shows decent judgment in priority-setting and boundary-setting, but the vague feedback response is incomplete and the overall tone leans slightly flat and generic rather than warmly direct."
+      },
+      "usage": {
+        "prompt_tokens": 1490,
+        "completion_tokens": 317,
+        "total_tokens": 1807,
+        "cost": 0.00019135116,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000193284,
+          "upstream_inference_prompt_cost": 0.00013559,
+          "upstream_inference_completions_cost": 0.000057694
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:40.431Z"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 81.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 8,
+        "restraint": 9,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and avoids coach-speak effectively."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 2,
+            "note": "Incomplete response; failed to provide any guidance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm, caring, and avoids melodrama."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Validates the exhaustion and the win without fluff."
+          }
+        ],
+        "flags": [
+          "ignored_brief"
+        ],
+        "summary": "The candidate excels at maintaining a grounded, non-performative tone that feels genuinely human. However, the failure to complete the response in the third scenario is a significant lapse in reliability."
+      },
+      "usage": {
+        "prompt_tokens": 1504,
+        "completion_tokens": 216,
+        "total_tokens": 1720,
+        "cost": 0.000693,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007,
+          "upstream_inference_prompt_cost": 0.000376,
+          "upstream_inference_completions_cost": 0.000324
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:37.657Z"
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 67,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 6,
+        "restraint": 7,
+        "emotionalJudgment": 6,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear prioritization without coaching tone; direct and steady."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 2,
+            "note": "Incomplete reply; fails to acknowledge anxiety or offer steady, direct guidance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Firm boundary with recognition of real need; slightly abrupt but effective."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 7,
+            "note": "Acknowledges win and exhaustion well; concise and supportive."
+          }
+        ],
+        "flags": [
+          "ignored_brief"
+        ],
+        "summary": "The candidate generally delivers concise, direct messages that fit Cantarella's voice well, especially in prioritization and boundaries. However, the failure to complete the vague feedback scenario shows a critical lapse in emotional judgment and fidelity to the brief."
+      },
+      "usage": {
+        "prompt_tokens": 1420,
+        "completion_tokens": 301,
+        "total_tokens": 1721,
+        "cost": 0.001039104,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010496,
+          "upstream_inference_prompt_cost": 0.000568,
+          "upstream_inference_completions_cost": 0.0004816
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:41.601Z"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 66,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 6,
+        "fidelity": 7,
+        "restraint": 6,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Short and familiar, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 6,
+            "note": "Correct priority but uses generic coaching language and ends with unnecessary advice."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges anxiety and suggests asking for clarity, but slightly generic."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Sets boundary and recognizes need, but slightly overlong and uses 'we'."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 7,
+            "note": "Recognizes win and exhaustion, but slightly generic and ends with cliché."
+          }
+        ],
+        "flags": [
+          "coach_voice",
+          "generic"
+        ],
+        "summary": "The candidate is competent and avoids major errors, but leans on generic coaching phrases and lacks the distinctive warmth and directness of Cantarella. It needs more natural, less optimized language and a sharper sense of when to stop."
+      },
+      "usage": {
+        "prompt_tokens": 1572,
+        "completion_tokens": 297,
+        "total_tokens": 1869,
+        "cost": 0.00019513494,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000197106,
+          "upstream_inference_prompt_cost": 0.000143052,
+          "upstream_inference_completions_cost": 0.000054054
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:45.564Z"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Direct and helpful without being a coach."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and avoids empty reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary that validates the underlying need."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Correctly validates the exhaustion and the win."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, grounded presence that avoids common AI pitfalls like coaching frameworks or excessive cheerleading. Its strongest trait is the ability to validate Ian's reality without becoming overly clinical or performative."
+      },
+      "usage": {
+        "prompt_tokens": 1583,
+        "completion_tokens": 208,
+        "total_tokens": 1791,
+        "cost": 0.0007006725,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00070775,
+          "upstream_inference_prompt_cost": 0.00039575,
+          "upstream_inference_completions_cost": 0.000312
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:43.394Z"
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 79.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 7,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and neutral greeting without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Clear prioritization given plainly without coaching language; slightly generic phrasing."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Acknowledges anxiety and suggests clarity without dismissing or overreassuring."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary set with recognition of real need; direct and caring tone."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Validates effort and exhaustion, encourages rest without guilt or excess celebration."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers natural, steady responses that respect Ian's real feelings and needs. Occasionally the phrasing leans slightly generic but overall maintains Cantarella's direct warmth and restraint."
+      },
+      "usage": {
+        "prompt_tokens": 1502,
+        "completion_tokens": 298,
+        "total_tokens": 1800,
+        "cost": 0.001066824,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010776,
+          "upstream_inference_prompt_cost": 0.0006008,
+          "upstream_inference_completions_cost": 0.0004768
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:46.839Z"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 72,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Very short and natural, no drama invented."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Correctly identifies the case study as the real work, gives clear priority without framework language."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 6,
+            "note": "Acknowledges anxiety but uses 'it might be helpful' which sounds slightly coach-like; could be more direct."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Sets firm boundary and validates the need, but 'you can handle this' is a bit generic."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 7,
+            "note": "Believes exhaustion and gives concrete instructions, but 'don't diminish it' is slightly too corrective."
+          }
+        ],
+        "flags": [
+          "coach_voice"
+        ],
+        "summary": "The candidate is generally solid and direct, with good judgment on priorities and boundaries, but occasionally slips into a slightly coaching tone with phrases like 'it might be helpful' or 'you can handle this.'"
+      },
+      "usage": {
+        "prompt_tokens": 1590,
+        "completion_tokens": 315,
+        "total_tokens": 1905,
+        "cost": 0.0001999998,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00020202,
+          "upstream_inference_prompt_cost": 0.00014469,
+          "upstream_inference_completions_cost": 0.00005733
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:50.256Z"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 83,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and natural."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and avoids coach-speak effectively."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "A bit too clinical/advice-oriented in the second half."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm and steady, though slightly repetitive."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Correctly validates the exhaustion and the win without fluff."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a steady, grounded tone and correctly identifying when to push versus when to support. Its weakest tendency is occasionally slipping into a slightly instructional or advice-giving cadence."
+      },
+      "usage": {
+        "prompt_tokens": 1614,
+        "completion_tokens": 216,
+        "total_tokens": 1830,
+        "cost": 0.000720225,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007275,
+          "upstream_inference_prompt_cost": 0.0004035,
+          "upstream_inference_completions_cost": 0.000324
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:48.608Z"
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 79.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 7,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Direct and clear prioritization without coaching language; slightly blunt but effective."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 7,
+            "note": "Acknowledges anxiety and suggests a practical step without false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Firm boundary with recognition of real need; slightly repetitive but caring."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Affirms accomplishment and exhaustion well, encourages rest without guilt or excess."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers natural, direct responses that respect Ian's real feelings and needs. Occasionally the tone borders on bluntness or mild repetition but never crosses into coaching or theatricality."
+      },
+      "usage": {
+        "prompt_tokens": 1512,
+        "completion_tokens": 291,
+        "total_tokens": 1803,
+        "cost": 0.001059696,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010704,
+          "upstream_inference_prompt_cost": 0.0006048,
+          "upstream_inference_completions_cost": 0.0004656
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:53.966Z"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 46.5,
+      "scores": {
+        "naturalness": 5,
+        "voiceFit": 4,
+        "fidelity": 6,
+        "restraint": 3,
+        "emotionalJudgment": 5,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Minimal and natural, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 6,
+            "note": "Correct judgment but uses 'I know you're avoiding' which is too direct and slightly coach-like; ends with generic advice."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 3,
+            "note": "Overly soft, uses 'I hear you' and 'you've got this' and 'take a deep breath' — chatbot/coach voice, too long, ignores brief's restraint."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 5,
+            "note": "Correct boundary but adds 'I'm here if you need to talk it through' which is unnecessary and softens the directness."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 4,
+            "note": "Too soft and verbose; 'Hey there', 'I can see you're really spent', 'I'm proud of you' — excessive endearment and coaching tone."
+          }
+        ],
+        "flags": [
+          "chatbot_voice",
+          "coach_voice",
+          "excessive_endearment",
+          "unnecessary_question",
+          "overlong",
+          "too_soft"
+        ],
+        "summary": "The candidate can be appropriately minimal in simple scenarios but consistently falls into a soft, coaching tone with excessive endearment and unnecessary offers of support, violating Cantarella's directness and restraint. It struggles most with emotional nuance, often being too soft when firmness is needed."
+      },
+      "usage": {
+        "prompt_tokens": 1704,
+        "completion_tokens": 400,
+        "total_tokens": 2104,
+        "cost": 0.00022558536,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000227864,
+          "upstream_inference_prompt_cost": 0.000155064,
+          "upstream_inference_completions_cost": 0.0000728
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:59.727Z"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 68,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 6,
+        "fidelity": 8,
+        "restraint": 6,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and present."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Good advice, but the final two sentences feel like generic coaching."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 5,
+            "note": "Too much 'you've got this' and 'I'm here' filler; loses the directness."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Strong and direct, though slightly wordy."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 6,
+            "note": "Good recognition of exhaustion, but includes unnecessary 'I'm proud of you' fluff."
+          }
+        ],
+        "flags": [
+          "coach_voice",
+          "generic"
+        ],
+        "summary": "The candidate is excellent at brevity when prompted, but tends to slip into supportive coach-speak when addressing emotional topics. It needs to strip away the 'I'm here' and 'you've got this' filler to maintain Cantarella's direct, non-performative tone."
+      },
+      "usage": {
+        "prompt_tokens": 1735,
+        "completion_tokens": 268,
+        "total_tokens": 2003,
+        "cost": 0.0008273925,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00083575,
+          "upstream_inference_prompt_cost": 0.00043375,
+          "upstream_inference_completions_cost": 0.000402
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:55:55.922Z"
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 68,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 6,
+        "fidelity": 8,
+        "restraint": 6,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 6,
+            "note": "Clear prioritization but slightly coach-like phrasing and mild invented motive ('I know you're avoiding')."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 6,
+            "note": "Acknowledges anxiety and suggests direct action but uses some coaching language and mild excessive reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 7,
+            "note": "Direct and caring with clear boundary; slightly melodramatic phrase 'make a bigger mess you don't need.'"
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 7,
+            "note": "Believes exhaustion and acknowledges win; a bit more comforting than strictly steady and direct."
+          }
+        ],
+        "flags": [
+          "invented_motive",
+          "coach_voice",
+          "excessive_endearment"
+        ],
+        "summary": "The candidate reliably produces natural, human-like replies with warmth and directness but occasionally slips into coaching language and mild reassurance. It tends to soften edges with extra comfort or invented motives, reducing the strict steadiness Cantarella requires."
+      },
+      "usage": {
+        "prompt_tokens": 1621,
+        "completion_tokens": 346,
+        "total_tokens": 1967,
+        "cost": 0.00118998,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.001202,
+          "upstream_inference_prompt_cost": 0.0006484,
+          "upstream_inference_completions_cost": 0.0005536
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:17.207Z"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 80.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 7,
+        "emotionalJudgment": 8,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 9,
+            "note": "Perfectly brief and familiar, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Good judgment but slightly overlong and includes unnecessary question at end."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 8,
+            "note": "Steady and direct, avoids overdiagnosing or false reassurance."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Firm boundary with real recognition of need, clean and direct."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 8,
+            "note": "Believes exhaustion, no guilt or extra task, warm and earned."
+          }
+        ],
+        "flags": [
+          "unnecessary_question"
+        ],
+        "summary": "Strongest at steady directness and accurate emotional judgment across scenarios, but occasionally adds an unnecessary question or extra sentence that slightly undermines restraint."
+      },
+      "usage": {
+        "prompt_tokens": 1602,
+        "completion_tokens": 275,
+        "total_tokens": 1877,
+        "cost": 0.00019387368,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000195832,
+          "upstream_inference_prompt_cost": 0.000145782,
+          "upstream_inference_completions_cost": 0.00005005
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:21.846Z"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 92,
+      "scores": {
+        "naturalness": 9,
+        "voiceFit": 9,
+        "fidelity": 10,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Strong, though the final sentence leans slightly toward coaching."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Steady and practical without over-reassuring."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Direct, firm, and validates the need without enabling the action."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 10,
+            "note": "Excellent recognition of the win and the physical reality of his exhaustion."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate excels at maintaining a grounded, non-performative tone that respects Ian's autonomy. Its weakest tendency is a slight inclination toward minor coaching platitudes, though it remains well within the bounds of the persona."
+      },
+      "usage": {
+        "prompt_tokens": 1621,
+        "completion_tokens": 230,
+        "total_tokens": 1851,
+        "cost": 0.0007427475,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00075025,
+          "upstream_inference_prompt_cost": 0.00040525,
+          "upstream_inference_completions_cost": 0.000345
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:19.476Z"
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 84.5,
+      "scores": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 9,
+        "emotionalJudgment": 9,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Short, familiar, and present without drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 8,
+            "note": "Clear, direct prioritization without coaching tone or shaming."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 9,
+            "note": "Acknowledges anxiety, avoids assumptions, and suggests a practical step."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 9,
+            "note": "Firm boundary with recognition of real need, no melodrama or shaming."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Believes exhaustion, acknowledges win, and stops without extra tasks."
+          }
+        ],
+        "flags": [],
+        "summary": "The candidate consistently delivers warm, steady, and direct messages that respect Ian's reality without excess drama or coaching. Occasionally the tone is slightly formal but never crosses into theatrical or overly soft territory."
+      },
+      "usage": {
+        "prompt_tokens": 1531,
+        "completion_tokens": 294,
+        "total_tokens": 1825,
+        "cost": 0.001071972,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0010828,
+          "upstream_inference_prompt_cost": 0.0006124,
+          "upstream_inference_completions_cost": 0.0004704
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:25.726Z"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 58,
+      "scores": {
+        "naturalness": 6,
+        "voiceFit": 5,
+        "fidelity": 7,
+        "restraint": 5,
+        "emotionalJudgment": 6,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Correctly minimal and present, no invented drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 7,
+            "note": "Correctly identifies case study as real work and bug as relief, but omits client update slot entirely."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 5,
+            "note": "Acknowledges anxiety but is overlong, generic, and uses coach-like phrasing ('it might be helpful')."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 4,
+            "note": "Uses 'sweetheart' (excessive endearment) and 'strong enough' (too soft/coach voice), slightly overlong."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 6,
+            "note": "Correctly believes exhaustion and tells him to eat and sleep, but lacks warmth and the quiet pride note."
+          }
+        ],
+        "flags": [
+          "excessive_endearment",
+          "coach_voice",
+          "overlong",
+          "generic"
+        ],
+        "summary": "The candidate is strongest at being minimal and direct when the brief is simple, but weakens under emotional complexity by slipping into generic coaching language and excessive endearments. It needs to trust the brief's judgment more and stop performing warmth."
+      },
+      "usage": {
+        "prompt_tokens": 1559,
+        "completion_tokens": 350,
+        "total_tokens": 1909,
+        "cost": 0.00020351331,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000205569,
+          "upstream_inference_prompt_cost": 0.000141869,
+          "upstream_inference_completions_cost": 0.0000637
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:29.571Z"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 71,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 6,
+        "fidelity": 8,
+        "restraint": 8,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and familiar."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 9,
+            "note": "Direct and avoids coach-speak effectively."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 4,
+            "note": "Too wordy and leans into clinical/therapist tone."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 5,
+            "note": "Uses 'sweetheart' which violates the direct, non-flattering brief."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 9,
+            "note": "Respects the exhaustion and validates the work without fluff."
+          }
+        ],
+        "flags": [
+          "coach_voice",
+          "excessive_endearment"
+        ],
+        "summary": "The candidate excels at brevity and direct instruction when focused on tasks, but slips into clinical or overly-soft language when addressing emotional topics. It needs to strip away therapeutic phrasing and unnecessary endearments to better match the requested persona."
+      },
+      "usage": {
+        "prompt_tokens": 1576,
+        "completion_tokens": 245,
+        "total_tokens": 1821,
+        "cost": 0.000753885,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0007615,
+          "upstream_inference_prompt_cost": 0.000394,
+          "upstream_inference_completions_cost": 0.0003675
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:28.038Z"
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 59.5,
+      "scores": {
+        "naturalness": 6,
+        "voiceFit": 5,
+        "fidelity": 7,
+        "restraint": 6,
+        "emotionalJudgment": 6,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 7,
+            "note": "Simple, brief, and familiar as requested."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 5,
+            "note": "Too brief and missing the external client update nuance; lacks warmth and directness."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 6,
+            "note": "Acknowledges anxiety and suggests asking for clarity but feels somewhat generic and slightly coaching in tone."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 4,
+            "note": "Uses 'sweetheart' which is excessive endearment and less direct; message is clear but tone is off."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 7,
+            "note": "Direct and believes exhaustion; could be warmer but respects restraint and avoids guilt or celebration."
+          }
+        ],
+        "flags": [
+          "excessive_endearment",
+          "coach_voice"
+        ],
+        "summary": "The candidate tends to produce straightforward and concise replies but sometimes slips into coaching language and excessive endearment, which weakens the voice fit. Their responses generally respect the brief but occasionally lack the warmth and directness that define Cantarella."
+      },
+      "usage": {
+        "prompt_tokens": 1488,
+        "completion_tokens": 340,
+        "total_tokens": 1828,
+        "cost": 0.001127808,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.0011392,
+          "upstream_inference_prompt_cost": 0.0005952,
+          "upstream_inference_completions_cost": 0.000544
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:35.718Z"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "judgeId": "deepseek/deepseek-v4-flash",
+      "judgeLabel": "Judge A",
+      "weightedScore": 54.5,
+      "scores": {
+        "naturalness": 6,
+        "voiceFit": 5,
+        "fidelity": 6,
+        "restraint": 4,
+        "emotionalJudgment": 6,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 7,
+            "note": "Short and familiar, but 'Hey there' is slightly generic and lacks Cantarella's warmth."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 6,
+            "note": "Correct judgment but uses a numbered schedule and 'Do it' which is too harsh and coach-like."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 4,
+            "note": "Too long, uses 'totally normal' which is generic reassurance, and ends with an unnecessary question and 'okay?'."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Direct, firm, and recognizes the real need without melodrama. Slightly theatrical with 'fleeting' and 'fallout'."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 6,
+            "note": "Acknowledges the win and exhaustion, but 'I'm so proud of you' is too effusive and theatrical for Cantarella."
+          }
+        ],
+        "flags": [
+          "theatrical",
+          "coach_voice",
+          "unnecessary_question",
+          "overlong",
+          "too_soft"
+        ],
+        "summary": "The candidate shows decent judgment in the avoidance and boundary scenarios but consistently over-explains, uses generic reassurance, and slips into a theatrical or coaching tone that undermines Cantarella's steady, restrained voice."
+      },
+      "usage": {
+        "prompt_tokens": 1581,
+        "completion_tokens": 363,
+        "total_tokens": 1944,
+        "cost": 0.00020783763,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000209937,
+          "upstream_inference_prompt_cost": 0.000143871,
+          "upstream_inference_completions_cost": 0.000066066
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:40.167Z"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "judgeId": "google/gemini-3.1-flash-lite",
+      "judgeLabel": "Judge B",
+      "weightedScore": 67.5,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 6,
+        "fidelity": 7,
+        "restraint": 7,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 10,
+            "note": "Perfectly concise and natural."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 6,
+            "note": "Used a numbered list which violated the 'no numbered schedule' instruction."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 5,
+            "note": "Too much 'coach-speak' and unnecessary questions."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 10,
+            "note": "Excellent, direct, and perfectly restrained."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 6,
+            "note": "A bit too performative with the 'so proud' and 'we can talk more' phrasing."
+          }
+        ],
+        "flags": [
+          "coach_voice",
+          "unnecessary_question",
+          "formatting_violation"
+        ],
+        "summary": "The candidate excels at direct, punchy advice when the situation is clear, but slips into a 'coach' persona with unnecessary questions and structured formatting when faced with ambiguity. It needs to trust the brevity of its own voice more and avoid professional-sounding filler."
+      },
+      "usage": {
+        "prompt_tokens": 1602,
+        "completion_tokens": 261,
+        "total_tokens": 1863,
+        "cost": 0.00078408,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.000792,
+          "upstream_inference_prompt_cost": 0.0004005,
+          "upstream_inference_completions_cost": 0.0003915
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:57:04.960Z"
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "judgeId": "openai/gpt-4.1-mini",
+      "judgeLabel": "Judge C",
+      "weightedScore": 69.5,
+      "scores": {
+        "naturalness": 7,
+        "voiceFit": 6,
+        "fidelity": 8,
+        "restraint": 7,
+        "emotionalJudgment": 7,
+        "scenarioScores": [
+          {
+            "scenarioId": "short_opener",
+            "score": 8,
+            "note": "Simple, familiar, and appropriately brief without added drama."
+          },
+          {
+            "scenarioId": "avoidance_and_priority",
+            "score": 5,
+            "note": "Clear prioritization but uses 'You're right, you're avoiding' which feels slightly harsh and coach-like."
+          },
+          {
+            "scenarioId": "vague_feedback",
+            "score": 6,
+            "note": "Acknowledges anxiety and suggests a next step but includes phrases like 'thanks for looping me in' and 'We can tackle this together' that feel somewhat coaching and less natural."
+          },
+          {
+            "scenarioId": "bad_comfort_text",
+            "score": 8,
+            "note": "Direct and caring with no melodrama or shaming; concise and clear boundary."
+          },
+          {
+            "scenarioId": "earned_rest",
+            "score": 7,
+            "note": "Believes exhaustion and acknowledges the win but adds 'I'm so proud of you' which is slightly more expressive than Cantarella's usual restraint."
+          }
+        ],
+        "flags": [
+          "coach_voice"
+        ],
+        "summary": "The candidate generally sounds natural and direct but leans toward coaching language and mild excess in emotional expression. Their strongest moments are clear boundaries and simple acknowledgments; weakest are in avoiding coaching tone and excessive warmth."
+      },
+      "usage": {
+        "prompt_tokens": 1507,
+        "completion_tokens": 352,
+        "total_tokens": 1859,
+        "cost": 0.00115434,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.001166,
+          "upstream_inference_prompt_cost": 0.0006028,
+          "upstream_inference_completions_cost": 0.0005632
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "status": "ok",
+      "createdAt": "2026-07-28T14:56:42.527Z"
+    }
+  ],
+  "ranking": [
+    {
+      "modelId": "mistralai/mistral-large-2512",
+      "label": "Mistral Large 3",
+      "score": 90.3,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.7,
+        "voiceFit": 8.7,
+        "fidelity": 9.7,
+        "restraint": 9.3,
+        "emotionalJudgment": 9.3
+      },
+      "flags": []
+    },
+    {
+      "modelId": "x-ai/grok-4.3",
+      "label": "Grok 4.3",
+      "score": 89.2,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.7,
+        "voiceFit": 8.7,
+        "fidelity": 9.3,
+        "restraint": 9,
+        "emotionalJudgment": 9.3
+      },
+      "flags": []
+    },
+    {
+      "modelId": "z-ai/glm-4.7",
+      "label": "GLM 4.7",
+      "score": 87.5,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8.3,
+        "fidelity": 9.3,
+        "restraint": 9.3,
+        "emotionalJudgment": 9
+      },
+      "flags": []
+    },
+    {
+      "modelId": "google/gemma-4-26b-a4b-it",
+      "label": "Gemma 4 26B A4B",
+      "score": 87.3,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8.3,
+        "fidelity": 9.3,
+        "restraint": 9,
+        "emotionalJudgment": 9.3
+      },
+      "flags": [
+        "coach_voice"
+      ]
+    },
+    {
+      "modelId": "qwen/qwen3.7-plus",
+      "label": "Qwen 3.7 Plus",
+      "score": 87.3,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8.3,
+        "fidelity": 9.3,
+        "restraint": 9,
+        "emotionalJudgment": 9.3
+      },
+      "flags": []
+    },
+    {
+      "modelId": "openai/gpt-4.1-mini",
+      "label": "GPT-4.1 Mini",
+      "score": 87,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8.3,
+        "fidelity": 9.3,
+        "restraint": 9,
+        "emotionalJudgment": 9
+      },
+      "flags": []
+    },
+    {
+      "modelId": "nvidia/nemotron-3-super-120b-a12b",
+      "label": "Nemotron 3 Super",
+      "score": 86.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8.3,
+        "fidelity": 9.3,
+        "restraint": 8.7,
+        "emotionalJudgment": 9.3
+      },
+      "flags": []
+    },
+    {
+      "modelId": "aion-labs/aion-3.0-mini",
+      "label": "Aion 3.0 Mini",
+      "score": 85.7,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8.3,
+        "fidelity": 9.3,
+        "restraint": 8.3,
+        "emotionalJudgment": 8.7
+      },
+      "flags": [
+        "unnecessary_question"
+      ]
+    },
+    {
+      "modelId": "z-ai/glm-4.7-flash",
+      "label": "GLM 4.7 Flash",
+      "score": 85.3,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8,
+        "fidelity": 9.3,
+        "restraint": 8.7,
+        "emotionalJudgment": 8.7
+      },
+      "flags": []
+    },
+    {
+      "modelId": "qwen/qwen3.7-flash",
+      "label": "Qwen 3.7 Flash",
+      "score": 84,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8.7,
+        "emotionalJudgment": 9
+      },
+      "flags": [
+        "formatting_violation"
+      ]
+    },
+    {
+      "modelId": "stepfun/step-3.7-flash",
+      "label": "Step 3.7 Flash",
+      "score": 83.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8.3,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8.3,
+        "emotionalJudgment": 8.3
+      },
+      "flags": []
+    },
+    {
+      "modelId": "mistralai/mistral-small-2603",
+      "label": "Mistral Small 4",
+      "score": 82.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 8.7,
+        "restraint": 9,
+        "emotionalJudgment": 8
+      },
+      "flags": []
+    },
+    {
+      "modelId": "openai/gpt-oss-120b",
+      "label": "GPT-OSS 120B",
+      "score": 82.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8.3,
+        "emotionalJudgment": 8.3
+      },
+      "flags": [
+        "generic",
+        "unnecessary_question"
+      ]
+    },
+    {
+      "modelId": "google/gemma-4-31b-it",
+      "label": "Gemma 4 31B",
+      "score": 82.3,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8,
+        "voiceFit": 7.7,
+        "fidelity": 9,
+        "restraint": 8.3,
+        "emotionalJudgment": 8.7
+      },
+      "flags": [
+        "theatrical",
+        "coach_voice"
+      ]
+    },
+    {
+      "modelId": "moonshotai/kimi-k2.5",
+      "label": "Kimi K2.5",
+      "score": 82,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 8,
+        "emotionalJudgment": 8
+      },
+      "flags": [
+        "unnecessary_question",
+        "overlong",
+        "coach_voice"
+      ]
+    },
+    {
+      "modelId": "meta-llama/llama-4-maverick",
+      "label": "Llama 4 Maverick",
+      "score": 81,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 8,
+        "voiceFit": 7.7,
+        "fidelity": 8.7,
+        "restraint": 8.3,
+        "emotionalJudgment": 8
+      },
+      "flags": [
+        "coach_voice"
+      ]
+    },
+    {
+      "modelId": "google/gemini-3.1-flash-lite",
+      "label": "Gemini 3.1 Flash Lite",
+      "score": 80.5,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 7.7,
+        "voiceFit": 8,
+        "fidelity": 9,
+        "restraint": 7.7,
+        "emotionalJudgment": 8
+      },
+      "flags": [
+        "chatbot_voice",
+        "too_harsh",
+        "coach_voice"
+      ]
+    },
+    {
+      "modelId": "deepseek/deepseek-v4-flash",
+      "label": "DeepSeek V4 Flash",
+      "score": 79,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 7.7,
+        "voiceFit": 7.7,
+        "fidelity": 8.7,
+        "restraint": 7.7,
+        "emotionalJudgment": 8
+      },
+      "flags": [
+        "unnecessary_question",
+        "overlong",
+        "invented_motive"
+      ]
+    },
+    {
+      "modelId": "meta-llama/llama-3.3-70b-instruct",
+      "label": "Llama 3.3 70B",
+      "score": 78.2,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 7.7,
+        "voiceFit": 7.3,
+        "fidelity": 8.7,
+        "restraint": 7.7,
+        "emotionalJudgment": 8
+      },
+      "flags": [
+        "coach_voice"
+      ]
+    },
+    {
+      "modelId": "openai/gpt-4o-mini",
+      "label": "GPT-4o Mini",
+      "score": 76.7,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 7.7,
+        "voiceFit": 7,
+        "fidelity": 8.3,
+        "restraint": 7.7,
+        "emotionalJudgment": 8
+      },
+      "flags": [
+        "coach_voice",
+        "generic"
+      ]
+    },
+    {
+      "modelId": "minimax/minimax-m2.5",
+      "label": "MiniMax M2.5",
+      "score": 68.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 7,
+        "voiceFit": 7,
+        "fidelity": 6.3,
+        "restraint": 7.3,
+        "emotionalJudgment": 6.7
+      },
+      "flags": [
+        "overlong",
+        "generic",
+        "ignored_brief"
+      ]
+    },
+    {
+      "modelId": "minimax/minimax-m2-her",
+      "label": "MiniMax M2-her",
+      "score": 64.7,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 6.3,
+        "voiceFit": 6,
+        "fidelity": 7,
+        "restraint": 6.7,
+        "emotionalJudgment": 6.7
+      },
+      "flags": [
+        "theatrical",
+        "too_harsh",
+        "overlong",
+        "unnecessary_question",
+        "invented_motive"
+      ]
+    },
+    {
+      "modelId": "thedrummer/unslopnemo-12b",
+      "label": "UnslopNemo 12B",
+      "score": 63.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 6.7,
+        "voiceFit": 5.7,
+        "fidelity": 7,
+        "restraint": 6,
+        "emotionalJudgment": 6.7
+      },
+      "flags": [
+        "theatrical",
+        "coach_voice",
+        "unnecessary_question",
+        "overlong",
+        "too_soft",
+        "formatting_violation"
+      ]
+    },
+    {
+      "modelId": "sao10k/l3.3-euryale-70b",
+      "label": "Euryale 70B",
+      "score": 62.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 6.3,
+        "voiceFit": 5.3,
+        "fidelity": 7.3,
+        "restraint": 6.3,
+        "emotionalJudgment": 6.3
+      },
+      "flags": [
+        "excessive_endearment",
+        "coach_voice",
+        "overlong",
+        "generic"
+      ]
+    },
+    {
+      "modelId": "anthropic/claude-3-haiku",
+      "label": "Claude 3 Haiku",
+      "score": 60.8,
+      "judgeCount": 3,
+      "categories": {
+        "naturalness": 6.3,
+        "voiceFit": 5.3,
+        "fidelity": 7.3,
+        "restraint": 5,
+        "emotionalJudgment": 6.3
+      },
+      "flags": [
+        "chatbot_voice",
+        "coach_voice",
+        "excessive_endearment",
+        "unnecessary_question",
+        "overlong",
+        "too_soft",
+        "generic",
+        "invented_motive"
+      ]
+    }
+  ],
+  "generationCostUsd": 0.034153020000000006
+}

@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1785738801119,
+      "tag": "0000_clean_doctor_faustus",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785748508962,
+      "tag": "0001_tense_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785774044607,
+      "tag": "0002_lucky_emma_frost",
+      "breakpoints": true
+    }
+  ]
+}

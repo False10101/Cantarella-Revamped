@@ -88,3 +88,25 @@ html, body {
   overscroll-behavior: none;
   overflow: hidden;
 }
+
+.cantarella-supported-viewport {
+  min-height: 100dvh;
+}
+
+.cantarella-unsupported-viewport {
+  display: none;
+}
+
+@media (max-width: 767px),
+  (max-height: 600px) and (pointer: coarse),
+  (orientation: portrait) and (max-width: 1180px) and (pointer: coarse) {
+  .cantarella-supported-viewport {
+    display: none;
+  }
+
+  .cantarella-unsupported-viewport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

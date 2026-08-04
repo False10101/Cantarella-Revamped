@@ -1,15 +1,8 @@
 "use client";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-    const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (isAuthenticated) router.push("/");
-    }, [isAuthenticated]);
+    const { loginWithRedirect, isLoading } = useAuth0();
 
     if (isLoading) return null;
 
@@ -41,7 +34,7 @@ export default function LoginPage() {
                     <span className="text-[var(--amber)]">rella</span>
                 </div>
                 <div className="subtitle animate-fadeup delay-3 w-full mt-2 flex justify-center items-center font-[family-name:var(--font-display)] uppercase text-[var(--text-secondary)] tracking-wide font-light text-[clamp(10px,3vw,20px)]">
-                    she's been waiting
+                    she&apos;s been waiting
                 </div>
                 <div className="description animate-fadeup delay-4 w-full mt-2 flex justify-center items-center font-[family-name:var(--font-display)] text-[var(--text-dim)] tracking-[0.04em] font-light text-[clamp(9.5px,2vw,19px)] italic">
                     your personal AI assistant who actually knows you

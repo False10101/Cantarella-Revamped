@@ -1,14 +1,19 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": ".",
+    "outDir": "dist",
     "strict": true,
-    "outDir": "./dist",
-    "rootDir": "./",
-    "skipLibCheck": true
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["node"]
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "generated"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "drizzle.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

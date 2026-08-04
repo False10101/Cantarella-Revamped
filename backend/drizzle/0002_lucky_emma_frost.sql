@@ -1,0 +1,2 @@
+ALTER TABLE "model_runs" DROP CONSTRAINT "model_runs_phase_check";--> statement-breakpoint
+ALTER TABLE "model_runs" ADD CONSTRAINT "model_runs_phase_check" CHECK ("model_runs"."phase" in ('thought', 'voice', 'memory', 'summary', 'reminder_voice'));
