@@ -10,7 +10,10 @@ const environmentSchema = z.object({
   AUTH0_DOMAIN: z.string().min(1),
   AUTH0_AUDIENCE: z.string().min(1),
   OPENROUTER_API_KEY: z.string().min(1).optional(),
-  THOUGHT_MODEL: z.string().min(1).default("qwen/qwen3.7-plus"),
+  THOUGHT_MODEL: z
+    .string()
+    .min(1)
+    .default("deepseek/deepseek-v4-pro-0813"),
   VOICE_MODEL: z.string().min(1).default("aion-labs/aion-3.0-mini"),
   EMBEDDING_MODEL: z
     .string()

@@ -180,7 +180,7 @@ describe("message delivery snapshots", () => {
     ).toBe("sent");
   });
 
-  it.each(["thinking", "voicing", "completed", "failed"] as const)(
+  it.each(["thinking", "voicing", "completed"] as const)(
     "marks every batch message seen once its turn is %s",
     (turnStatus) => {
       expect(
@@ -188,4 +188,10 @@ describe("message delivery snapshots", () => {
       ).toBe("seen");
     },
   );
+
+  it("preserves a visible failed status for a terminally failed turn", () => {
+    expect(
+      toMessageSnapshot({ ...storedUserMessage, turnStatus: "failed" }).status,
+    ).toBe("failed");
+  });
 });

@@ -35,9 +35,9 @@ export function createReminderVoiceGenerator(
         replyBrief: {
           messageMode: "help",
           contextRelation: "standalone",
+          applicationActionDecision: "none",
           replyPoints: [context.reminderText],
           question: null,
-          reminderAction: null,
         },
         deliveryContext: { kind: "due_reminder" },
       });

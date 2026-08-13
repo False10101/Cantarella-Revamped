@@ -1,29 +1,502 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applicationTools,
+  createApplicationToolRuntime,
+  requiresTimeBoundMemoryExpiry,
+  resolveMutationTarget,
+} from "../src/tools/application-tools.js";
+import {
   createThoughtGenerator,
   MAX_REPLY_POINT_CHARACTERS,
   MAX_REPLY_POINT_WORDS,
+  suppressAutomaticMemoryNarration,
+  ThoughtContractError,
   thoughtSchema,
 } from "../src/models/thought.js";
-import type { CompletionRequest } from "../src/models/openrouter.js";
+import {
+  createOpenRouterClient,
+  OpenRouterError,
+  type CompletionRequest,
+} from "../src/models/openrouter.js";
+import { limitRecentContext } from "../src/pipeline/turn-processor.js";
 import {
   createVoiceGenerator,
   splitVoiceBubbles,
   VOICE_BRIEF_REJECTION_SENTINEL,
   VoiceBriefRejectedError,
+  VoiceOutputLeakageError,
 } from "../src/models/voice.js";
 
 const validThought = {
   messageMode: "help" as const,
   contextRelation: "standalone" as const,
+  applicationActionDecision: "none" as const,
   replyPoints: [
     "If the client is waiting, send a brief update first.",
     "Otherwise, start the portfolio work.",
   ],
   question: null,
-  reminderAction: null,
 };
+
+describe("automatic memory narration", () => {
+  const successfulSave = [
+    { name: "save_memory", output: { ok: true, operation: "updated" } },
+  ];
+
+  it("removes internal save confirmation while preserving the conversational answer", () => {
+    const result = suppressAutomaticMemoryNarration(
+      {
+        ...validThought,
+        replyPoints: [
+          "You just used 8,000 THB more.",
+          "Your budget is now 6,000 THB.",
+          "I updated the stored budget memory to 6,000 THB.",
+        ],
+      },
+      ["nah i just used 8k now"],
+      successfulSave,
+    );
+
+    expect(result.replyPoints).toEqual([
+      "You just used 8,000 THB more.",
+      "Your budget is now 6,000 THB.",
+    ]);
+  });
+
+  it("uses a neutral acknowledgment when the model supplied only storage narration", () => {
+    const result = suppressAutomaticMemoryNarration(
+      { ...validThought, replyPoints: ["I saved that in memory."] },
+      ["my sister is amy"],
+      successfulSave,
+    );
+
+    expect(result.replyPoints).toEqual([
+      "Acknowledge the user's information or correction briefly.",
+    ]);
+  });
+
+  it("keeps storage status when the user explicitly asks about it", () => {
+    const thought = {
+      ...validThought,
+      replyPoints: ["I updated the stored budget memory to 6,000 THB."],
+    };
+
+    expect(
+      suppressAutomaticMemoryNarration(
+        thought,
+        ["did you update that memory?"],
+        successfulSave,
+      ),
+    ).toEqual(thought);
+  });
+});
+
+describe("production request parity", () => {
+  it("omits unsupported parallel_tool_calls when the request leaves it unset", async () => {
+    let requestBody: Record<string, unknown> | null = null;
+    const client = createOpenRouterClient(async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        model: "deepseek/deepseek-v4-pro-0813",
+        provider: "DeepSeek",
+        choices: [{
+          finish_reason: "tool_calls",
+          message: {
+            content: "",
+            tool_calls: [{
+              id: "call_1",
+              type: "function",
+              function: { name: "find_memories", arguments: "{\"query\":\"assignment\"}" },
+            }],
+          },
+        }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+
+    await client.complete({
+      model: "deepseek/deepseek-v4-pro-0813",
+      messages: [{ role: "user", content: "assignment due in a week" }],
+      temperature: 0,
+      maxTokens: 1_200,
+      tools: applicationTools,
+      toolChoice: "auto",
+      reasoning: { max_tokens: 384, exclude: true },
+      providerRouting: {
+        order: ["deepseek"],
+        allowFallbacks: true,
+        maxPrice: { prompt: 3, completion: 5 },
+      },
+    });
+
+    expect(requestBody).not.toBeNull();
+    expect(requestBody).not.toHaveProperty("parallel_tool_calls");
+  });
+
+  it("does not exclude DeepSeek from its own structured-output round", async () => {
+    let requestBody: Record<string, unknown> | null = null;
+    const client = createOpenRouterClient(async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        model: "deepseek/deepseek-v4-pro-0813",
+        provider: "DeepSeek",
+        choices: [{
+          finish_reason: "stop",
+          message: { content: JSON.stringify(validThought) },
+        }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+
+    await client.complete({
+      model: "deepseek/deepseek-v4-pro-0813",
+      messages: [{ role: "user", content: "return the final brief" }],
+      temperature: 0,
+      maxTokens: 1_200,
+      responseFormat: {
+        name: "cantarella_thought",
+        schema: { type: "object" },
+      },
+      providerRouting: {
+        order: ["deepseek"],
+        allowFallbacks: true,
+        maxPrice: { prompt: 3, completion: 5 },
+      },
+    });
+
+    expect(requestBody).not.toBeNull();
+    const capturedBody = requestBody as unknown as Record<string, unknown>;
+    expect(capturedBody.provider).toEqual({
+      order: ["deepseek"],
+      allow_fallbacks: true,
+      max_price: { prompt: 3, completion: 5 },
+    });
+  });
+
+  it("keeps only the latest twelve raw context messages", () => {
+    const messages = Array.from({ length: 20 }, (_, index) => index + 1);
+    expect(limitRecentContext(messages)).toEqual(
+      Array.from({ length: 12 }, (_, index) => index + 9),
+    );
+  });
+});
+
+describe("application deletion tools", () => {
+  it("exposes only the consolidated memory and reminder tools", () => {
+    const toolNames = applicationTools.map((tool) => tool.function.name);
+
+    expect(toolNames).toEqual([
+      "find_memories",
+      "save_memory",
+      "delete_memory",
+      "find_reminders",
+      "save_reminder",
+      "delete_reminder",
+    ]);
+    expect(toolNames.some((name) => name.startsWith("request_delete_"))).toBe(false);
+    expect(toolNames.some((name) => name.startsWith("confirm_delete_"))).toBe(false);
+  });
+
+  it("allows the only matching target without asking a follow-up", () => {
+    expect(
+      resolveMutationTarget("forget my rent", [
+        { id: "rent-memory", label: "The user's monthly rent is 8,000 THB." },
+      ]),
+    ).toEqual({
+      status: "unique",
+      allowedTargetId: "rent-memory",
+      candidateIds: ["rent-memory"],
+    });
+  });
+
+  it("allows one explicitly named target when several records were returned", () => {
+    expect(
+      resolveMutationTarget("delete Check the mailbox", [
+        { id: "mailbox", label: "Check the mailbox" },
+        { id: "rent", label: "Pay rent" },
+      ]),
+    ).toEqual({
+      status: "confident",
+      allowedTargetId: "mailbox",
+      candidateIds: ["mailbox", "rent"],
+    });
+  });
+
+  it("allows a strong semantic target with a clear lead over broad retrieval noise", () => {
+    expect(
+      resolveMutationTarget("update my current bank budget", [
+        { id: "budget", label: "Current bank budget", similarity: 0.627 },
+        { id: "tracking", label: "Financial tracking preference", similarity: 0.262 },
+      ]),
+    ).toEqual({
+      status: "confident",
+      allowedTargetId: "budget",
+      candidateIds: ["budget", "tracking"],
+    });
+  });
+
+  it("rejects a single weak semantic result as irrelevant", () => {
+    expect(
+      resolveMutationTarget("assignment due in a week", [
+        { id: "eidolon", label: "User owns Eidolon", similarity: 0.275 },
+      ]),
+    ).toEqual({
+      status: "none",
+      allowedTargetId: null,
+      candidateIds: ["eidolon"],
+    });
+  });
+
+  it("rejects multiple weak semantic results instead of calling them ambiguous", () => {
+    expect(
+      resolveMutationTarget("assignment due in a week", [
+        { id: "eidolon", label: "User owns Eidolon", similarity: 0.275 },
+        { id: "assistant", label: "User wants everyday help", similarity: 0.22 },
+        { id: "student", label: "User studies at KMUTT", similarity: 0.18 },
+      ]).status,
+    ).toBe("none");
+  });
+
+  it("requires clarification when multiple targets remain plausible", () => {
+    expect(
+      resolveMutationTarget("delete that reminder", [
+        { id: "mailbox", label: "Check the mailbox" },
+        { id: "parcel", label: "Track parcel delivery" },
+      ]),
+    ).toEqual({
+      status: "ambiguous",
+      allowedTargetId: null,
+      candidateIds: ["mailbox", "parcel"],
+    });
+
+    expect(
+      resolveMutationTarget("forget my housing cost", [
+        { id: "rent", label: "Monthly rent", similarity: 0.58 },
+        { id: "utilities", label: "Monthly utilities", similarity: 0.51 },
+      ]).status,
+    ).toBe("ambiguous");
+
+    expect(
+      resolveMutationTarget("forget that old fact", [
+        { id: "first", label: "First weak match", similarity: 0.49 },
+        { id: "second", label: "Second weak match", similarity: 0.2 },
+      ]).status,
+    ).toBe("none");
+  });
+});
+
+describe("time-bound memory expiry contract", () => {
+  it("rejects save_memory until find_memories succeeds in the same runtime", async () => {
+    const runtime = createApplicationToolRuntime({
+      userId: "11111111-1111-4111-8111-111111111111",
+      conversationId: "22222222-2222-4222-8222-222222222222",
+      turnId: "33333333-3333-4333-8333-333333333333",
+      sourceMessageId: "44444444-4444-4444-8444-444444444444",
+      originalRequest: "i study at kmutt",
+      timezone: "Asia/Bangkok",
+      referenceAt: new Date("2026-08-13T08:00:00.000Z"),
+      memoryRetriever: { async retrieve() { return []; } },
+    });
+
+    const result = await runtime.execute({
+      id: "save_without_lookup",
+      type: "function",
+      function: {
+        name: "save_memory",
+        arguments: JSON.stringify({
+          canonicalText: "The user studies at KMUTT.",
+          type: "profile",
+          expiresAt: null,
+        }),
+      },
+    });
+
+    expect(result.output).toMatchObject({
+      ok: false,
+      code: "InvalidMemoryActionError",
+      error: expect.stringContaining("requires a successful find_memories"),
+    });
+  });
+
+  it("withholds save_memory from the model until find_memories succeeds", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        if (requests.length === 1) {
+          return {
+            content: "",
+            toolCalls: [{
+              id: "find_assignment",
+              type: "function" as const,
+              function: {
+                name: "find_memories",
+                arguments: JSON.stringify({ query: "internship report" }),
+              },
+            }],
+            model: request.model,
+            provider: "test",
+            usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+            latencyMs: 1,
+          };
+        }
+        if (requests.length === 2) {
+          return {
+            content: "",
+            toolCalls: [{
+              id: "save_assignment",
+              type: "function" as const,
+              function: {
+                name: "save_memory",
+                arguments: JSON.stringify({
+                  canonicalText: "The internship report is due August 20, 2026.",
+                  type: "event",
+                  expiresAt: "2026-08-21T17:00:00.000Z",
+                }),
+              },
+            }],
+            model: request.model,
+            provider: "test",
+            usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+            latencyMs: 1,
+          };
+        }
+        return {
+          content: JSON.stringify(validThought),
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    await generator.generate(
+      {
+        currentMessages: ["the internship report is due august 20"],
+        recentConversation: [],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Thursday, August 13, 2026 at 3:00 PM GMT+7",
+      },
+      {
+        tools: applicationTools,
+        classify(name) {
+          if (name === "find_memories") return "read";
+          if (name === "save_memory") return "mutation";
+          return null;
+        },
+        async execute(call) {
+          return call.function.name === "find_memories"
+            ? { output: { ok: true, memories: [] } }
+            : { output: { ok: true, operation: "created" } };
+        },
+      },
+    );
+
+    expect(requests[0]?.tools?.map((tool) => tool.function.name)).not.toContain(
+      "save_memory",
+    );
+    expect(requests[0]?.tools?.map((tool) => tool.function.name)).toContain(
+      "find_memories",
+    );
+    expect(requests[0]?.tools?.map((tool) => tool.function.name)).toContain(
+      "save_reminder",
+    );
+    expect(requests[1]?.tools?.map((tool) => tool.function.name)).toContain(
+      "save_memory",
+    );
+  });
+
+  it("requires every save_memory call to declare expiresAt", () => {
+    const saveMemory = applicationTools.find(
+      (tool) => tool.function.name === "save_memory",
+    );
+
+    expect(saveMemory?.function.parameters).toMatchObject({
+      required: ["canonicalText", "type", "expiresAt"],
+    });
+    expect(saveMemory?.function.description).toContain(
+      "Always supply expiresAt",
+    );
+  });
+
+  it("recognizes explicit deadlines and bounded current situations", () => {
+    expect(
+      requiresTimeBoundMemoryExpiry({
+        type: "situation",
+        canonicalText:
+          "The user's internship final report is due on August 20, 2026.",
+        originalRequest: "its due in a week",
+      }),
+    ).toBe(true);
+    expect(
+      requiresTimeBoundMemoryExpiry({
+        type: "event",
+        canonicalText: "The user has exams next week.",
+        originalRequest: "exam week starts next week",
+      }),
+    ).toBe(true);
+  });
+
+  it("allows permanent and genuinely open-ended memory to remain unexpired", () => {
+    expect(
+      requiresTimeBoundMemoryExpiry({
+        type: "profile",
+        canonicalText: "The user studies at KMUTT.",
+        originalRequest: "i study at kmutt",
+      }),
+    ).toBe(false);
+    expect(
+      requiresTimeBoundMemoryExpiry({
+        type: "situation",
+        canonicalText: "The user is developing Eidolon.",
+        originalRequest: "im working on eidolon",
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects a bounded memory with a null expiry before touching storage", async () => {
+    const runtime = createApplicationToolRuntime({
+      userId: "11111111-1111-4111-8111-111111111111",
+      conversationId: "22222222-2222-4222-8222-222222222222",
+      turnId: "33333333-3333-4333-8333-333333333333",
+      sourceMessageId: "44444444-4444-4444-8444-444444444444",
+      originalRequest: "my internship report is due in a week",
+      timezone: "Asia/Bangkok",
+      referenceAt: new Date("2026-08-13T08:00:00.000Z"),
+      memoryRetriever: { async retrieve() { return []; } },
+    });
+
+    await runtime.execute({
+      id: "find_before_expiry_test",
+      type: "function",
+      function: {
+        name: "find_memories",
+        arguments: JSON.stringify({ query: "internship report" }),
+      },
+    });
+
+    const result = await runtime.execute({
+      id: "save_without_expiry",
+      type: "function",
+      function: {
+        name: "save_memory",
+        arguments: JSON.stringify({
+          canonicalText:
+            "The user's internship final report is due on August 20, 2026.",
+          type: "situation",
+          expiresAt: null,
+        }),
+      },
+    });
+
+    expect(result.output).toMatchObject({
+      ok: false,
+      code: "InvalidMemoryActionError",
+    });
+  });
+});
 
 describe("two-pass model contracts", () => {
   it("requires the Thought model to provide at least one compact reply point", () => {
@@ -37,6 +510,29 @@ describe("two-pass model contracts", () => {
     expect(
       thoughtSchema.safeParse({ ...validThought, finalProse: "just do it" })
         .success,
+    ).toBe(false);
+  });
+
+  it("rejects duplicate meaning, internal schema leakage, and malformed clarification state", () => {
+    expect(
+      thoughtSchema.safeParse({
+        ...validThought,
+        replyPoints: ["Start with the client update.", "Start with the client update."],
+      }).success,
+    ).toBe(false);
+    expect(
+      thoughtSchema.safeParse({
+        ...validThought,
+        replyPoints: ["The hidden reasoning says to start with the client update."],
+      }).success,
+    ).toBe(false);
+    expect(
+      thoughtSchema.safeParse({
+        ...validThought,
+        applicationActionDecision: "clarify",
+        messageMode: "help",
+        question: "Which reminder?",
+      }).success,
     ).toBe(false);
   });
 
@@ -61,37 +557,17 @@ describe("two-pass model contracts", () => {
     ).toBe(false);
   });
 
-  it("accepts one explicit structured relative reminder action", () => {
-    const result = thoughtSchema.parse({
-      messageMode: "help",
-      contextRelation: "standalone",
-      replyPoints: ["The requested reminder should be scheduled."],
-      question: null,
-      reminderAction: {
-        operation: "create",
-        targetReminderRef: null,
-        title: "Look at the banking app",
-        scheduleKind: "after",
-        localDateTime: null,
-        delayAmount: 5,
-        delayUnit: "minutes",
-        recurrence: "none",
-      },
-    });
-
-    expect(result.reminderAction?.delayAmount).toBe(5);
+  it("rejects application mutations embedded in final Thought JSON", () => {
     expect(
       thoughtSchema.safeParse({
-        messageMode: "help",
-        contextRelation: "standalone",
-        replyPoints: ["The requested reminder should be scheduled."],
-        question: null,
+        ...validThought,
+        applicationActionDecision: "ready",
         reminderAction: {
           operation: "create",
           targetReminderRef: null,
           title: "Look at the banking app",
           scheduleKind: "after",
-          localDateTime: "2026-08-04T10:30",
+          localDateTime: null,
           delayAmount: 5,
           delayUnit: "minutes",
           recurrence: "none",
@@ -100,71 +576,698 @@ describe("two-pass model contracts", () => {
     ).toBe(false);
   });
 
-  it("distinguishes permanent deletion from cancellation and listing", () => {
-    const inertFields = {
-      title: null,
-      scheduleKind: null,
-      localDateTime: null,
-      delayAmount: null,
-      delayUnit: null,
-      recurrence: "unchanged" as const,
+  it("executes a read tool and then a terminal write tool", async () => {
+    const requests: CompletionRequest[] = [];
+    const calls = [
+      {
+        id: "call_search",
+        type: "function" as const,
+        function: {
+          name: "search_memories",
+          arguments: JSON.stringify({ query: "the user's monthly rent" }),
+        },
+      },
+      {
+        id: "call_edit",
+        type: "function" as const,
+        function: {
+          name: "edit_memory",
+          arguments: JSON.stringify({
+            memoryId: "11111111-1111-4111-8111-111111111111",
+            replacementText: "The user's monthly rent is 2,000 THB.",
+          }),
+        },
+      },
+    ];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: "",
+          toolCalls: [calls[requests.length - 1] ?? calls[1]!],
+          reasoningDetails: [
+            {
+              type: "reasoning.text",
+              text: requests.length === 1 ? "resolve rent" : "apply correction",
+            },
+          ],
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+    const executed: string[] = [];
+    const terminalThought = {
+      ...validThought,
+      contextRelation: "immediate_context" as const,
+      replyPoints: ["The stored rent was updated to 2,000 THB."],
     };
-    const permanentDelete = thoughtSchema.parse({
-      ...validThought,
-      reminderAction: {
-        operation: "delete",
-        targetReminderRef: "reminder_1",
-        ...inertFields,
-      },
-    });
-    const cancellation = thoughtSchema.parse({
-      ...validThought,
-      reminderAction: {
-        operation: "cancel",
-        targetReminderRef: "reminder_1",
-        ...inertFields,
-      },
-    });
-    const list = thoughtSchema.parse({
-      ...validThought,
-      reminderAction: {
-        operation: "list",
-        targetReminderRef: null,
-        ...inertFields,
-      },
-    });
 
-    expect(permanentDelete.reminderAction?.operation).toBe("delete");
-    expect(cancellation.reminderAction?.operation).toBe("cancel");
-    expect(list.reminderAction?.operation).toBe("list");
+    const result = await generator.generate(
+      {
+        currentMessages: ["mb mb its 2k"],
+        recentConversation: [
+          { sender: "user", content: "also fyi, my rent is 8k thb" },
+        ],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Tuesday, August 11, 2026 at 12:43 PM GMT+7",
+      },
+      {
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "search_memories",
+              description: "search",
+              parameters: { type: "object" },
+            },
+          },
+          {
+            type: "function",
+            function: {
+              name: "edit_memory",
+              description: "edit",
+              parameters: { type: "object" },
+            },
+          },
+        ],
+        classify(name) {
+          return name === "search_memories" ? "read" : "mutation";
+        },
+        async execute(call) {
+          executed.push(call.function.name);
+          if (call.function.name === "search_memories") {
+            return {
+              output: {
+                ok: true,
+                memories: [
+                  {
+                    id: "11111111-1111-4111-8111-111111111111",
+                    content: "The user's monthly rent is 8,000 THB.",
+                  },
+                ],
+              },
+            };
+          }
+          return {
+            output: { ok: true },
+            terminalThought,
+            applicationResult: {
+              kind: "memory",
+              memoryId: "11111111-1111-4111-8111-111111111111",
+            },
+          };
+        },
+      },
+    );
+
+    expect(executed).toEqual(["search_memories", "edit_memory"]);
+    expect(requests[0]?.responseFormat).toBeUndefined();
+    expect(requests[1]?.messages.find((message) => message.role === "tool")).toMatchObject({
+      role: "tool",
+      name: "search_memories",
+      toolCallId: "call_search",
+    });
+    expect(requests[1]?.messages.find((message) => message.role === "assistant"))
+      .toMatchObject({
+        reasoningDetails: [
+          { type: "reasoning.text", text: "resolve rent" },
+        ],
+      });
+    expect(result.thought).toEqual(terminalThought);
+    expect(result.applicationResult).toEqual({
+      kind: "memory",
+      memoryId: "11111111-1111-4111-8111-111111111111",
+    });
   });
 
-  it("retries an unavailable reminder reference from the original context", async () => {
+  it("accepts multiple independent read tools in one response", async () => {
     const requests: CompletionRequest[] = [];
-    const actionFields = {
-      title: null,
-      scheduleKind: null,
-      localDateTime: null,
-      delayAmount: null,
-      delayUnit: null,
-      recurrence: "unchanged",
+    const readCalls = [
+      {
+        id: "call_memory_search",
+        type: "function" as const,
+        function: {
+          name: "search_memories",
+          arguments: JSON.stringify({ query: "the user's rent" }),
+        },
+      },
+      {
+        id: "call_reminder_list",
+        type: "function" as const,
+        function: {
+          name: "list_reminders",
+          arguments: JSON.stringify({ status: null }),
+        },
+      },
+    ];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return requests.length === 1
+          ? {
+              content: "",
+              toolCalls: readCalls,
+              model: request.model,
+              provider: "test",
+              usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+              latencyMs: 1,
+            }
+          : {
+              content: JSON.stringify(validThought),
+              model: request.model,
+              provider: "test",
+              usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+              latencyMs: 1,
+            };
+      },
+    });
+    const executed: string[] = [];
+
+    const result = await generator.generate(
+      {
+        currentMessages: ["what do you remember about my rent and reminders"],
+        recentConversation: [],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+      },
+      {
+        tools: applicationTools,
+        classify(name) {
+          return name === "search_memories" || name === "list_reminders"
+            ? "read"
+            : null;
+        },
+        async execute(call) {
+          executed.push(call.function.name);
+          return { output: { ok: true, results: [] } };
+        },
+      },
+    );
+
+    expect(executed).toEqual(["search_memories", "list_reminders"]);
+    expect(result.thought).toEqual(validThought);
+    expect(requests[1]?.messages.filter((message) => message.role === "tool"))
+      .toHaveLength(2);
+  });
+
+  it("defers a mutation bundled with a read and executes only a later standalone mutation", async () => {
+    const requests: CompletionRequest[] = [];
+    const memoryId = "11111111-1111-4111-8111-111111111111";
+    const searchCall = {
+      id: "call_search_mixed",
+      type: "function" as const,
+      function: {
+        name: "search_memories",
+        arguments: JSON.stringify({ query: "the user's rent" }),
+      },
     };
+    const mixedEditCall = {
+      id: "call_edit_deferred",
+      type: "function" as const,
+      function: {
+        name: "edit_memory",
+        arguments: JSON.stringify({ memoryId, replacementText: "The user's rent is 2,000 THB." }),
+      },
+    };
+    const standaloneEditCall = { ...mixedEditCall, id: "call_edit_standalone" };
+    const terminalThought = {
+      ...validThought,
+      replyPoints: ["The stored rent was updated to 2,000 THB."],
+    };
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        const toolCalls = requests.length === 1
+          ? [searchCall, mixedEditCall]
+          : [standaloneEditCall];
+        return {
+          content: "",
+          toolCalls,
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+    const executed: string[] = [];
+
+    const result = await generator.generate(
+      {
+        currentMessages: ["change my rent to 2k"],
+        recentConversation: [],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+      },
+      {
+        tools: applicationTools,
+        classify(name) {
+          if (name === "search_memories") return "read";
+          if (name === "edit_memory") return "mutation";
+          return null;
+        },
+        async execute(call) {
+          executed.push(call.function.name);
+          if (call.function.name === "search_memories") {
+            return { output: { ok: true, memories: [{ id: memoryId }] } };
+          }
+          return {
+            output: { ok: true },
+            terminalThought,
+            applicationResult: { kind: "memory", memoryId },
+          };
+        },
+      },
+    );
+
+    expect(executed).toEqual(["search_memories", "edit_memory"]);
+    expect(result.toolExecutions?.map((execution) => execution.output)).toContainEqual(
+      expect.objectContaining({ code: "MUTATION_MUST_FOLLOW_READS" }),
+    );
+    expect(result.thought).toEqual(terminalThought);
+  });
+
+  it("executes a valid mutation even when the provider includes incidental prose", async () => {
+    const requests: CompletionRequest[] = [];
+    const memoryId = "11111111-1111-4111-8111-111111111111";
+    const deletionCall = {
+      type: "function" as const,
+      function: {
+        name: "delete_memory",
+        arguments: JSON.stringify({ memoryId }),
+      },
+    };
+    const terminalThought = {
+      ...validThought,
+      replyPoints: ["The stored rent memory was permanently forgotten."],
+    };
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: requests.length === 1 ? "I will delete it now." : "",
+          toolCalls: [
+            {
+              ...deletionCall,
+              id: requests.length === 1
+                ? "delete_with_prose"
+                : "delete_standalone",
+            },
+          ],
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+    let executionCount = 0;
+
+    const result = await generator.generate(
+      {
+        currentMessages: ["forget my rent"],
+        recentConversation: [],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+      },
+      {
+        tools: applicationTools,
+        classify(name) {
+          return name === "delete_memory" ? "mutation" : null;
+        },
+        async execute() {
+          executionCount += 1;
+          return {
+            output: { ok: true },
+            terminalThought,
+            applicationResult: {
+              kind: "memory",
+              memoryId,
+              deletedMemoryCount: 1,
+            },
+          };
+        },
+      },
+    );
+
+    expect(executionCount).toBe(1);
+    expect(result.toolExecutions?.[0]?.output).toMatchObject({ ok: true });
+    expect(result.thought).toEqual(terminalThought);
+  });
+
+  it("executes up to three distinct mutations together", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        if (requests.length === 1) {
+          return {
+            content: "",
+            toolCalls: [
+              {
+                id: "delete_one",
+                type: "function",
+                function: { name: "delete_memory", arguments: JSON.stringify({ memoryId: "11111111-1111-4111-8111-111111111111" }) },
+              },
+              {
+                id: "delete_two",
+                type: "function",
+                function: { name: "delete_reminder", arguments: JSON.stringify({ reminderId: "22222222-2222-4222-8222-222222222222" }) },
+              },
+            ],
+            model: request.model,
+            provider: "test",
+            usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+            latencyMs: 1,
+          };
+        }
+        return {
+          content: JSON.stringify({
+            ...validThought,
+            messageMode: "unclear",
+            applicationActionDecision: "clarify",
+            replyPoints: ["Only one stored item can be changed per turn."],
+            question: "Which one should I delete first?",
+          }),
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+    const executed: string[] = [];
+
+    const result = await generator.generate(
+      {
+        currentMessages: ["delete both of those"],
+        recentConversation: [],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+      },
+      {
+        tools: applicationTools,
+        classify(name) {
+          return name === "delete_memory" || name === "delete_reminder"
+            ? "mutation"
+            : null;
+        },
+        async execute(call) {
+          executed.push(call.function.name);
+          return call.function.name === "delete_memory"
+            ? {
+                output: { ok: true },
+                applicationResult: {
+                  kind: "memory" as const,
+                  memoryId: "11111111-1111-4111-8111-111111111111",
+                  deletedMemoryCount: 1,
+                },
+              }
+            : {
+                output: { ok: true },
+                applicationResult: {
+                  kind: "reminder" as const,
+                  reminderId: "22222222-2222-4222-8222-222222222222",
+                  reminderIds: ["22222222-2222-4222-8222-222222222222"],
+                },
+              };
+        },
+      },
+    );
+
+    expect(executed).toEqual(["delete_memory", "delete_reminder"]);
+    expect(result.toolExecutions).toHaveLength(2);
+    expect(result.toolExecutions?.every((execution) =>
+      (execution.output as { ok?: boolean }).ok === true
+    )).toBe(true);
+    expect(result.applicationResults).toHaveLength(2);
+    expect(result.applicationResults?.map((result) => result.kind)).toEqual([
+      "memory",
+      "reminder",
+    ]);
+  });
+
+  it("rejects more than three tool calls in one stage", async () => {
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        return {
+          content: "",
+          toolCalls: Array.from({ length: 4 }, (_, index) => ({
+            id: `read_${index}`,
+            type: "function" as const,
+            function: {
+              name: "find_memories",
+              arguments: JSON.stringify({ query: `topic ${index}` }),
+            },
+          })),
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    await expect(
+      generator.generate(
+        {
+          currentMessages: ["remember these four unrelated things"],
+          recentConversation: [],
+          conversationSummary: null,
+          memories: [],
+          reminders: [],
+          localTime: "Tuesday, August 11, 2026 at 7:00 PM GMT+7",
+        },
+        {
+          tools: applicationTools,
+          classify() {
+            return "read";
+          },
+          async execute() {
+            return { output: { ok: true } };
+          },
+        },
+      ),
+    ).rejects.toBeInstanceOf(ThoughtContractError);
+  });
+
+  it("uses DeepSeek V4 Pro with official-provider preference and fallback", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: JSON.stringify(validThought),
+          model: request.model,
+          provider: "fallback-test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      currentMessages: ["yo"],
+      recentConversation: [],
+      conversationSummary: null,
+      memories: [],
+      reminders: [],
+      localTime: "Tuesday, August 11, 2026 at 7:00 PM GMT+7",
+    });
+
+    expect(result.thought).toEqual(validThought);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.model).toBe("deepseek/deepseek-v4-pro-0813");
+    expect(requests[0]?.providerRouting).toEqual({
+      order: ["deepseek"],
+      allowFallbacks: true,
+      maxPrice: { prompt: 3, completion: 5 },
+    });
+    expect(requests[0]?.parallelToolCalls).toBeUndefined();
+    expect(requests[0]?.maxTokens).toBe(2_400);
+    expect(requests[0]?.responseFormat).toBeUndefined();
+  });
+
+  it("runs a duplicated read only once and quarantines its duplicate", async () => {
+    const requests: CompletionRequest[] = [];
+    const call = {
+      type: "function" as const,
+      function: {
+        name: "search_memories",
+        arguments: JSON.stringify({ query: "the user's rent" }),
+      },
+    };
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return requests.length === 1
+          ? {
+              content: "",
+              toolCalls: [
+                { ...call, id: "search_once" },
+                { ...call, id: "search_duplicate" },
+              ],
+              model: request.model,
+              provider: "test",
+              usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+              latencyMs: 1,
+            }
+          : {
+              content: JSON.stringify(validThought),
+              model: request.model,
+              provider: "test",
+              usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+              latencyMs: 1,
+            };
+      },
+    });
+    let executionCount = 0;
+
+    const result = await generator.generate(
+      {
+        currentMessages: ["what do you remember about my rent"],
+        recentConversation: [],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+      },
+      {
+        tools: applicationTools,
+        classify(name) {
+          return name === "search_memories" ? "read" : null;
+        },
+        async execute() {
+          executionCount += 1;
+          return { output: { ok: true, matches: [] } };
+        },
+      },
+    );
+
+    expect(executionCount).toBe(1);
+    expect(result.toolExecutions?.[1]?.output).toMatchObject({
+      code: "DUPLICATE_TOOL_CALL_REJECTED",
+    });
+  });
+
+  it("quarantines malformed tool arguments instead of invoking application code", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return requests.length === 1
+          ? {
+              content: "",
+              toolCalls: [
+                {
+                  id: "malformed_search",
+                  type: "function",
+                  function: { name: "search_memories", arguments: "{" },
+                },
+              ],
+              model: request.model,
+              provider: "test",
+              usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+              latencyMs: 1,
+            }
+          : {
+              content: JSON.stringify(validThought),
+              model: request.model,
+              provider: "test",
+              usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+              latencyMs: 1,
+            };
+      },
+    });
+    let executed = false;
+
+    const result = await generator.generate(
+      {
+        currentMessages: ["what do you remember"],
+        recentConversation: [],
+        conversationSummary: null,
+        memories: [],
+        reminders: [],
+        localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+      },
+      {
+        tools: applicationTools,
+        classify(name) {
+          return name === "search_memories" ? "read" : null;
+        },
+        async execute() {
+          executed = true;
+          return { output: { ok: true } };
+        },
+      },
+    );
+
+    expect(executed).toBe(false);
+    expect(result.toolExecutions?.[0]?.output).toMatchObject({
+      code: "MALFORMED_TOOL_ARGUMENTS",
+    });
+  });
+
+  it("tells Qwen that ordinary shorthand can carry tool intent", async () => {
+    let capturedRequest: CompletionRequest | undefined;
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        capturedRequest = request;
+        return {
+          content: JSON.stringify(validThought),
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      currentMessages: ["mb mb its 2k"],
+      recentConversation: [
+        { sender: "user", content: "also fyi, my rent is 8k thb" },
+        { sender: "assistant", content: "got it, 8k thb" },
+      ],
+      conversationSummary: null,
+      memories: [],
+      reminders: [],
+      localTime: "Tuesday, August 11, 2026 at 12:43 PM GMT+7",
+    });
+
+    expect(result.thought).toEqual(validThought);
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      "Ordinary conversational wording carries full intent",
+    );
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      "Resolve shorthand and pronouns",
+    );
+  });
+
+  it("retries when Thought contradicts the number in a current correction", async () => {
+    const requests: CompletionRequest[] = [];
     const outputs = [
       JSON.stringify({
         ...validThought,
-        reminderAction: {
-          operation: "delete",
-          targetReminderRef: "reminder_2",
-          ...actionFields,
-        },
+        replyPoints: ["The user's rent is 8,000 THB."],
       }),
       JSON.stringify({
         ...validThought,
-        reminderAction: {
-          operation: "delete",
-          targetReminderRef: "reminder_1",
-          ...actionFields,
-        },
+        contextRelation: "immediate_context",
+        replyPoints: ["The corrected rent is 2,000 THB."],
       }),
     ];
     const generator = createThoughtGenerator({
@@ -181,26 +1284,69 @@ describe("two-pass model contracts", () => {
     });
 
     const result = await generator.generate({
-      currentMessages: ["delete the mailbox reminder"],
-      recentConversation: [],
+      currentMessages: ["mb mb its 2k"],
+      recentConversation: [
+        { sender: "user", content: "also fyi, my rent is 8k thb" },
+      ],
       conversationSummary: null,
-      memories: [],
-      reminders: [
+      memories: [
         {
-          ref: "reminder_1",
-          title: "Check the mailbox",
-          status: "scheduled",
-          scheduledForLocal: "Tuesday, August 4, 2026 at 7:00 PM GMT+7",
-          recurrence: null,
+          ref: "memory_1",
+          type: "profile",
+          content: "The user's rent is 8,000 THB.",
         },
       ],
-      localTime: "Tuesday, August 4, 2026 at 6:00 PM GMT+7",
+      reminders: [],
+      localTime: "Tuesday, August 11, 2026 at 12:43 PM GMT+7",
     });
 
-    expect(result.thought.reminderAction?.targetReminderRef).toBe(
-      "reminder_1",
-    );
+    expect(result.thought.replyPoints).toEqual([
+      "The corrected rent is 2,000 THB.",
+    ]);
     expect(requests).toHaveLength(2);
+  });
+
+  it("instructs clear forget requests to delete immediately without confirmation", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: JSON.stringify(validThought),
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      currentMessages: ["nvm just forget it ig"],
+      recentConversation: [
+        { sender: "user", content: "mb mb its 2k" },
+        { sender: "assistant", content: "yea got it, updated to 2k" },
+      ],
+      conversationSummary: null,
+      memories: [
+        {
+          ref: "memory_1",
+          type: "profile",
+          content: "The user's rent is 2,000 THB.",
+        },
+      ],
+      reminders: [],
+      localTime: "Tuesday, August 11, 2026 at 1:11 PM GMT+7",
+    });
+
+    expect(result.thought).toEqual(validThought);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.messages[0]?.content).toContain(
+      "must call delete_memory immediately",
+    );
+    expect(requests[0]?.messages[0]?.content).toContain(
+      "never create pending confirmation state",
+    );
   });
 
   it("retries malformed Thought JSON from the original context", async () => {
@@ -237,8 +1383,8 @@ describe("two-pass model contracts", () => {
     expect(requests[1]?.messages[1]?.content).toContain(
       "should i text them again?",
     );
-    expect(requests[1]?.messages[0]?.content).toContain(
-      "Start again from the original context",
+    expect(requests[1]?.messages.at(-1)?.content).toContain(
+      "final response was rejected",
     );
     expect(requests[0]?.messages[0]?.content).toContain(
       "Recent conversation is background, not an unfinished command queue",
@@ -250,7 +1396,7 @@ describe("two-pass model contracts", () => {
       "There is no ordinary target of two",
     );
     expect(requests[0]?.messages[0]?.content).toContain(
-      "Always return reminderAction",
+      "sole live owner of memory and reminder decisions",
     );
     expect(requests[0]?.messages[0]?.content).toContain(
       'A ping or test such as "yo", "you there", "test test"',
@@ -258,17 +1404,76 @@ describe("two-pass model contracts", () => {
     expect(requests[0]?.messages[0]?.content).toContain(
       "Treat social conversation as a complete first-class purpose",
     );
-    expect(requests[0]?.responseFormat?.schema).toMatchObject({
-      required: [
-        "messageMode",
-        "contextRelation",
-        "replyPoints",
-        "question",
-        "reminderAction",
-      ],
-    });
+    expect(requests[0]?.responseFormat).toBeUndefined();
+    expect(requests[0]?.maxTokens).toBe(2_400);
     expect(requests[1]?.messages.every((message) => !message.content.includes("not json")))
       .toBe(true);
+  });
+
+  it("normalizes a single fenced final JSON object", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: `\`\`\`json\n${JSON.stringify(validThought)}\n\`\`\``,
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      currentMessages: ["yo"],
+      recentConversation: [],
+      conversationSummary: null,
+      memories: [],
+      reminders: [],
+      localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+    });
+
+    expect(result.thought).toEqual(validThought);
+    expect(requests).toHaveLength(1);
+  });
+
+  it("rejects a claimed mutation success without a successful mutation tool", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = createThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: JSON.stringify(
+            requests.length === 1
+              ? { ...validThought, replyPoints: ["The reminder was deleted."] }
+              : {
+                  ...validThought,
+                  messageMode: "unclear",
+                  applicationActionDecision: "clarify",
+                  replyPoints: ["The reminder target is unclear."],
+                  question: "Which reminder should I delete?",
+                },
+          ),
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      currentMessages: ["delete my reminder"],
+      recentConversation: [],
+      conversationSummary: null,
+      memories: [],
+      reminders: [],
+      localTime: "Tuesday, August 11, 2026 at 5:00 PM GMT+7",
+    });
+
+    expect(result.thought.applicationActionDecision).toBe("clarify");
+    expect(requests).toHaveLength(2);
   });
 
   it("turns every non-empty Aion line into its own bubble", () => {
@@ -286,7 +1491,65 @@ describe("two-pass model contracts", () => {
     ).toThrow(VoiceBriefRejectedError);
   });
 
-  it("gives Aion the current batch only as a narrow relevance check", async () => {
+  it("never turns Aion's private analysis into visible bubbles", () => {
+    const leaked = `First, I need to check that the reply brief responds to the current user messages.
+- messageMode: "social"
+- contextRelation: "standalone"
+Now I need to render it through Cantarella's persona.
+got it, 2k thb`;
+
+    expect(() => splitVoiceBubbles(leaked)).toThrow(VoiceOutputLeakageError);
+  });
+
+  it("retries Aion once when its first response leaks private analysis", async () => {
+    const requests: CompletionRequest[] = [];
+    const outputs = [
+      "First, I need to check the reply brief before rendering it.",
+      "got it, 2k thb",
+    ];
+    const generator = createVoiceGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: outputs[requests.length - 1] ?? outputs[1]!,
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      persona: {
+        name: "Cantarella",
+        voiceDirection: "default",
+        customStyle: "",
+        preferredUserName: null,
+        endearmentPreference: null,
+        boundaries: [],
+      },
+      replyBrief: {
+        ...validThought,
+        replyPoints: ["The user's corrected rent is 2,000 THB."],
+      },
+      currentMessages: ["mb mb its 2k"],
+    });
+
+    expect(result.bubbles).toEqual(["got it, 2k thb"]);
+    expect(result.completion.usage).toEqual({
+      inputTokens: 2,
+      outputTokens: 2,
+      estimatedCostUsd: 0,
+    });
+    expect(result.completion.latencyMs).toBe(2);
+    expect(requests).toHaveLength(2);
+    expect(requests[1]?.messages[0]?.content).toContain(
+      "previous response exposed private analysis",
+    );
+  });
+
+  it("gives Aion recent conversation and authority to write the natural next reply", async () => {
     let capturedRequest: CompletionRequest | undefined;
     const generator = createVoiceGenerator({
       async complete(request) {
@@ -317,18 +1580,22 @@ describe("two-pass model contracts", () => {
       replyBrief: {
         messageMode: "help",
         contextRelation: "standalone",
+        applicationActionDecision: "none",
         replyPoints: ["Start with the smallest possible part of the task."],
         question: null,
-        reminderAction: null,
       },
       currentMessages: ["how do i start this task"],
+      recentConversation: [
+        { sender: "user", content: "i keep staring at it" },
+        { sender: "assistant", content: "whats making it hard to start" },
+      ],
     });
 
     expect(capturedRequest).toBeDefined();
     expect(capturedRequest?.messages).toHaveLength(2);
     expect(capturedRequest?.messages[1]).toEqual({
       role: "user",
-      content: "Check that the brief responds to the current messages, then render it.",
+      content: "Write Cantarella's natural next message. Return only the visible chat text.",
     });
     expect(capturedRequest?.messages[0]?.content).toContain(
       '"replyPoints": [',
@@ -352,12 +1619,104 @@ describe("two-pass model contracts", () => {
       '"how do i start this task"',
     );
     expect(capturedRequest?.messages[0]?.content).toContain(
-      "reject when you are certain the REPLY BRIEF answers, repeats, or revives a topic",
+      "<authority_mode>GROUNDED</authority_mode>",
+    );
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      '"content": "whats making it hard to start"',
+    );
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      "A stiff, repetitive, or overly literal brief is not grounds for rejection",
     );
     expect(capturedRequest?.messages[0]?.content).not.toContain(
-      "recentConversation",
+      "You have no conversation to interpret",
     );
     expect(capturedRequest?.temperature).toBe(0.5);
     expect(capturedRequest?.reasoning).toBeUndefined();
+  });
+
+  it("gives social replies freedom to avoid repeating the last assistant message", async () => {
+    let capturedRequest: CompletionRequest | undefined;
+    const generator = createVoiceGenerator({
+      async complete(request) {
+        capturedRequest = request;
+        return {
+          content: "literally the worst timing",
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    const result = await generator.generate({
+      persona: {
+        name: "Cantarella",
+        voiceDirection: "default",
+        customStyle: "",
+        preferredUserName: null,
+        endearmentPreference: null,
+        boundaries: [],
+      },
+      replyBrief: {
+        ...validThought,
+        messageMode: "social",
+        contextRelation: "immediate_context",
+        replyPoints: ["The assignment still hangs over the holiday."],
+      },
+      recentConversation: [
+        { sender: "assistant", content: "yea that assignment's still hanging over the holiday though" },
+      ],
+      currentMessages: ["unfortunately :("],
+    });
+
+    expect(result.bubbles).toEqual(["literally the worst timing"]);
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      "<authority_mode>SOCIAL</authority_mode>",
+    );
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      "do not mechanically repeat a fact or reaction Cantarella just said",
+    );
+  });
+
+  it("keeps successful application results under strict authority", async () => {
+    let capturedRequest: CompletionRequest | undefined;
+    const generator = createVoiceGenerator({
+      async complete(request) {
+        capturedRequest = request;
+        return {
+          content: "gotchu, ill remind you at 5",
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    await generator.generate({
+      persona: {
+        name: "Cantarella",
+        voiceDirection: "default",
+        customStyle: "",
+        preferredUserName: null,
+        endearmentPreference: null,
+        boundaries: [],
+      },
+      replyBrief: {
+        ...validThought,
+        messageMode: "mixed",
+        replyPoints: ["The reminder was scheduled for 5 PM."],
+      },
+      currentMessages: ["remind me at 5"],
+      successfulApplicationAction: true,
+    });
+
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      "<authority_mode>APPLICATION</authority_mode>",
+    );
+    expect(capturedRequest?.messages[0]?.content).toContain(
+      "Never invent another operation, target, time, result, or confirmation",
+    );
   });
 });

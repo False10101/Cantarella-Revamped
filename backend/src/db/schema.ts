@@ -513,6 +513,9 @@ export const memories = pgTable(
     normalizedHash: varchar("normalized_hash", { length: 64 }).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     lastReinforcedAt: timestamp("last_reinforced_at", { withTimezone: true }),
+    pendingDeleteConfirmationTurnId: uuid(
+      "pending_delete_confirmation_turn_id",
+    ).references((): AnyPgColumn => turns.id, { onDelete: "set null" }),
     searchDocument: tsvector("search_document").generatedAlwaysAs(
       sql`to_tsvector('simple', coalesce("canonical_text", ''))`,
     ),
@@ -690,6 +693,9 @@ export const reminders = pgTable(
     sourceMessageId: uuid("source_message_id").references(() => messages.id, {
       onDelete: "set null",
     }),
+    pendingDeleteConfirmationTurnId: uuid(
+      "pending_delete_confirmation_turn_id",
+    ).references(() => turns.id, { onDelete: "set null" }),
     creationKey: text("creation_key"),
     lastFiredAt: timestamp("last_fired_at", { withTimezone: true }),
     ...timestampColumns,

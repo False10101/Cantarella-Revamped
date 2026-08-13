@@ -1,0 +1,2 @@
+ALTER TABLE "memories" ADD COLUMN "pending_delete_confirmation_turn_id" uuid;--> statement-breakpoint
+ALTER TABLE "memories" ADD CONSTRAINT "memories_pending_delete_confirmation_turn_id_turns_id_fk" FOREIGN KEY ("pending_delete_confirmation_turn_id") REFERENCES "public"."turns"("id") ON DELETE set null ON UPDATE no action;

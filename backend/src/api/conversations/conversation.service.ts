@@ -93,8 +93,7 @@ export function toMessageSnapshot(message: StoredMessage): MessageSnapshot {
   const wasSeen =
     message.turnStatus === "thinking" ||
     message.turnStatus === "voicing" ||
-    message.turnStatus === "completed" ||
-    message.turnStatus === "failed";
+    message.turnStatus === "completed";
 
   return {
     id: message.id,
@@ -106,7 +105,13 @@ export function toMessageSnapshot(message: StoredMessage): MessageSnapshot {
     source: message.origin,
     partIndex: message.partIndex,
     status:
-      message.role === "user" ? (wasSeen ? "seen" : "sent") : "delivered",
+      message.role === "user"
+        ? message.turnStatus === "failed"
+          ? "failed"
+          : wasSeen
+            ? "seen"
+            : "sent"
+        : "delivered",
     replyToMessageId: null,
     createdAt: message.createdAt.toISOString(),
   };

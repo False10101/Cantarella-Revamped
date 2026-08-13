@@ -139,12 +139,27 @@ export function createSummaryPolicyGenerator(
             userMessage,
           ],
           temperature: 0,
-          maxTokens: 900,
-          responseFormat: {
-            name: "cantarella_conversation_summary_chunk",
-            schema: summaryPlanJsonSchema,
-          },
+          maxTokens: 2_400,
+          ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
+          "deepseek/deepseek-v4-pro-0813"
+            ? {}
+            : {
+                responseFormat: {
+                  name: "cantarella_conversation_summary_chunk",
+                  schema: summaryPlanJsonSchema,
+                },
+              }),
           reasoning: { max_tokens: 256, exclude: true },
+          ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
+          "deepseek/deepseek-v4-pro-0813"
+            ? {
+                providerRouting: {
+                  order: ["deepseek"],
+                  allowFallbacks: true,
+                  maxPrice: { prompt: 3, completion: 5 },
+                },
+              }
+            : {}),
         });
 
       const firstCompletion = await request(null);

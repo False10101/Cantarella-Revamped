@@ -17,7 +17,7 @@ import {
   type EmbeddingClient,
 } from "../models/embedding.js";
 import { logger } from "../lib/logger.js";
-import type { MemoryType } from "./memory-policy.js";
+import type { MemoryType } from "./memory-core.js";
 
 export interface RetrievedMemory {
   id: string;

@@ -15,7 +15,8 @@ import { HttpError } from "../../http/http-error.js";
 import {
   memoryContentHash,
   normalizeMemoryText,
-} from "../../memory/memory-processor.js";
+} from "../../memory/memory-core.js";
+import { reusableMemoryEmbeddingId } from "../../memory/memory-embedding-history.js";
 import {
   createEmbeddingClient,
   type EmbeddingClient,
@@ -317,6 +318,7 @@ export function createMemoryService(dependencies: {
               confidence: 1,
               normalizedHash: nextHash,
               expiresAt: nextExpiresAt,
+              pendingDeleteConfirmationTurnId: null,
               updatedAt: now,
             })
             .where(eq(memories.id, memoryId))
@@ -324,6 +326,19 @@ export function createMemoryService(dependencies: {
           if (!updated) throw memoryNotFound();
 
           if (contentChanged && embedding) {
+            const historicalEmbeddings = await transaction
+              .select({
+                id: memoryEmbeddings.id,
+                embeddingModel: memoryEmbeddings.embeddingModel,
+                contentHash: memoryEmbeddings.contentHash,
+              })
+              .from(memoryEmbeddings)
+              .where(eq(memoryEmbeddings.memoryId, memoryId));
+            const reusableEmbeddingId = reusableMemoryEmbeddingId(
+              historicalEmbeddings,
+              embedding.model,
+              nextHash,
+            );
             await transaction
               .update(memoryEmbeddings)
               .set({ isCurrent: false, supersededAt: now })
@@ -333,9 +348,25 @@ export function createMemoryService(dependencies: {
                   eq(memoryEmbeddings.isCurrent, true),
                 ),
               );
-            await transaction.insert(memoryEmbeddings).values(
-              embeddingValues(memoryId, nextHash, embedding),
-            );
+            if (reusableEmbeddingId) {
+              const vector = embedding.vectors[0];
+              if (!vector) {
+                throw new Error("The memory embedding response was empty.");
+              }
+              await transaction
+                .update(memoryEmbeddings)
+                .set({
+                  embeddingDimensions: embedding.dimensions,
+                  embedding: vector,
+                  isCurrent: true,
+                  supersededAt: null,
+                })
+                .where(eq(memoryEmbeddings.id, reusableEmbeddingId));
+            } else {
+              await transaction.insert(memoryEmbeddings).values(
+                embeddingValues(memoryId, nextHash, embedding),
+              );
+            }
           }
 
           await transaction.insert(memoryEvents).values({

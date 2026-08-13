@@ -6,7 +6,7 @@ import { DateTime } from "luxon";
 import type { ReminderSnapshot } from "../api/reminders/reminder.types.js";
 import { database } from "../db/client.js";
 import { reminderDeliveries, reminders } from "../db/schema.js";
-import type { ReminderAction, Thought } from "../models/thought.js";
+import type { ReminderAction } from "../models/thought.js";
 import { nextReminderOccurrence } from "./reminder-schedule.js";
 
 export class InvalidReminderActionError extends Error {
@@ -88,64 +88,9 @@ function snapshot(reminder: typeof reminders.$inferSelect): ReminderSnapshot {
   };
 }
 
-function briefTitle(title: string): string {
-  return title.length <= 55 ? title : `${title.slice(0, 52)}...`;
-}
-
-function localSchedule(reminder: ReminderSnapshot): string {
-  const localized = DateTime.fromISO(reminder.scheduledFor, {
-    setZone: true,
-  }).setZone(reminder.timezone);
-  return localized.isValid
-    ? localized.toFormat("ccc, LLL d 'at' h:mm a")
-    : reminder.scheduledFor;
-}
-
-function confirmationBrief(
-  action: ReminderAction,
-  records: ReminderSnapshot[],
-): Thought {
-  const reminder = records[0];
-  let replyPoints: string[];
-
-  if (action.operation === "list") {
-    replyPoints =
-      records.length === 0
-        ? ["The user currently has no active reminders."]
-        : records.slice(0, 10).map(
-            (record) =>
-              `${briefTitle(record.title)} — ${record.status}, ${localSchedule(record)}`,
-          );
-  } else {
-    if (!reminder) {
-      throw new Error("The reminder action produced no reminder record.");
-    }
-    const title = briefTitle(reminder.title);
-    const messages: Record<Exclude<ReminderAction["operation"], "list">, string> = {
-      create: `The reminder to ${title} was created successfully.`,
-      update: `The reminder to ${title} was updated successfully.`,
-      reschedule: `The reminder to ${title} was rescheduled successfully.`,
-      pause: `The reminder to ${title} was paused successfully.`,
-      resume: `The reminder to ${title} was resumed successfully.`,
-      cancel: `The reminder to ${title} was cancelled successfully.`,
-      delete: `The reminder to ${title} was permanently deleted.`,
-    };
-    replyPoints = [messages[action.operation]];
-  }
-
-  return {
-    messageMode: "help",
-    contextRelation: "standalone",
-    replyPoints,
-    question: null,
-    reminderAction: null,
-  };
-}
-
 export interface ReminderActionResult {
   primaryReminder: ReminderSnapshot | null;
   reminders: ReminderSnapshot[];
-  voiceBrief: Thought;
 }
 
 function recurrenceValue(value: string | null): ReminderSnapshot["recurrence"] {
@@ -189,7 +134,6 @@ export async function executeReminderAction(input: {
     return {
       primaryReminder: null,
       reminders: records,
-      voiceBrief: confirmationBrief(input.action, records),
     };
   }
 
@@ -227,6 +171,7 @@ export async function executeReminderAction(input: {
             and(
               eq(reminders.id, reminderId),
               eq(reminders.userId, input.userId),
+              eq(reminders.conversationId, input.conversationId),
             ),
           )
           .returning();
@@ -235,7 +180,13 @@ export async function executeReminderAction(input: {
             "The selected reminder could not be deleted.",
           );
         }
-        return deleted;
+        return {
+          record: deleted,
+          effectiveAction: {
+            ...input.action,
+            operation: "delete" as const,
+          },
+        };
       }
 
       if (existing.status === "cancelled") {
@@ -327,6 +278,7 @@ export async function executeReminderAction(input: {
           recurrenceRule: recurrence,
           status,
           nextRunAt,
+          pendingDeleteConfirmationTurnId: null,
           updatedAt: now,
         })
         .where(eq(reminders.id, reminderId))
@@ -336,14 +288,13 @@ export async function executeReminderAction(input: {
           "The selected reminder could not be updated.",
         );
       }
-      return updated;
+      return { record: updated, effectiveAction: input.action };
     });
 
-    const reminder = snapshot(record);
+    const reminder = snapshot(record.record);
     return {
       primaryReminder: reminder,
       reminders: [reminder],
-      voiceBrief: confirmationBrief(input.action, [reminder]),
     };
   }
 
@@ -397,6 +348,5 @@ export async function executeReminderAction(input: {
   return {
     primaryReminder: reminder,
     reminders: [reminder],
-    voiceBrief: confirmationBrief(input.action, [reminder]),
   };
 }

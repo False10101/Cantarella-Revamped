@@ -8,11 +8,6 @@ import { database } from "../db/client.js";
 import { inputBatches, jobs, turns } from "../db/schema.js";
 import { conversationEvents } from "../events/conversation-events.js";
 import { logger } from "../lib/logger.js";
-import {
-  createMemoryProcessor,
-  ObsoleteMemoryJobError,
-  type MemoryProcessor,
-} from "../memory/memory-processor.js";
 import { EmbeddingError } from "../models/embedding.js";
 import { OpenRouterError } from "../models/openrouter.js";
 import {
@@ -34,6 +29,8 @@ const supportedJobKinds = [
   "sync_turn_memory",
   "summarize_conversation",
 ] as const;
+const staleJobAgeMs = 5 * 60_000;
+const staleJobRecoveryIntervalMs = 60_000;
 type SupportedJobKind = (typeof supportedJobKinds)[number];
 
 interface ClaimedJob extends ClaimedTurnJob {
@@ -218,50 +215,18 @@ async function failTurnJob(job: ClaimedJob, error: unknown): Promise<void> {
     }
   }
 
-  logger.error(
-    { jobId: job.id, turnId: job.turnId, code, retryable: shouldRetry },
-    "Turn generation failed",
-  );
-}
-
-async function failMemoryJob(job: ClaimedJob, error: unknown): Promise<void> {
-  const retryable = isRetryable(error);
-  const shouldRetry = retryable && job.attemptCount < job.maxAttempts;
-  const code = error instanceof Error ? error.name : "MEMORY_SYNC_ERROR";
-  const message = (error instanceof Error ? error.message : String(error)).slice(
-    0,
-    2_000,
-  );
-  const now = new Date();
-
-  await database
-    .update(jobs)
-    .set(
-      shouldRetry
-        ? {
-            status: "pending",
-            runAt: new Date(now.getTime() + 1_500 * job.attemptCount),
-            lockedAt: null,
-            lockedBy: null,
-            lastErrorCode: code,
-            lastErrorMessage: message,
-            updatedAt: now,
-          }
-        : {
-            status: "failed",
-            lockedAt: null,
-            lockedBy: null,
-            lastErrorCode: code,
-            lastErrorMessage: message,
-            updatedAt: now,
-          },
-    )
-    .where(eq(jobs.id, job.id));
-
-  logger.error(
-    { jobId: job.id, turnId: job.turnId, code, retryable: shouldRetry },
-    "Memory synchronization failed",
-  );
+  const logContext = {
+    jobId: job.id,
+    turnId: job.turnId,
+    code,
+    errorMessage: message,
+    retryable: shouldRetry,
+  };
+  if (shouldRetry) {
+    logger.warn(logContext, "Turn generation attempt failed; retrying");
+  } else {
+    logger.error(logContext, "Turn generation failed");
+  }
 }
 
 async function failSummaryJob(job: ClaimedJob, error: unknown): Promise<void> {
@@ -305,7 +270,7 @@ async function failSummaryJob(job: ClaimedJob, error: unknown): Promise<void> {
 }
 
 async function recoverStaleJobs(): Promise<void> {
-  const staleBefore = new Date(Date.now() - 5 * 60_000);
+  const staleBefore = new Date(Date.now() - staleJobAgeMs);
   await database
     .update(jobs)
     .set({
@@ -324,13 +289,10 @@ export interface JobWorker {
 
 export function startJobWorker(dependencies: {
   turnProcessor?: TurnProcessor;
-  memoryProcessor?: MemoryProcessor;
   summaryProcessor?: SummaryProcessor;
 } = {}): JobWorker {
   const environment = getEnvironment();
   const turnProcessor = dependencies.turnProcessor ?? createTurnProcessor();
-  const memoryProcessor =
-    dependencies.memoryProcessor ?? createMemoryProcessor();
   const summaryProcessor =
     dependencies.summaryProcessor ?? createSummaryProcessor();
 
@@ -345,6 +307,7 @@ export function startJobWorker(dependencies: {
   const workerId = `cantarella-${process.pid}-${randomUUID()}`;
   let stopped = false;
   let timer: NodeJS.Timeout | undefined;
+  let nextStaleRecoveryAt = 0;
 
   const schedule = (delay: number) => {
     if (!stopped) timer = setTimeout(run, delay);
@@ -352,6 +315,12 @@ export function startJobWorker(dependencies: {
 
   const run = async () => {
     try {
+      const now = Date.now();
+      if (now >= nextStaleRecoveryAt) {
+        await recoverStaleJobs();
+        nextStaleRecoveryAt = now + staleJobRecoveryIntervalMs;
+      }
+
       const job = await claimNextJob(workerId);
 
       if (!job) {
@@ -363,7 +332,9 @@ export function startJobWorker(dependencies: {
         if (job.kind === "generate_turn") {
           await turnProcessor.process(job);
         } else if (job.kind === "sync_turn_memory") {
-          await memoryProcessor.process(job);
+          // Legacy jobs from the previous dual-writer memory pipeline are
+          // intentionally retired. Kimi now owns memory inside generate_turn.
+          await completeObsoleteJob(job);
         } else {
           await summaryProcessor.process(job);
         }
@@ -372,12 +343,9 @@ export function startJobWorker(dependencies: {
           await deferJob(job, error.runAt);
         } else if (
           error instanceof ObsoleteTurnJobError ||
-          error instanceof ObsoleteMemoryJobError ||
           error instanceof ObsoleteSummaryJobError
         ) {
           await completeObsoleteJob(job);
-        } else if (job.kind === "sync_turn_memory") {
-          await failMemoryJob(job, error);
         } else if (job.kind === "summarize_conversation") {
           await failSummaryJob(job, error);
         } else {
@@ -392,12 +360,7 @@ export function startJobWorker(dependencies: {
     }
   };
 
-  void recoverStaleJobs()
-    .then(() => schedule(0))
-    .catch((error: unknown) => {
-      logger.error({ error }, "Failed to recover stale jobs");
-      schedule(environment.JOB_POLL_MS);
-    });
+  schedule(0);
 
   return {
     stop() {

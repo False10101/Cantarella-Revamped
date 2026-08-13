@@ -34,7 +34,7 @@ export interface MessageSnapshot {
   messageKind: "chat" | "reminder";
   source: "web" | "android" | "ios" | "system";
   partIndex: number | null;
-  status: "sent" | "seen" | "delivered";
+  status: "sent" | "seen" | "delivered" | "failed";
   replyToMessageId: null;
   createdAt: string;
 }

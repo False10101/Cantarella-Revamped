@@ -1,8 +1,22 @@
 import { getEnvironment } from "../config/env.js";
 
+export interface ModelToolCall {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
 export interface ModelMessage {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "tool";
   content: string;
+  toolCalls?: ModelToolCall[];
+  toolCallId?: string;
+  name?: string;
+  reasoning?: string;
+  reasoningDetails?: unknown[];
 }
 
 export interface ModelUsage {
@@ -13,6 +27,10 @@ export interface ModelUsage {
 
 export interface ModelCompletion {
   content: string;
+  toolCalls?: ModelToolCall[];
+  reasoning?: string;
+  reasoningDetails?: unknown[];
+  finishReason?: string | null;
   model: string;
   provider: string | null;
   usage: ModelUsage;
@@ -24,16 +42,39 @@ export interface JsonSchemaResponseFormat {
   schema: Record<string, unknown>;
 }
 
+export interface ModelFunctionTool {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+}
+
 export interface CompletionRequest {
   model: string;
   messages: ModelMessage[];
   temperature: number;
   maxTokens: number;
   responseFormat?: JsonSchemaResponseFormat;
+  tools?: ModelFunctionTool[];
+  toolChoice?: "auto" | "none" | {
+    type: "function";
+    function: { name: string };
+  };
+  parallelToolCalls?: boolean;
   reasoning?: {
     effort?: "low" | "medium" | "high" | "xhigh";
     max_tokens?: number;
     exclude: boolean;
+  };
+  providerRouting?: {
+    order: string[];
+    allowFallbacks: boolean;
+    maxPrice?: {
+      prompt: number;
+      completion: number;
+    };
   };
 }
 
@@ -43,8 +84,13 @@ interface OpenRouterPayload {
   model?: string;
   provider?: string;
   choices?: Array<{
+    finish_reason?: string | null;
     message?: {
       content?: string | null;
+      tool_calls?: ModelToolCall[];
+      reasoning?: string | null;
+      reasoning_content?: string | null;
+      reasoning_details?: unknown[];
     };
   }>;
   usage?: {
@@ -95,10 +141,30 @@ export function createOpenRouterClient(
       const environment = getEnvironment();
       const body: Record<string, unknown> = {
         model: request.model,
-        messages: request.messages,
+        messages: request.messages.map((message) => ({
+          role: message.role,
+          content: message.content,
+          ...(message.toolCalls ? { tool_calls: message.toolCalls } : {}),
+          ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
+          ...(message.name ? { name: message.name } : {}),
+          ...(message.reasoning ? { reasoning: message.reasoning } : {}),
+          ...(message.reasoningDetails
+            ? { reasoning_details: message.reasoningDetails }
+            : {}),
+        })),
         temperature: request.temperature,
         max_tokens: request.maxTokens,
       };
+
+      if (request.providerRouting) {
+        body.provider = {
+          order: request.providerRouting.order,
+          allow_fallbacks: request.providerRouting.allowFallbacks,
+          ...(request.providerRouting.maxPrice
+            ? { max_price: request.providerRouting.maxPrice }
+            : {}),
+        };
+      }
 
       if (request.responseFormat) {
         body.response_format = {
@@ -109,7 +175,14 @@ export function createOpenRouterClient(
             schema: request.responseFormat.schema,
           },
         };
-        body.provider = { require_parameters: true };
+      }
+
+      if (request.tools) {
+        body.tools = request.tools;
+        body.tool_choice = request.toolChoice ?? "auto";
+        if (request.parallelToolCalls !== undefined) {
+          body.parallel_tool_calls = request.parallelToolCalls;
+        }
       }
 
       if (request.reasoning) body.reasoning = request.reasoning;
@@ -150,9 +223,16 @@ export function createOpenRouterClient(
         );
       }
 
-      const content = payload.choices?.[0]?.message?.content?.trim();
+      const choice = payload.choices?.[0];
+      const content = choice?.message?.content?.trim() ?? "";
+      const toolCalls = choice?.message?.tool_calls ?? [];
+      const reasoning =
+        choice?.message?.reasoning ??
+        choice?.message?.reasoning_content ??
+        undefined;
+      const reasoningDetails = choice?.message?.reasoning_details;
 
-      if (!content) {
+      if (!content && toolCalls.length === 0) {
         throw new OpenRouterError(
           payload.error?.message ?? "OpenRouter returned an empty completion.",
           response.status,
@@ -162,6 +242,10 @@ export function createOpenRouterClient(
 
       return {
         content,
+        toolCalls,
+        ...(reasoning ? { reasoning } : {}),
+        ...(reasoningDetails ? { reasoningDetails } : {}),
+        finishReason: choice?.finish_reason ?? null,
         model: payload.model ?? request.model,
         provider: payload.provider ?? null,
         usage: {

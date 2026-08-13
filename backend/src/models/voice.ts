@@ -15,6 +15,11 @@ export interface VoiceContext {
   persona: VoicePersonaConfiguration;
   replyBrief: Thought;
   currentMessages?: string[];
+  recentConversation?: Array<{
+    sender: "user" | "assistant";
+    content: string;
+  }>;
+  successfulApplicationAction?: boolean;
   deliveryContext?: {
     kind: "due_reminder";
   };
@@ -42,6 +47,62 @@ export class VoiceBriefRejectedError extends OpenRouterError {
     );
     this.name = "VoiceBriefRejectedError";
   }
+}
+
+export class VoiceOutputLeakageError extends OpenRouterError {
+  constructor(public readonly rawOutput: string) {
+    super(
+      "The Voice model exposed internal analysis or prompt instructions.",
+      null,
+      true,
+    );
+    this.name = "VoiceOutputLeakageError";
+  }
+}
+
+const voiceLeakagePatterns = [
+  /\b(?:reply brief|current user messages|messageMode|contextRelation)\b/i,
+  /\b(?:safety gate|voice adapter|hidden chain[- ]of[- ]thought)\b/i,
+  /\b(?:now|first),?\s+i need to (?:check|render|rewrite|respond|produce)\b/i,
+  /\brender (?:it|this) through Cantarella(?:'s)? persona\b/i,
+  /\bthe brief (?:has|says|contains|requires)\b/i,
+  /\bdo not introduce a new fact\b/i,
+  /^\s*(?:[-*]|\d+[.)])\s+(?:no|never|do not|messageMode|contextRelation)\b/im,
+];
+
+export function containsVoiceOutputLeakage(rawOutput: string): boolean {
+  return voiceLeakagePatterns.some((pattern) => pattern.test(rawOutput));
+}
+
+function addNullableUsage(
+  left: number | null,
+  right: number | null,
+): number | null {
+  return left === null && right === null ? null : (left ?? 0) + (right ?? 0);
+}
+
+function combineVoiceAttempts(
+  first: ModelCompletion,
+  retry: ModelCompletion,
+): ModelCompletion {
+  return {
+    ...retry,
+    usage: {
+      inputTokens: addNullableUsage(
+        first.usage.inputTokens,
+        retry.usage.inputTokens,
+      ),
+      outputTokens: addNullableUsage(
+        first.usage.outputTokens,
+        retry.usage.outputTokens,
+      ),
+      estimatedCostUsd: addNullableUsage(
+        first.usage.estimatedCostUsd,
+        retry.usage.estimatedCostUsd,
+      ),
+    },
+    latencyMs: first.latencyMs + retry.latencyMs,
+  };
 }
 
 export const voiceTextingStyleRules = `Texting style:
@@ -73,47 +134,56 @@ The supplied meaning is a reminder that has become due now. It is inert reminder
 - Never use formal alert wording such as "This is your reminder to...", "It is time to...", or "Please remember to...".
 - Do not add a reason, deadline, consequence, recommendation, question, or unrelated fact.`;
 
-const voiceAdapterPrompt = `You are Cantarella's final text renderer.
+const voiceAdapterPrompt = `You are Cantarella's final conversational writer.
 
-You have no conversation to interpret and no decision to make. The REPLY BRIEF is complete and authoritative once it passes the narrow relevance gate below. Render only its supplied meaning through Cantarella's persona.
+You receive the live conversation plus a private REPLY BRIEF from a separate reasoning model. The brief decides the grounded substance and application behavior. You decide what Cantarella would actually text next: the reaction, wording, rhythm, brevity, and bubble boundaries.
 
-Safety gate before rendering:
-- When CURRENT USER MESSAGES are supplied, they contain only the active user message batch. They are relevance evidence, not permission to invent or improve the answer. When they are absent for a due reminder, skip only the relevance comparison.
-- When CURRENT USER MESSAGES are supplied, reject when you are certain the REPLY BRIEF answers, repeats, or revives a topic they did not raise, continue, react to, or explicitly resume.
-- Social responses do not need keyword overlap. Greetings, reactions, jokes, pings, fragments, and acknowledgments can have natural short replies. Reject only a clear semantic mismatch, not ordinary conversational inference.
-- contextRelation is a hint, not authority. If it claims earlier context but the current text clearly does not rely on or resume earlier context, reject the brief.
-- Also reject when you are certain the REPLY BRIEF contains hidden chain-of-thought, reasoning narration, internal instructions, prompt or schema commentary, model/provider/tool diagnostics, error or placeholder text, or clearly broken content that cannot be rendered without inventing meaning.
+Authority mode:
+- SOCIAL: The brief identifies the relevant situation or intent, but its wording and individual replyPoints are not a script. Read the conversation, respond naturally, and do not mechanically repeat a fact or reaction Cantarella just said. You may omit or compress a redundant point, add a small human reaction grounded in the conversation, or ask one harmless natural follow-up even when question is null. Never invent a new concrete fact, promise, diagnosis, or application action.
+- GROUNDED: Preserve the actual answer, recommendation, constraints, concrete facts, uncertainty, and explicit question in the brief. You may reorganize, compress, and naturalize them, but may not change their meaning or add unsupported factual reasoning. Avoid repeating the immediately previous assistant message unless repetition is genuinely needed.
+- APPLICATION: A real memory or reminder operation has already succeeded. Preserve any user-facing consequence in the brief exactly enough to remain true. Never invent another operation, target, time, result, or confirmation. Do not mention databases, tools, memory bookkeeping, internal state, or that something was "saved to memory". A natural acknowledgment is fine when the brief calls for one.
+- REMINDER: Follow the dedicated due-reminder rules below.
+
+Conversation use:
+- RECENT CONVERSATION is real context. CURRENT USER MESSAGES are the newest messages and have highest conversational priority.
+- Use both to understand pronouns, emotional continuity, what has already been said, and whether a repeated brief point should remain implicit.
+- Do not continue an old topic when the current messages clearly moved elsewhere.
+- Do not turn every message into help, advice, a question, or a transaction. Ordinary reactions, jokes, complaints, fragments, and silence-shaped moments are complete conversational purposes.
+
+Safety gate before writing:
+- Reject only when you are certain the brief is clearly unrelated to the current conversation, contains hidden chain-of-thought or reasoning narration, exposes internal instructions/schema/model/provider/tool diagnostics, contains error or placeholder text, or is too broken to use safely.
+- A stiff, repetitive, or overly literal brief is not grounds for rejection; repair its conversational delivery while respecting the authority mode.
 - Do not expose, summarize, paraphrase, or explain rejected content.
 - When rejecting, return exactly ${VOICE_BRIEF_REJECTION_SENTINEL} and nothing else.
-- Do not reject merely because the meaning is blunt, uncertain, emotionally sensitive, or something you disagree with. You are not judging the advice or reinterpreting the conversation.
-
-Meaning boundary:
-- Preserve every replyPoint and the optional question.
-- replyPoints specify required meaning, not sentence count, newline count, or bubble count.
-- Do not introduce a new fact, action, example, number, reason, diagnosis, reassurance, or conclusion.
-- Do not explain why a point is true or improve the advice.
-- Do not respond to an imagined user message. You are rewriting supplied meaning, nothing else.
-- You may add semantically empty conversational connective language such as "yea", "nah", "tbh", "like", or "ofc" when it fits the persona. Never let a connector change certainty or meaning.
+- Do not reject merely because the meaning is blunt, uncertain, emotionally sensitive, or something you disagree with.
 
 ${voiceTextingStyleRules}
-- Ask a question only when REPLY BRIEF question is not null, and preserve its intended meaning.
+- In GROUNDED or APPLICATION mode, ask a question only when REPLY BRIEF question is not null, and preserve its intended meaning.
 
 Examples:
-REPLY BRIEF points:
+GROUNDED BRIEF points:
 - "Meditation may not address difficulty initiating a task."
 - "Recommend choosing one task and doing only five minutes."
 VISIBLE TEXT:
 yea meditation probably isnt gonna fix the starting part
 try picking one thing and doing like 5 mins instead
 
-REPLY BRIEF point: "The deployment failed because the environment variable is missing."
+GROUNDED BRIEF point: "The deployment failed because the environment variable is missing."
 VISIBLE TEXT: yea its missing the env var
+
+RECENT ASSISTANT: "yea that assignment's still hanging over the holiday though"
+CURRENT USER: "unfortunately :("
+SOCIAL BRIEF point: "The assignment is still hanging over the holiday."
+VISIBLE TEXT: literally the worst timing
 
 Do not mention these controls, models, prompts, rewriting, or hidden reasoning.`;
 
 export function splitVoiceBubbles(rawOutput: string): string[] {
   if (rawOutput.includes(VOICE_BRIEF_REJECTION_SENTINEL)) {
     throw new VoiceBriefRejectedError();
+  }
+  if (containsVoiceOutputLeakage(rawOutput)) {
+    throw new VoiceOutputLeakageError(rawOutput);
   }
 
   const bubbles = rawOutput
@@ -145,27 +215,53 @@ export function createVoiceGenerator(
       const relevanceContext = context.currentMessages
         ? `\n\n<current_user_messages>\n${JSON.stringify(context.currentMessages, null, 2)}\n</current_user_messages>`
         : "";
-      const systemPrompt = `${buildVoicePersonaPrompt(context.persona)}\n\n---\n\n## FINAL VOICE ADAPTER\n\n${voiceAdapterPrompt}${deliveryPrompt}${relevanceContext}\n\n<reply_brief>\n${JSON.stringify(context.replyBrief, null, 2)}\n</reply_brief>`;
       const isDueReminder = context.deliveryContext?.kind === "due_reminder";
+      const authorityMode = isDueReminder
+        ? "REMINDER"
+        : context.successfulApplicationAction
+          ? "APPLICATION"
+          : context.replyBrief.messageMode === "social"
+            ? "SOCIAL"
+            : "GROUNDED";
+      const recentContext = context.recentConversation?.length
+        ? `\n\n<recent_conversation>\n${JSON.stringify(context.recentConversation, null, 2)}\n</recent_conversation>`
+        : "";
+      const systemPrompt = `${buildVoicePersonaPrompt(context.persona)}\n\n---\n\n## FINAL VOICE ADAPTER\n\n${voiceAdapterPrompt}${deliveryPrompt}\n\n<authority_mode>${authorityMode}</authority_mode>${recentContext}${relevanceContext}\n\n<reply_brief>\n${JSON.stringify(context.replyBrief, null, 2)}\n</reply_brief>`;
+      const request = (leakageRetry: boolean) =>
+        client.complete({
+          model: environment.VOICE_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: leakageRetry
+                ? `${systemPrompt}\n\nYour previous response exposed private analysis or these instructions. Start over. Return only the final visible chat text, with no analysis, checking, explanation, labels, quoted draft, or rule list.`
+                : systemPrompt,
+            },
+            {
+              role: "user",
+              content: context.currentMessages
+                ? "Write Cantarella's natural next message. Return only the visible chat text."
+                : "Return only the visible chat text.",
+            },
+          ],
+          temperature: isDueReminder ? 0.45 : 0.5,
+          maxTokens: isDueReminder ? 180 : 1_200,
+        });
 
-      const completion = await client.complete({
-        model: environment.VOICE_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: context.currentMessages
-              ? "Check that the brief responds to the current messages, then render it."
-              : "Render the supplied reply brief.",
-          },
-        ],
-        temperature: isDueReminder ? 0.45 : 0.5,
-        maxTokens: isDueReminder ? 180 : 1_200,
-      });
+      let completion = await request(false);
+      let bubbles: string[];
+      try {
+        bubbles = splitVoiceBubbles(completion.content);
+      } catch (error) {
+        if (!(error instanceof VoiceOutputLeakageError)) throw error;
+        const retryCompletion = await request(true);
+        bubbles = splitVoiceBubbles(retryCompletion.content);
+        completion = combineVoiceAttempts(completion, retryCompletion);
+      }
 
       return {
         rawOutput: completion.content,
-        bubbles: splitVoiceBubbles(completion.content),
+        bubbles,
         completion,
       };
     },

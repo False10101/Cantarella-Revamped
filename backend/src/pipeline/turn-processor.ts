@@ -8,6 +8,7 @@ import {
   inArray,
   isNull,
   notInArray,
+  or,
   sql,
 } from "drizzle-orm";
 
@@ -22,7 +23,6 @@ import {
   messages,
   modelRuns,
   personas,
-  reminders,
   turns,
   users,
   userSettings,
@@ -34,6 +34,7 @@ import {
 } from "../memory/memory-retrieval.js";
 import {
   createThoughtGenerator,
+  ThoughtContractError,
   type Thought,
   type ThoughtContext,
   type ThoughtGeneration,
@@ -42,13 +43,11 @@ import {
 import {
   createVoiceGenerator,
   VoiceBriefRejectedError,
+  VoiceOutputLeakageError,
   type VoiceGeneration,
   type VoiceGenerator,
 } from "../models/voice.js";
-import {
-  executeReminderAction,
-  type ReminderActionResult,
-} from "../reminders/reminder-action.js";
+import { createApplicationToolRuntime } from "../tools/application-tools.js";
 import { orderRecentContextMessages } from "./message-order.js";
 import {
   createSummaryRetriever,
@@ -213,7 +212,6 @@ async function loadThoughtContext(
   sourceMessageId: string;
   referenceAt: Date;
   originalRequest: string;
-  reminderIdsByReference: Map<string, string>;
 }> {
   const batchMessages = await database
     .select({
@@ -234,81 +232,43 @@ async function loadThoughtContext(
   const batchMessageIds = batchMessages.map((message) => message.id);
   const referenceMessage = batchMessages.at(-1);
   if (!referenceMessage) throw new Error("The turn has no reference message.");
-  const [recentMessages, summaryRetrieval, memoryRecords, reminderRecords] =
-    await Promise.all([
-    database
-      .select({
-        id: messages.id,
-        turnId: messages.turnId,
-        role: messages.role,
-        content: messages.content,
-        createdAt: messages.createdAt,
-        partIndex: messages.partIndex,
-      })
-      .from(messages)
-      .where(
-        and(
-          eq(messages.conversationId, prepared.conversationId),
-          isNull(messages.deletedAt),
-          inArray(messages.role, ["user", "assistant"]),
-          notInArray(messages.id, batchMessageIds),
-        ),
-      )
-      .orderBy(
-        desc(messages.createdAt),
-        sql`${messages.partIndex} desc nulls last`,
-        desc(messages.id),
-      )
-      .limit(60),
-    summaryRetriever.retrieve({
-      userId: prepared.userId,
-      conversationId: prepared.conversationId,
-      queryTexts: batchMessages.map((message) => message.content),
-      recentLimit: 2,
-      relevantLimit: 3,
-      minimumSimilarity: 0.22,
-    }),
-    memoryRetriever.retrieve({
-      userId: prepared.userId,
-      queryTexts: batchMessages.map((message) => message.content),
-      limit: 8,
-      minimumSimilarity: 0.28,
-    }),
-    database
-      .select({
-        id: reminders.id,
-        title: reminders.title,
-        status: reminders.status,
-        scheduledFor: reminders.scheduledFor,
-        recurrenceRule: reminders.recurrenceRule,
-        updatedAt: reminders.updatedAt,
-      })
-      .from(reminders)
-      .where(eq(reminders.userId, prepared.userId))
-      .orderBy(desc(reminders.updatedAt))
-      .limit(50),
-  ]);
-
-  const reminderIdsByReference = new Map<string, string>();
-  const reminderContext = reminderRecords.map((reminder, index) => {
-    const ref = `reminder_${index + 1}`;
-    reminderIdsByReference.set(ref, reminder.id);
-    const recurrence: ThoughtContext["reminders"][number]["recurrence"] =
-      reminder.recurrenceRule === "daily" ||
-      reminder.recurrenceRule === "weekly" ||
-      reminder.recurrenceRule === "monthly"
-        ? reminder.recurrenceRule
-        : null;
-    return {
-      ref,
-      title: reminder.title,
-      status: reminder.status,
-      scheduledForLocal: localTime(prepared.timezone, reminder.scheduledFor),
-      recurrence,
-    };
-  });
-
+  const recentMessages = await database
+    .select({
+      id: messages.id,
+      turnId: messages.turnId,
+      role: messages.role,
+      content: messages.content,
+      createdAt: messages.createdAt,
+      partIndex: messages.partIndex,
+    })
+    .from(messages)
+    .leftJoin(turns, eq(turns.id, messages.turnId))
+    .where(
+      and(
+        eq(messages.conversationId, prepared.conversationId),
+        or(isNull(messages.turnId), eq(turns.status, "completed")),
+        isNull(messages.deletedAt),
+        inArray(messages.role, ["user", "assistant"]),
+        notInArray(messages.id, batchMessageIds),
+      ),
+    )
+    .orderBy(
+      desc(messages.createdAt),
+      sql`${messages.partIndex} desc nulls last`,
+      desc(messages.id),
+    )
+    .limit(60);
   const orderedRecentMessages = orderRecentContextMessages(recentMessages);
+  const summaryRetrieval = await summaryRetriever.retrieve({
+    userId: prepared.userId,
+    conversationId: prepared.conversationId,
+    queryTexts: [],
+    recentLimit: 2,
+    relevantLimit: 0,
+  });
+  const reminderContext: ThoughtContext["reminders"] = [];
+  const memoryContext: ThoughtContext["memories"] = [];
+
   const summaryCursorIndex = summaryRetrieval.latestEndMessageId
     ? orderedRecentMessages.findIndex(
         (message) => message.id === summaryRetrieval.latestEndMessageId,
@@ -318,7 +278,7 @@ async function loadThoughtContext(
     summaryCursorIndex >= 0
       ? orderedRecentMessages.slice(summaryCursorIndex + 1)
       : orderedRecentMessages;
-  const recentConversation = unsummarizedRecentMessages.map(
+  const recentConversation = limitRecentContext(unsummarizedRecentMessages).map(
     (message) => ({
       sender: message.role as "user" | "assistant",
       content: message.content,
@@ -331,15 +291,18 @@ async function loadThoughtContext(
       currentMessages: batchMessages.map((message) => message.content),
       recentConversation,
       conversationSummary: formatSummaryContext(summaryRetrieval),
-      memories: memoryRecords.map((memory) => memory.canonicalText),
+      memories: memoryContext,
       reminders: reminderContext,
       localTime: localTime(prepared.timezone, referenceMessage.createdAt),
     },
     sourceMessageId: referenceMessage.id,
     referenceAt: referenceMessage.createdAt,
     originalRequest: batchMessages.map((message) => message.content).join("\n"),
-    reminderIdsByReference,
   };
+}
+
+export function limitRecentContext<T>(messagesToLimit: T[]): T[] {
+  return messagesToLimit.slice(-12);
 }
 
 async function createModelRun(input: {
@@ -402,6 +365,12 @@ async function failModelRun(id: string, error: unknown): Promise<void> {
     .update(modelRuns)
     .set({
       status: "failed",
+      rawOutput:
+        error instanceof VoiceOutputLeakageError
+          ? error.rawOutput.slice(0, 20_000)
+          : error instanceof ThoughtContractError
+            ? error.rawOutput.slice(0, 20_000)
+          : undefined,
       errorCode: error instanceof Error ? error.name : "MODEL_ERROR",
       errorMessage: message.slice(0, 2_000),
       completedAt: new Date(),
@@ -436,7 +405,6 @@ export function createTurnProcessor(dependencies: {
         sourceMessageId,
         referenceAt,
         originalRequest,
-        reminderIdsByReference,
       } = await loadThoughtContext(
         prepared,
         memoryRetriever,
@@ -450,6 +418,16 @@ export function createTurnProcessor(dependencies: {
 
       let voiceGeneration: VoiceGeneration | undefined;
       let rejectedResponse: Thought | undefined;
+      const toolRuntime = createApplicationToolRuntime({
+        userId: prepared.userId,
+        conversationId: prepared.conversationId,
+        turnId: prepared.turnId,
+        sourceMessageId,
+        originalRequest,
+        timezone: prepared.timezone,
+        referenceAt,
+        memoryRetriever,
+      });
 
       for (let generationAttempt = 1; generationAttempt <= 2; generationAttempt += 1) {
         const attemptContext: ThoughtContext = rejectedResponse
@@ -459,18 +437,24 @@ export function createTurnProcessor(dependencies: {
           job,
           phase: "thought",
           model: environment.THOUGHT_MODEL,
-          promptVersion: "thought-v10",
+          promptVersion: "thought-v15-tools",
           personaVersion: prepared.persona.version,
           inputJson: { ...attemptContext, generationAttempt },
         });
 
         let thoughtGeneration: ThoughtGeneration;
         try {
-          thoughtGeneration = await thoughtGenerator.generate(attemptContext);
+          thoughtGeneration = await thoughtGenerator.generate(
+            attemptContext,
+            toolRuntime,
+          );
           await completeModelRun(thoughtRunId, {
             provider: thoughtGeneration.completion.provider,
             model: thoughtGeneration.completion.model,
-            outputJson: { ...thoughtGeneration.thought },
+            outputJson: {
+              ...thoughtGeneration.thought,
+              toolExecutions: thoughtGeneration.toolExecutions ?? [],
+            },
             rawOutput: thoughtGeneration.completion.content,
             inputTokens: thoughtGeneration.completion.usage.inputTokens,
             outputTokens: thoughtGeneration.completion.usage.outputTokens,
@@ -483,41 +467,26 @@ export function createTurnProcessor(dependencies: {
           throw error;
         }
 
-        let reminderActionResult: ReminderActionResult | undefined;
-        let voiceBrief: Thought = {
+        const applicationResults =
+          thoughtGeneration.applicationResults ??
+          (thoughtGeneration.applicationResult
+            ? [thoughtGeneration.applicationResult]
+            : []);
+        const memoryResults = applicationResults.filter(
+          (result) => result.kind === "memory",
+        );
+        const reminderResults = applicationResults.filter(
+          (result) => result.kind === "reminder",
+        );
+        const latestMemoryResult = memoryResults.at(-1);
+        const latestReminderResult = reminderResults.at(-1);
+        const voiceBrief: Thought = {
           messageMode: thoughtGeneration.thought.messageMode,
           contextRelation: thoughtGeneration.thought.contextRelation,
+          applicationActionDecision: "none",
           replyPoints: thoughtGeneration.thought.replyPoints,
           question: thoughtGeneration.thought.question,
-          reminderAction: null,
         };
-
-        if (thoughtGeneration.thought.reminderAction) {
-          const requestedAction = thoughtGeneration.thought.reminderAction;
-          const resolvedReminderId = requestedAction.targetReminderRef
-            ? (reminderIdsByReference.get(requestedAction.targetReminderRef) ??
-              null)
-            : null;
-          if (requestedAction.targetReminderRef && !resolvedReminderId) {
-            throw new Error(
-              `Reminder reference ${requestedAction.targetReminderRef} was not resolved.`,
-            );
-          }
-          reminderActionResult = await executeReminderAction({
-            action: {
-              ...requestedAction,
-              targetReminderRef: resolvedReminderId,
-            },
-            turnId: prepared.turnId,
-            userId: prepared.userId,
-            conversationId: prepared.conversationId,
-            sourceMessageId,
-            originalRequest,
-            timezone: prepared.timezone,
-            referenceAt,
-          });
-          voiceBrief = reminderActionResult.voiceBrief;
-        }
 
         await database
           .update(turns)
@@ -536,16 +505,32 @@ export function createTurnProcessor(dependencies: {
           job,
           phase: "voice",
           model: environment.VOICE_MODEL,
-          promptVersion: "voice-v8",
+          promptVersion: "voice-v10-contextual",
           personaVersion: prepared.persona.version,
           inputJson: {
             replyBrief: voiceBrief,
             currentMessages: context.currentMessages,
+            recentConversation: context.recentConversation.slice(-6),
+            authorityMode:
+              applicationResults.length > 0
+                ? "application"
+                : voiceBrief.messageMode === "social"
+                  ? "social"
+                  : "grounded",
             personaVersion: prepared.persona.version,
             generationAttempt,
-            reminderId: reminderActionResult?.primaryReminder?.id ?? null,
-            reminderIds:
-              reminderActionResult?.reminders.map((reminder) => reminder.id) ?? [],
+            reminderId:
+              latestReminderResult?.reminderId ?? null,
+            reminderIds: reminderResults.flatMap(
+              (result) => result.reminderIds,
+            ),
+            memoryId:
+              latestMemoryResult?.memoryId ?? null,
+            deletedMemoryCount:
+              memoryResults.reduce(
+                (total, result) => total + (result.deletedMemoryCount ?? 0),
+                0,
+              ) || null,
           },
         });
 
@@ -554,6 +539,8 @@ export function createTurnProcessor(dependencies: {
             persona: prepared.persona,
             replyBrief: voiceBrief,
             currentMessages: context.currentMessages,
+            recentConversation: context.recentConversation.slice(-6),
+            successfulApplicationAction: applicationResults.length > 0,
           });
           await completeModelRun(voiceRunId, {
             provider: voiceGeneration.completion.provider,
@@ -568,8 +555,14 @@ export function createTurnProcessor(dependencies: {
         } catch (error) {
           await failModelRun(voiceRunId, error);
 
-          if (reminderActionResult) {
-            const fallbackBubbles = voiceBrief.replyPoints;
+          if (
+            applicationResults.length > 0 ||
+            error instanceof VoiceOutputLeakageError
+          ) {
+            const fallbackBubbles = [
+              ...voiceBrief.replyPoints,
+              ...(voiceBrief.question ? [voiceBrief.question] : []),
+            ];
             voiceGeneration = {
               rawOutput: fallbackBubbles.join("\n"),
               bubbles: fallbackBubbles,
@@ -673,19 +666,6 @@ export function createTurnProcessor(dependencies: {
             updatedAt: now,
           })
           .where(eq(jobs.id, job.id));
-        await transaction
-          .insert(jobs)
-          .values({
-            id: randomUUID(),
-            kind: "sync_turn_memory",
-            payload: { turnId: prepared.turnId },
-            status: "pending",
-            priority: -10,
-            runAt: now,
-            maxAttempts: 3,
-            dedupeKey: `sync-memory:${prepared.turnId}`,
-          })
-          .onConflictDoNothing();
         await transaction
           .insert(jobs)
           .values({
