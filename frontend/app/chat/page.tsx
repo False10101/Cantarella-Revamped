@@ -3,7 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import Navbar from "../navbar";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
-import { Check, CheckCheck, LoaderCircle, Send } from "lucide-react";
+import { Check, CheckCheck, CircleAlert, LoaderCircle, Send } from "lucide-react";
 
 type ChatMessage = {
     id: string;
@@ -15,7 +15,7 @@ type ChatMessage = {
     source: "web" | "android" | "ios" | "system";
     messageKind: "chat" | "reminder";
     partIndex: number | null;
-    status: "sending" | "sent" | "seen" | "delivered";
+    status: "sending" | "sent" | "seen" | "delivered" | "failed";
 };
 
 type PrimaryConversation = {
@@ -170,6 +170,14 @@ function MessageStatus({ status }: { status: ChatMessage["status"] }) {
         );
     }
 
+    if (status === "failed") {
+        return (
+            <span aria-label="Cantarella couldn't respond" title="Cantarella couldn't respond" className="inline-flex text-red-400">
+                <CircleAlert className="h-3.5 w-3.5" strokeWidth={1.8} />
+            </span>
+        );
+    }
+
     return (
         <span aria-label="Sent" title="Sent" className="inline-flex text-[var(--text-dim)]">
             <Check className="h-3 w-3" strokeWidth={1.7} />
@@ -199,6 +207,7 @@ export default function Page() {
     const backendTypingActiveRef = useRef(false);
     const messageListRef = useRef<ChatMessage[]>([]);
     const seenTurnIdsRef = useRef(new Set<string>());
+    const failedTurnIdsRef = useRef(new Set<string>());
     messageListRef.current = messageList;
 
     useEffect(() => {
@@ -307,6 +316,7 @@ export default function Page() {
         const handleEvent = (event: ConversationEvent) => {
             if (event.type === "turn.status") {
                 seenTurnIdsRef.current.add(event.data.turnId);
+                failedTurnIdsRef.current.delete(event.data.turnId);
                 setMessageList((current) => current.map((message) =>
                     message.sender === "user" && message.turnId === event.data.turnId
                         ? { ...message, status: "seen" }
@@ -351,6 +361,8 @@ export default function Page() {
                 }
             }
             if (event.type === "turn.failed") {
+                failedTurnIdsRef.current.add(event.data.turnId);
+                seenTurnIdsRef.current.delete(event.data.turnId);
                 backendTypingActiveRef.current = false;
                 clearTypingRevealTimer();
                 if (stagedDeliveryTimerRef.current !== null) {
@@ -359,6 +371,11 @@ export default function Page() {
                 }
                 stagedMessagesRef.current = [];
                 setIsTyping(false);
+                setMessageList((current) => current.map((message) =>
+                    message.sender === "user" && message.turnId === event.data.turnId
+                        ? { ...message, status: "failed" }
+                        : message
+                ));
                 console.error(`${event.data.code}: ${event.data.message}`);
             }
         };
@@ -513,6 +530,11 @@ export default function Page() {
                             {isAssistant && <div className="absolute inset-0 pointer-events-none rounded-2xl bg-gradient-to-br from-[rgba(201,147,90,0.04)] to-transparent" />}
                             <p className="relative z-10">{msg.content}</p>
                         </div>
+                        {!isAssistant && msg.status === "failed" && (
+                            <span className="px-1 text-[10px] tracking-wide text-red-400">
+                                Cantarella couldn&apos;t respond
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -559,9 +581,11 @@ export default function Page() {
             const payload = await res.json() as { data: { message: ChatMessage } };
             const savedMessage = payload.data.message;
             const resolvedMessage =
-                savedMessage.turnId && seenTurnIdsRef.current.has(savedMessage.turnId)
-                    ? { ...savedMessage, status: "seen" as const }
-                    : savedMessage;
+                savedMessage.turnId && failedTurnIdsRef.current.has(savedMessage.turnId)
+                    ? { ...savedMessage, status: "failed" as const }
+                    : savedMessage.turnId && seenTurnIdsRef.current.has(savedMessage.turnId)
+                        ? { ...savedMessage, status: "seen" as const }
+                        : savedMessage;
             setMessageList((current) => current.map((item) =>
                 item.clientMessageId === clientMessageId ? resolvedMessage : item
             ));
