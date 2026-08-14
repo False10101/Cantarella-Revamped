@@ -143,7 +143,7 @@ export function createOpenRouterClient(
         model: request.model,
         messages: request.messages.map((message) => ({
           role: message.role,
-          content: message.content,
+          content: message.toolCalls ? null : message.content,
           ...(message.toolCalls ? { tool_calls: message.toolCalls } : {}),
           ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
           ...(message.name ? { name: message.name } : {}),

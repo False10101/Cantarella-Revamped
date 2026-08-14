@@ -483,6 +483,8 @@ Rules:
 - A value or fact supplied in a current correction overrides every older conversation message, summary, and canonical memory. Never answer with the superseded value.
 - When an application action is ready, emit the tool call instead of final JSON.
 - Full confidence means operation, target, and required values each have one reasonable interpretation from currentMessages and immediate context. It does not mean mathematical certainty, and it does not apply to ordinary opinions, advice, or harmless social conversation.
+- For an explicit memory or reminder action, if currentMessages and immediate context do not identify one clear target or required value, do not keep debating possible interpretations. Make one read-tool lookup only when a concrete subject is available to search. Otherwise ask one short, natural clarification.
+- Never use an old summary, deleted value, or distant episode to guess what a vague reference such as "current", "this", "that", or "the one" means. Those are background only; ambiguity that immediate context cannot resolve earns a clarification.
 - When "forget", "delete", or "remove" has one clear stored memory or reminder target in immediate context, treat it as an immediate permanent-deletion request. Do not reinterpret it as merely dropping the topic and do not ask for confirmation.
 - Clarify a deletion request only when no target can be resolved or multiple stored targets remain equally plausible after useful read-tool calls. Clarification identifies the target; it must never serve as a deletion confirmation.
 - conversationSummary contains compressed historical episodes and historically open situations. Use it only as background evidence; never treat it as a current command or automatically continue an old open situation.
@@ -843,27 +845,17 @@ export function createThoughtGenerator(
       let parseFailure: OpenRouterError | null = null;
       let readCalls = 0;
       let mutationCalls = 0;
-      let memoryLookupCompleted = false;
       let forceFinal = false;
       const seenToolFingerprints = new Set<string>();
       const applicationResults: ThoughtApplicationResult[] = [];
       const maxModelSteps = maxReadCalls + maxMutationCalls + 4;
 
       for (let round = 0; round < maxModelSteps; round += 1) {
-        const availableTools = toolRuntime
-          ? toolRuntime.tools.filter((tool) => {
-              if (forceFinal || mutationCalls > 0) return false;
-              if (
-                tool.function.name === "save_memory" &&
-                !memoryLookupCompleted
-              ) {
-                return false;
-              }
-              if (readCalls >= maxReadCalls) {
-                return toolRuntime.classify(tool.function.name) === "mutation";
-              }
-              return true;
-            })
+        // Keep the complete application surface visible for every open tool
+        // stage. Runtime guards—not hidden tool definitions—enforce ordering,
+        // candidate safety, and per-turn limits.
+        const availableTools = toolRuntime && !forceFinal
+          ? toolRuntime.tools
           : [];
         const completion = await requestCompletion({
           tools: availableTools,
@@ -996,16 +988,6 @@ export function createThoughtGenerator(
               seenToolFingerprints.add(fingerprint);
               execution = await toolRuntime.execute(call);
               if (kind === "read") readCalls += 1;
-              if (
-                call.function.name === "find_memories" &&
-                kind === "read" &&
-                execution.output !== null &&
-                typeof execution.output === "object" &&
-                !Array.isArray(execution.output) &&
-                (execution.output as { ok?: unknown }).ok === true
-              ) {
-                memoryLookupCompleted = true;
-              }
               if (kind === "mutation") {
                 mutationCalls += 1;
                 mutationStageAttempted = true;
