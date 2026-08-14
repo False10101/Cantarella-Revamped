@@ -3,6 +3,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import {
   AlertTriangle,
+  ArrowLeft,
   Check,
   Pencil,
   Plus,
@@ -239,6 +240,8 @@ export default function MemoriesPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<MemoryType | "all">("all");
+  const [selectedTopic, setSelectedTopic] = useState<MemoryTopic | null>(null);
+  const [visibleLimit, setVisibleLimit] = useState(30);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<MemoryDraft>(emptyDraft);
@@ -303,26 +306,54 @@ export default function MemoriesPage() {
   const visibleMemories = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     return memories.filter((memory) => {
+      if (selectedTopic && memory.topic !== selectedTopic) return false;
       if (typeFilter !== "all" && memory.type !== typeFilter) return false;
       return (
         !normalizedSearch ||
         memory.content.toLocaleLowerCase().includes(normalizedSearch)
       );
     });
-  }, [memories, search, typeFilter]);
+  }, [memories, search, selectedTopic, typeFilter]);
 
-  const groupedMemories = useMemo(
+  const topicSummaries = useMemo(
     () =>
       memoryTopics
         .map((topic) => ({
           ...topic,
-          memories: visibleMemories.filter((memory) =>
+          memories: memories.filter((memory) =>
             memory.topic === topic.id,
           ),
         }))
         .filter((topic) => topic.memories.length > 0),
-    [visibleMemories],
+    [memories],
   );
+
+  const recentMemories = useMemo(
+    () => [...memories].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6),
+    [memories],
+  );
+
+  const expiringMemories = useMemo(() => {
+    const now = Date.now();
+    const weekFromNow = now + 7 * 24 * 60 * 60 * 1000;
+    return memories
+      .filter((memory) => {
+        if (!memory.expiresAt) return false;
+        const expiresAt = new Date(memory.expiresAt).getTime();
+        return expiresAt >= now && expiresAt <= weekFromNow;
+      })
+      .sort((a, b) => (a.expiresAt ?? "").localeCompare(b.expiresAt ?? ""))
+      .slice(0, 6);
+  }, [memories]);
+
+  useEffect(() => {
+    setVisibleLimit(30);
+  }, [search, selectedTopic, typeFilter]);
+
+  const isBrowsing = Boolean(search.trim()) || selectedTopic !== null;
+  const activeTopic = selectedTopic
+    ? memoryTopics.find((topic) => topic.id === selectedTopic) ?? null
+    : null;
 
   const formatStoredDate = (value: string) =>
     new Intl.DateTimeFormat("en-US", {
@@ -392,6 +423,74 @@ export default function MemoriesPage() {
     }
   };
 
+  const renderMemory = (memory: MemoryRecord) =>
+    editingId === memory.id ? (
+      <MemoryEditor
+        key={memory.id}
+        draft={draft}
+        onChange={setDraft}
+        onCancel={() => {
+          setEditingId(null);
+          setDraft(emptyDraft);
+        }}
+        onSave={() => void saveEditedMemory()}
+        saving={saving}
+        submitLabel="Save changes"
+      />
+    ) : (
+      <article
+        key={memory.id}
+        className="group flex items-start gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3 transition hover:border-[var(--border2)]"
+      >
+        <span className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[rgba(201,147,90,0.2)] bg-[var(--amber-dim)] px-2 py-0.5 text-[10px] text-[var(--amber-soft)]">
+          <span className="h-1 w-1 rounded-full bg-[var(--amber)]" />
+          {memory.type}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          {memory.subject && (
+            <p className="mb-0.5 text-[10px] uppercase tracking-[0.1em] text-[var(--text-dim)]">
+              {memory.subject.replaceAll("_", " ")}
+            </p>
+          )}
+          <p className="text-[13px] font-light leading-[1.65] text-[var(--text)]">
+            {memory.content}
+          </p>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--text-dim)]">
+            <span>updated {formatStoredDate(memory.updatedAt)}</span>
+            {memory.expiresAt && (
+              <span>expires {formatStoredDate(memory.expiresAt)}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 gap-1 opacity-60 transition group-hover:opacity-100 max-sm:opacity-100">
+          <button
+            type="button"
+            aria-label="Edit memory"
+            title="Edit memory"
+            onClick={() => {
+              setAdding(false);
+              setEditingId(memory.id);
+              setDraft(draftFor(memory));
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-dim)] transition hover:bg-[var(--surface2)] hover:text-[var(--amber-soft)]"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            aria-label="Delete memory"
+            title="Delete memory"
+            onClick={() => setDeleteTarget(memory)}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-dim)] transition hover:bg-[rgba(180,60,60,0.08)] hover:text-[#C07070]"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </article>
+    );
+
   return (
     <div className="grid h-screen w-full grid-cols-[260px_1fr] overflow-hidden bg-[var(--bg)] max-[820px]:grid-cols-[76px_1fr]">
       <Navbar />
@@ -428,30 +527,35 @@ export default function MemoriesPage() {
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-dim)]" />
               <input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setSelectedTopic(null);
+                }}
                 placeholder="Search memories…"
                 className="h-11 w-full rounded-[10px] border border-[var(--border2)] bg-[var(--surface)] pl-10 pr-4 text-[13px] font-light text-[var(--text)] outline-none transition placeholder:text-[var(--text-dim)] focus:border-[rgba(201,147,90,0.4)] focus:shadow-[0_0_0_3px_rgba(201,147,90,0.05)]"
               />
             </div>
 
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-              {[{ id: "all" as const, label: "All" }, ...memoryTypes].map(
-                (type) => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setTypeFilter(type.id)}
-                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-[0.1em] transition ${
-                      typeFilter === type.id
-                        ? "border-[rgba(201,147,90,0.24)] bg-[var(--amber-dim)] text-[var(--amber-soft)]"
-                        : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-dim)] hover:border-[var(--border2)] hover:text-[var(--text-secondary)]"
-                    }`}
-                  >
-                    {type.label}
-                  </button>
-                ),
-              )}
-            </div>
+            {isBrowsing && (
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+                {[{ id: "all" as const, label: "All" }, ...memoryTypes].map(
+                  (type) => (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => setTypeFilter(type.id)}
+                      className={`shrink-0 rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-[0.1em] transition ${
+                        typeFilter === type.id
+                          ? "border-[rgba(201,147,90,0.24)] bg-[var(--amber-dim)] text-[var(--amber-soft)]"
+                          : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-dim)] hover:border-[var(--border2)] hover:text-[var(--text-secondary)]"
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
 
             {error && (
               <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-[rgba(180,70,70,0.2)] bg-[rgba(180,60,60,0.08)] px-3.5 py-3 text-[12px] text-[#C98A82]">
@@ -485,100 +589,121 @@ export default function MemoriesPage() {
                 <span className="h-1.5 w-1.5 animate-typing-2 rounded-full bg-[var(--amber)]" />
                 <span className="h-1.5 w-1.5 animate-typing-3 rounded-full bg-[var(--amber)]" />
               </div>
-            ) : groupedMemories.length === 0 ? (
+            ) : memories.length === 0 ? (
               <div className="mt-10 rounded-xl border border-dashed border-[var(--border2)] bg-[rgba(22,18,16,0.55)] px-6 py-12 text-center">
                 <div className="font-[family-name:var(--font-display)] text-xl italic text-[var(--text-secondary)]">
                   Nothing here yet
                 </div>
                 <p className="mt-2 text-[12px] font-light text-[var(--text-dim)]">
-                  {search || typeFilter !== "all"
-                    ? "Try a different search or memory type."
-                    : "Useful details from your conversations will appear here."}
+                  Useful details from your conversations will appear here.
                 </p>
+              </div>
+            ) : isBrowsing && visibleMemories.length === 0 ? (
+              <div className="mt-10 rounded-xl border border-dashed border-[var(--border2)] bg-[rgba(22,18,16,0.55)] px-6 py-12 text-center">
+                <div className="font-[family-name:var(--font-display)] text-xl italic text-[var(--text-secondary)]">
+                  Nothing matches that
+                </div>
+                <p className="mt-2 text-[12px] font-light text-[var(--text-dim)]">
+                  Try a different search, topic, or memory type.
+                </p>
+              </div>
+            ) : isBrowsing ? (
+              <div className="mt-6 pb-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setSelectedTopic(null);
+                      setTypeFilter("all");
+                    }}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[11px] text-[var(--text-secondary)] transition hover:border-[var(--border2)] hover:text-[var(--text)]"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    Overview
+                  </button>
+                  <div className="min-w-0">
+                    <h2 className="text-[13px] font-medium text-[var(--text)]">
+                      {search.trim()
+                        ? "Search results"
+                        : activeTopic?.label ?? "Memories"}
+                    </h2>
+                    <p className="text-[10px] text-[var(--text-dim)]">
+                      {visibleMemories.length} {visibleMemories.length === 1 ? "memory" : "memories"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  {visibleMemories.slice(0, visibleLimit).map(renderMemory)}
+                </div>
+
+                {visibleMemories.length > visibleLimit && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleLimit((current) => current + 30)}
+                    className="mt-4 h-10 w-full rounded-lg border border-[var(--border2)] bg-[var(--surface)] text-[12px] text-[var(--text-secondary)] transition hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+                  >
+                    Show 30 more
+                  </button>
+                )}
               </div>
             ) : (
               <div className="mt-6 pb-6">
-                {groupedMemories.map((topic) => (
-                  <section key={topic.id} className="mb-7">
-                    <div className="mb-2.5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--text-dim)]">
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ background: topic.color }}
-                      />
-                      {topic.label}
-                      <span className="ml-1 text-[9px] text-[var(--text-dim)] opacity-60">
-                        {topic.memories.length}
-                      </span>
+                <section>
+                  <div className="mb-2.5 flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-[13px] font-medium text-[var(--text)]">Browse by topic</h2>
+                      <p className="mt-0.5 text-[10px] text-[var(--text-dim)]">
+                        Open only what you need right now.
+                      </p>
                     </div>
+                    <span className="text-[10px] text-[var(--text-dim)]">{memories.length} total</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 max-[620px]:grid-cols-1">
+                    {topicSummaries.map((topic) => (
+                      <button
+                        key={topic.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTopic(topic.id);
+                          setTypeFilter("all");
+                        }}
+                        className="group flex items-center gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3 text-left transition hover:border-[var(--border2)] hover:bg-[var(--surface2)]"
+                      >
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: topic.color }} />
+                        <span className="min-w-0 flex-1 text-[12px] text-[var(--text-secondary)] group-hover:text-[var(--text)]">
+                          {topic.label}
+                        </span>
+                        <span className="text-[11px] text-[var(--text-dim)]">{topic.memories.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
 
-                    <div className="space-y-1.5">
-                      {topic.memories.map((memory) =>
-                        editingId === memory.id ? (
-                          <MemoryEditor
-                            key={memory.id}
-                            draft={draft}
-                            onChange={setDraft}
-                            onCancel={() => {
-                              setEditingId(null);
-                              setDraft(emptyDraft);
-                            }}
-                            onSave={() => void saveEditedMemory()}
-                            saving={saving}
-                            submitLabel="Save changes"
-                          />
-                        ) : (
-                          <article
-                            key={memory.id}
-                            className="group flex items-start gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3 transition hover:border-[var(--border2)]"
-                          >
-                            <span className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[rgba(201,147,90,0.2)] bg-[var(--amber-dim)] px-2 py-0.5 text-[10px] text-[var(--amber-soft)]">
-                              <span className="h-1 w-1 rounded-full bg-[var(--amber)]" />
-                              {memory.type}
-                            </span>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[13px] font-light leading-[1.65] text-[var(--text)]">
-                                {memory.content}
-                              </p>
-                              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--text-dim)]">
-                                {memory.subject && <span>{memory.subject.replaceAll("_", " ")}</span>}
-                                <span>stored {formatStoredDate(memory.createdAt)}</span>
-                                {memory.expiresAt && (
-                                  <span>expires {formatStoredDate(memory.expiresAt)}</span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex shrink-0 gap-1 opacity-60 transition group-hover:opacity-100 max-sm:opacity-100">
-                              <button
-                                type="button"
-                                aria-label="Edit memory"
-                                title="Edit memory"
-                                onClick={() => {
-                                  setAdding(false);
-                                  setEditingId(memory.id);
-                                  setDraft(draftFor(memory));
-                                }}
-                                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-dim)] transition hover:bg-[var(--surface2)] hover:text-[var(--amber-soft)]"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label="Delete memory"
-                                title="Delete memory"
-                                onClick={() => setDeleteTarget(memory)}
-                                className="flex h-7 w-7 items-center justify-center rounded-md text-[var(--text-dim)] transition hover:bg-[rgba(180,60,60,0.08)] hover:text-[#C07070]"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </article>
-                        ),
-                      )}
+                <section className="mt-7">
+                  <div className="mb-2.5 flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-[13px] font-medium text-[var(--text)]">Recently changed</h2>
+                      <p className="mt-0.5 text-[10px] text-[var(--text-dim)]">The last details Cantarella updated.</p>
                     </div>
+                    <span className="text-[10px] text-[var(--text-dim)]">latest 6</span>
+                  </div>
+                  <div className="space-y-1.5">{recentMemories.map(renderMemory)}</div>
+                </section>
+
+                {expiringMemories.length > 0 && (
+                  <section className="mt-7">
+                    <div className="mb-2.5 flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-[13px] font-medium text-[var(--text)]">Current context</h2>
+                        <p className="mt-0.5 text-[10px] text-[var(--text-dim)]">Things that will expire within the next week.</p>
+                      </div>
+                      <span className="text-[10px] text-[var(--text-dim)]">{expiringMemories.length}</span>
+                    </div>
+                    <div className="space-y-1.5">{expiringMemories.map(renderMemory)}</div>
                   </section>
-                ))}
+                )}
               </div>
             )}
           </div>
