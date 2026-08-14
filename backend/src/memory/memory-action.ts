@@ -66,8 +66,8 @@ function normalizedFacets(canonicalText: string, facets: string[] | undefined): 
     seen.add(key);
     unique.push(text);
   }
-  if (unique.length > 3) {
-    throw new InvalidMemoryActionError("A memory can have at most three retrieval facets.");
+  if (unique.length > 4) {
+    throw new InvalidMemoryActionError("A memory can have at most four retrieval facets.");
   }
   return unique;
 }

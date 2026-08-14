@@ -139,7 +139,8 @@ export function createSummaryPolicyGenerator(
             userMessage,
           ],
           temperature: 0,
-          maxTokens: 2_400,
+          maxTokens: 6_000,
+          reasoning: { exclude: true },
           ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
           "deepseek/deepseek-v4-pro-0813"
             ? {}
@@ -149,7 +150,6 @@ export function createSummaryPolicyGenerator(
                   schema: summaryPlanJsonSchema,
                 },
               }),
-          reasoning: { max_tokens: 256, exclude: true },
           ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
           "deepseek/deepseek-v4-pro-0813"
             ? {

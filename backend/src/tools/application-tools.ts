@@ -44,7 +44,9 @@ const confidentMemoryLead = 0.15;
 const readToolNames = new Set(["find_memories", "find_reminders"]);
 const mutationToolNames = new Set([
   "save_memory",
+  "save_memories",
   "delete_memory",
+  "delete_memories",
   "save_reminder",
   "delete_reminder",
 ]);
@@ -196,17 +198,17 @@ export const applicationTools: ModelFunctionTool[] = [
   ),
   functionTool(
     "save_memory",
-    "After find_memories succeeds in this turn, silently create or update useful memory from ordinary conversation. Omit memoryId only when no relevant memory was found; for an update choose one ID returned by find_memories and merge its useful details with the new information. retrievalFacets contains only independently searchable details, never paraphrases; use [] for simple memories and at most three facets. Always supply expiresAt: use an absolute RFC 3339 timestamp for a deadline-bound or otherwise time-bounded current memory, and null only for stable or genuinely open-ended memory.",
+    "After find_memories succeeds in this turn, silently create or update useful memory from ordinary conversation. Omit memoryId only when no relevant memory was found; for an update choose one ID returned by find_memories and merge its useful details with the new information. retrievalFacets contains only independently searchable details, never paraphrases; use [] for simple memories and at most four facets. Always supply expiresAt: use an absolute RFC 3339 timestamp for a deadline-bound or otherwise time-bounded current memory, and null only for stable or genuinely open-ended memory.",
     {
       memoryId: { type: ["string", "null"], format: "uuid" },
-      canonicalText: { type: "string", minLength: 1, maxLength: 500 },
+      canonicalText: { type: "string", minLength: 1, maxLength: 1500 },
       type: { type: "string", enum: memoryTypes },
       topic: { type: "string", enum: memoryTopics },
       subject: { type: ["string", "null"], minLength: 1, maxLength: 120 },
       retrievalFacets: {
         type: "array",
         items: { type: "string", minLength: 1, maxLength: 300 },
-        maxItems: 3,
+        maxItems: 4,
       },
       importance: { type: "number", minimum: 0, maximum: 1 },
       expiresAt: {
@@ -219,10 +221,54 @@ export const applicationTools: ModelFunctionTool[] = [
     ["canonicalText", "type", "topic", "subject", "retrievalFacets", "expiresAt"],
   ),
   functionTool(
+    "save_memories",
+    "Batch-create or batch-update several memories after find_memories succeeds. Use this for one explicit request affecting multiple distinct memories, such as moving several records to one topic. Every update memoryId must have been returned by find_memories in this turn.",
+    {
+      memories: {
+        type: "array",
+        minItems: 1,
+        maxItems: 50,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            memoryId: { type: ["string", "null"], format: "uuid" },
+            canonicalText: { type: "string", minLength: 1, maxLength: 1500 },
+            type: { type: "string", enum: memoryTypes },
+            topic: { type: "string", enum: memoryTopics },
+            subject: { type: ["string", "null"], minLength: 1, maxLength: 120 },
+            retrievalFacets: {
+              type: "array",
+              items: { type: "string", minLength: 1, maxLength: 300 },
+              maxItems: 4,
+            },
+            importance: { type: "number", minimum: 0, maximum: 1 },
+            expiresAt: { type: ["string", "null"], format: "date-time" },
+          },
+          required: ["canonicalText", "type", "topic", "subject", "retrievalFacets", "expiresAt"],
+        },
+      },
+    },
+    ["memories"],
+  ),
+  functionTool(
     "delete_memory",
     "Permanently delete one clearly targeted memory when the user explicitly asks to forget, remove, or delete it. Never ask for confirmation after the target is resolved.",
     { memoryId: idProperty },
     ["memoryId"],
+  ),
+  functionTool(
+    "delete_memories",
+    "Permanently delete several clearly targeted memories in one explicit request. Every memoryId must have been returned by find_memories in this turn. For an explicit request to clear all memories, first use find_memories with query null, then pass its listed IDs here.",
+    {
+      memoryIds: {
+        type: "array",
+        minItems: 1,
+        maxItems: 200,
+        items: idProperty,
+      },
+    },
+    ["memoryIds"],
   ),
   functionTool(
     "find_reminders",
@@ -273,15 +319,21 @@ const findMemoriesSchema = z.object({
 });
 const saveMemorySchema = z.object({
   memoryId: z.string().uuid().nullable().optional(),
-  canonicalText: z.string().trim().min(1).max(500),
+  canonicalText: z.string().trim().min(1).max(1_500),
   type: z.enum(memoryTypes),
   topic: z.enum(memoryTopics),
   subject: z.string().trim().min(1).max(120).nullable(),
-  retrievalFacets: z.array(z.string().trim().min(1).max(300)).max(3),
+  retrievalFacets: z.array(z.string().trim().min(1).max(300)).max(4),
   importance: z.number().min(0).max(1).optional(),
   expiresAt: z.string().datetime({ offset: true }).nullable(),
 });
+const saveMemoriesSchema = z.object({
+  memories: z.array(saveMemorySchema).min(1).max(50),
+});
 const memoryIdSchema = z.object({ memoryId: z.string().uuid() });
+const memoryIdsSchema = z.object({
+  memoryIds: z.array(z.string().uuid()).min(1).max(200),
+});
 const findRemindersSchema = z.object({
   query: z.string().trim().min(1).max(500).nullable(),
   status: z.enum(reminderStatuses).nullable().optional(),
@@ -393,6 +445,7 @@ export function createApplicationToolRuntime(
   const allowedReminderIds = new Set<string>();
   const mutatedMemoryIds = new Set<string>();
   const mutatedReminderIds = new Set<string>();
+  const listedMemoryIds = new Set<string>();
   let memoryLookupPerformed = false;
 
   const rememberResolution = (
@@ -402,8 +455,11 @@ export function createApplicationToolRuntime(
     if (resolution.allowedTargetId) allowedIds.add(resolution.allowedTargetId);
     return targetResolutionOutput(resolution);
   };
-  const requireSafeMemoryTarget = (memoryId: string) => {
-    if (!retrievedMemoryIds.has(memoryId)) {
+  const requireSafeMemoryTarget = (memoryId: string, allowListed = false) => {
+    if (
+      !retrievedMemoryIds.has(memoryId) &&
+      !(allowListed && listedMemoryIds.has(memoryId))
+    ) {
       throw new InvalidMemoryActionError(
         "The memory target was not returned by find_memories in this turn.",
       );
@@ -449,11 +505,105 @@ export function createApplicationToolRuntime(
       applicationResult,
     };
   };
+  const explicitClearAllMemoryRequest = () =>
+    /\b(?:clear|delete|remove|forget)\b[\s\S]{0,80}\b(?:all|everything|every)\b|\b(?:all|everything|every)\b[\s\S]{0,80}\b(?:memories|memory)\b/i.test(
+      context.originalRequest,
+    );
+  const saveMemory = async (
+    input: z.infer<typeof saveMemorySchema>,
+  ): Promise<ThoughtToolExecutionResult> => {
+    if (!memoryLookupPerformed) {
+      throw new InvalidMemoryActionError(
+        "save_memory requires a successful find_memories call in the same turn.",
+      );
+    }
+    enforceMemoryExpiry(input, context.originalRequest);
+    if (!input.memoryId) {
+      const result = await createChatMemory({
+        userId: context.userId,
+        sourceMessageId: context.sourceMessageId,
+        type: input.type,
+        topic: input.topic,
+        subject: input.subject,
+        canonicalText: input.canonicalText,
+        retrievalFacets: input.retrievalFacets,
+        importance: input.importance ?? 0.7,
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+      });
+      return {
+        output: { ok: true, memory: result.memory, operation: "created" },
+        applicationResult: {
+          kind: "memory",
+          memoryId: result.memory.id,
+          deletedMemoryCount: 0,
+        },
+      };
+    }
+
+    requireSafeMemoryTarget(input.memoryId);
+    const result = await executeMemoryAction({
+      action: {
+        operation: "edit",
+        targetMemoryRef: input.memoryId,
+        replacementText: input.canonicalText,
+      },
+      userId: context.userId,
+      sourceMessageId: context.sourceMessageId,
+      replacementType: input.type,
+      replacementTopic: input.topic,
+      replacementSubject: input.subject,
+      replacementRetrievalFacets: input.retrievalFacets,
+      ...(input.importance !== undefined
+        ? { replacementImportance: input.importance }
+        : {}),
+      replacementExpiresAt: input.expiresAt
+        ? new Date(input.expiresAt)
+        : null,
+    });
+    mutatedMemoryIds.add(input.memoryId);
+    return {
+      output: { ok: true, memory: result.memory, operation: "updated" },
+      applicationResult: {
+        kind: "memory",
+        memoryId: result.memory.id,
+        deletedMemoryCount: 0,
+      },
+    };
+  };
+  const deleteMemory = async (
+    memoryId: string,
+    allowListed = false,
+  ): Promise<ThoughtToolExecutionResult> => {
+    requireSafeMemoryTarget(memoryId, allowListed);
+    const result = await executeMemoryAction({
+      action: {
+        operation: "delete",
+        targetMemoryRef: memoryId,
+        replacementText: null,
+      },
+      userId: context.userId,
+      sourceMessageId: context.sourceMessageId,
+    });
+    mutatedMemoryIds.add(memoryId);
+    return {
+      output: {
+        ok: true,
+        operation: "deleted",
+        deletedMemoryId: result.memory.id,
+        deletedMemoryCount: result.deletedMemoryCount,
+      },
+      applicationResult: {
+        kind: "memory",
+        memoryId: result.memory.id,
+        deletedMemoryCount: result.deletedMemoryCount,
+      },
+    };
+  };
 
   return {
     tools: applicationTools,
-    maxReadCalls: 3,
-    maxMutationCalls: 3,
+    maxReadCalls: 6,
+    maxMutationCalls: 6,
     classify(name) {
       if (readToolNames.has(name)) return "read";
       if (mutationToolNames.has(name)) return "mutation";
@@ -521,6 +671,7 @@ export function createApplicationToolRuntime(
             .where(and(...conditions))
             .orderBy(desc(memories.importance), desc(memories.updatedAt))
             .limit(input.limit ?? 100);
+          for (const record of records) listedMemoryIds.add(record.id);
           memoryLookupPerformed = true;
           return {
             output: {
@@ -537,90 +688,78 @@ export function createApplicationToolRuntime(
         }
 
         if (call.function.name === "save_memory") {
-          if (!memoryLookupPerformed) {
-            throw new InvalidMemoryActionError(
-              "save_memory requires a successful find_memories call in the same turn.",
-            );
-          }
-          const input = saveMemorySchema.parse(args);
-          enforceMemoryExpiry(input, context.originalRequest);
-          if (!input.memoryId) {
-            const result = await createChatMemory({
-              userId: context.userId,
-              sourceMessageId: context.sourceMessageId,
-              type: input.type,
-              topic: input.topic,
-              subject: input.subject,
-              canonicalText: input.canonicalText,
-              retrievalFacets: input.retrievalFacets,
-              importance: input.importance ?? 0.7,
-              expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-            });
-            return {
-              output: { ok: true, memory: result.memory, operation: "created" },
-              applicationResult: {
-                kind: "memory",
-                memoryId: result.memory.id,
-                deletedMemoryCount: 0,
-              },
-            };
-          }
+          return await saveMemory(saveMemorySchema.parse(args));
+        }
 
-          requireSafeMemoryTarget(input.memoryId);
-          const result = await executeMemoryAction({
-            action: {
-              operation: "edit",
-              targetMemoryRef: input.memoryId,
-              replacementText: input.canonicalText,
-            },
-            userId: context.userId,
-            sourceMessageId: context.sourceMessageId,
-            replacementType: input.type,
-            replacementTopic: input.topic,
-            replacementSubject: input.subject,
-            replacementRetrievalFacets: input.retrievalFacets,
-            ...(input.importance !== undefined
-              ? { replacementImportance: input.importance }
-              : {}),
-            replacementExpiresAt: input.expiresAt
-              ? new Date(input.expiresAt)
-              : null,
-          });
-          mutatedMemoryIds.add(input.memoryId);
+        if (call.function.name === "save_memories") {
+          const input = saveMemoriesSchema.parse(args);
+          const successes: Array<Extract<ThoughtApplicationResult, { kind: "memory" }>> = [];
+          const outcomes: unknown[] = [];
+          for (const memory of input.memories) {
+            try {
+              const result = await saveMemory(memory);
+              outcomes.push(result.output);
+              if (result.applicationResult?.kind === "memory") {
+                successes.push(result.applicationResult);
+              }
+            } catch (error) {
+              outcomes.push(errorOutput(error));
+            }
+          }
+          const memoryIds = successes.map((result) => result.memoryId);
           return {
-            output: { ok: true, memory: result.memory, operation: "updated" },
-            applicationResult: {
-              kind: "memory",
-              memoryId: result.memory.id,
-              deletedMemoryCount: 0,
+            output: {
+              ok: outcomes.length === successes.length,
+              operation: "batch_saved",
+              results: outcomes,
             },
+            ...(memoryIds.length > 0
+              ? {
+                  applicationResult: {
+                    kind: "memory_batch" as const,
+                    memoryIds,
+                    deletedMemoryCount: 0,
+                  },
+                }
+              : {}),
           };
         }
 
         if (call.function.name === "delete_memory") {
-          const input = memoryIdSchema.parse(args);
-          requireSafeMemoryTarget(input.memoryId);
-          const result = await executeMemoryAction({
-            action: {
-              operation: "delete",
-              targetMemoryRef: input.memoryId,
-              replacementText: null,
-            },
-            userId: context.userId,
-            sourceMessageId: context.sourceMessageId,
-          });
-          mutatedMemoryIds.add(input.memoryId);
+          return await deleteMemory(memoryIdSchema.parse(args).memoryId);
+        }
+
+        if (call.function.name === "delete_memories") {
+          const input = memoryIdsSchema.parse(args);
+          const allowListed = explicitClearAllMemoryRequest();
+          for (const memoryId of input.memoryIds) {
+            requireSafeMemoryTarget(memoryId, allowListed);
+          }
+          const deleted: Array<Extract<ThoughtApplicationResult, { kind: "memory" }>> = [];
+          for (const memoryId of input.memoryIds) {
+            const result = await deleteMemory(memoryId, allowListed);
+            if (result.applicationResult?.kind === "memory") {
+              deleted.push(result.applicationResult);
+            }
+          }
+          const memoryIds = deleted.map((result) => result.memoryId);
           return {
             output: {
               ok: true,
-              operation: "deleted",
-              deletedMemoryId: result.memory.id,
-              deletedMemoryCount: result.deletedMemoryCount,
+              operation: "batch_deleted",
+              deletedMemoryIds: memoryIds,
+              deletedMemoryCount: deleted.reduce(
+                (total, result) => total + (result.deletedMemoryCount ?? 0),
+                0,
+              ),
             },
             applicationResult: {
-              kind: "memory",
-              memoryId: result.memory.id,
-              deletedMemoryCount: result.deletedMemoryCount,
+              kind: "memory_batch",
+              memoryIds,
+              deletedMemoryCount: deleted.reduce(
+                (total, result) => total + (result.deletedMemoryCount ?? 0),
+                0,
+              ),
             },
           };
         }

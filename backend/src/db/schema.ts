@@ -79,7 +79,7 @@ const memoryTopics = [
   "logistics",
   "other",
 ] as const;
-const memoryEmbeddingRoles = ["canonical", "facet_1", "facet_2", "facet_3"] as const;
+const memoryEmbeddingRoles = ["canonical", "facet_1", "facet_2", "facet_3", "facet_4"] as const;
 const memoryStatuses = [
   "pending",
   "active",
@@ -666,7 +666,7 @@ export const memoryEmbeddings = pgTable(
     ),
     check(
       "memory_embeddings_role_check",
-      sql`${table.embeddingRole} in ('canonical', 'facet_1', 'facet_2', 'facet_3')`,
+      sql`${table.embeddingRole} in ('canonical', 'facet_1', 'facet_2', 'facet_3', 'facet_4')`,
     ),
     check(
       "memory_embeddings_superseded_check",

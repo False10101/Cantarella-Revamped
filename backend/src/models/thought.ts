@@ -12,20 +12,16 @@ import {
   type OpenRouterClient,
 } from "./openrouter.js";
 
-export const MAX_REPLY_POINT_WORDS = 18;
-export const MAX_REPLY_POINT_CHARACTERS = 160;
-export const THOUGHT_MAX_OUTPUT_TOKENS = 2_400;
+export const MAX_REPLY_POINT_CHARACTERS = 500;
+export const THOUGHT_MAX_OUTPUT_TOKENS = 6_000;
 const MAX_TOOL_CALLS_PER_RESPONSE = 3;
+const MAX_MODEL_STEPS = 16;
 
 const thoughtMetaLeakPattern = /\b(?:chain[- ]of[- ]thought|hidden (?:analysis|reasoning)|system prompt|developer message|replyPoints|messageMode|contextRelation|applicationActionDecision|tool call|json schema)\b/i;
 const applicationIntentPattern = /\b(?:remember|save|store|remind|schedule|reschedule|change|update|edit|pause|resume|cancel|delete|remove|forget)\b/i;
 const mutationSuccessClaimPattern = /\b(?:(?:i(?:'ve| have)?|cantarella has|it (?:was|has been|is now)|the (?:memory|reminder) (?:was|has been|is now)|successfully)\s+(?:remembered|stored|saved|created|scheduled|rescheduled|updated|edited|paused|resumed|cancelled|deleted|removed|forgotten)|will remember)\b/i;
 const memoryMaintenanceNarrationPattern = /(?:\b(?:memory|storage|stored)\b.{0,80}\b(?:save[ds]?|stor(?:e|ed)|update[ds]?|change[ds]?|remember(?:ed)?|delete[ds]?|remove[ds]?|forgot(?:ten)?)\b|\b(?:save[ds]?|stor(?:e|ed)|update[ds]?|change[ds]?|remember(?:ed)?|delete[ds]?|remove[ds]?|forgot(?:ten)?)\b.{0,80}\b(?:memory|storage|stored)\b|\bi(?:'ve| have| will|'ll)?\s+(?:saved|stored|updated|remembered)\b)/i;
 const memoryStatusQuestionPattern = /\b(?:did|do|does|have|has|is|are|was|were|can|could|would|will|wont|won't|not gonna)\b.{0,60}\b(?:remember|memory|save|saved|store|stored|update|updated|delete|deleted|forget|forgot)\b/i;
-
-function wordCount(value: string): number {
-  return value.trim().split(/\s+/).filter(Boolean).length;
-}
 
 function numericValues(value: string): Set<number> {
   const values = new Set<number>();
@@ -51,9 +47,6 @@ const replyPointSchema = z
   .trim()
   .min(1)
   .max(MAX_REPLY_POINT_CHARACTERS)
-  .refine((value) => wordCount(value) <= MAX_REPLY_POINT_WORDS, {
-    message: `Reply points must contain at most ${MAX_REPLY_POINT_WORDS} words.`,
-  })
   .refine((value) => !thoughtMetaLeakPattern.test(value), {
     message: "Reply points cannot contain model instructions, schema labels, or hidden reasoning.",
   });
@@ -236,8 +229,8 @@ export const thoughtSchema = z
     messageMode: z.enum(["social", "help", "mixed", "unclear"]),
     contextRelation: z.enum(["standalone", "immediate_context", "older_context"]),
     applicationActionDecision: z.enum(["none", "clarify"]),
-    replyPoints: z.array(replyPointSchema).min(1).max(12),
-    question: z.string().trim().min(1).max(500).nullable(),
+    replyPoints: z.array(replyPointSchema).min(1),
+    question: z.string().trim().min(1).max(2_000).nullable(),
   })
   .strict()
   .superRefine((thought, context) => {
@@ -284,8 +277,8 @@ const modelThoughtSchema = z
   .object({
     messageMode: z.enum(["social", "help", "mixed", "unclear"]),
     contextRelation: z.enum(["standalone", "immediate_context", "older_context"]),
-    replyPoints: z.array(replyPointSchema).min(1).max(12),
-    question: z.string().trim().min(1).max(500).nullable(),
+    replyPoints: z.array(replyPointSchema).min(1),
+    question: z.string().trim().min(1).max(2_000).nullable(),
   })
   .strip();
 
@@ -368,6 +361,11 @@ const thoughtApplicationResultSchema = z.discriminatedUnion("kind", [
     deletedMemoryCount: z.number().int().min(0).optional(),
   }).strict(),
   z.object({
+    kind: z.literal("memory_batch"),
+    memoryIds: z.array(z.string().uuid()).min(1),
+    deletedMemoryCount: z.number().int().min(0),
+  }).strict(),
+  z.object({
     kind: z.literal("reminder"),
     reminderId: z.string().uuid().nullable(),
     reminderIds: z.array(z.string().uuid()),
@@ -430,14 +428,13 @@ export const thoughtJsonSchema: Record<string, unknown> = {
     replyPoints: {
       type: "array",
       minItems: 1,
-      maxItems: 12,
       items: {
         type: "string",
         maxLength: MAX_REPLY_POINT_CHARACTERS,
-        description: `One distinct semantic requirement using at most ${MAX_REPLY_POINT_WORDS} words. Its count does not specify visible message bubbles.`,
+        description: "One distinct semantic requirement. Its count does not specify visible message bubbles.",
       },
     },
-    question: { type: ["string", "null"], minLength: 1, maxLength: 500 },
+    question: { type: ["string", "null"], minLength: 1, maxLength: 2_000 },
   },
   required: [
     "messageMode",
@@ -467,7 +464,7 @@ Rules:
 - Make the concrete judgment or answer yourself. Do not delegate judgment to the voice model.
 - replyPoints are the complete authoritative meaning the user should receive now. They are semantic requirements for the voice model, not visible dialogue or bubble instructions.
 - Use the fewest distinct replyPoints that preserve every meaning the user needs. A simple acknowledgment or complete short answer may need one. There is no ordinary target of two.
-- Every replyPoint must contain at most ${MAX_REPLY_POINT_WORDS} words and ${MAX_REPLY_POINT_CHARACTERS} characters. Each point must be one clear, self-contained, grammatical semantic statement.
+- Keep replyPoints concise when that preserves meaning. Each point must be one clear, self-contained, grammatical semantic statement.
 - Never squeeze an assessment and an action into a slogan or compressed command. Put them in separate replyPoints.
 - Use explicit subjects and referents. Avoid ambiguous uses of "it", "this", or "that" when the voice model cannot understand the point by itself.
 - Use plain literal meaning. No slogans, rhetorical fragments, metaphors, wordplay, or polished phrasing.
@@ -713,7 +710,7 @@ export function createThoughtGenerator(
         model: environment.THOUGHT_MODEL,
         temperature: 0,
         maxTokens: THOUGHT_MAX_OUTPUT_TOKENS,
-        reasoning: { max_tokens: 384, exclude: true },
+        reasoning: { exclude: true },
         ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
         "deepseek/deepseek-v4-pro-0813"
           ? {
@@ -848,7 +845,10 @@ export function createThoughtGenerator(
       let forceFinal = false;
       const seenToolFingerprints = new Set<string>();
       const applicationResults: ThoughtApplicationResult[] = [];
-      const maxModelSteps = maxReadCalls + maxMutationCalls + 4;
+      const maxModelSteps = Math.max(
+        MAX_MODEL_STEPS,
+        Math.min(maxReadCalls + maxMutationCalls + 4, 24),
+      );
 
       for (let round = 0; round < maxModelSteps; round += 1) {
         // Keep the complete application surface visible for every open tool
@@ -873,18 +873,23 @@ export function createThoughtGenerator(
             );
           }
           if (forceFinal || availableTools.length === 0) {
-            throw new ThoughtContractError(
-              "The Thought model requested a tool after the application stage was closed.",
-              completionEvidence(completions),
-              true,
-            );
-          }
-          if (calls.length > MAX_TOOL_CALLS_PER_RESPONSE) {
-            throw new ThoughtContractError(
-              `The Thought model exceeded ${MAX_TOOL_CALLS_PER_RESPONSE} tool calls in one response.`,
-              completionEvidence(completions),
-              true,
-            );
+            return {
+              thought: {
+                messageMode: "help",
+                contextRelation: "immediate_context",
+                applicationActionDecision: "none",
+                replyPoints: ["I couldn't finish that cleanly."],
+                question: "send that again?",
+              },
+              completion: combinedCompletion(),
+              ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
+              ...(applicationResults.length > 0
+                ? {
+                    applicationResult: applicationResults[0],
+                    applicationResults,
+                  }
+                : {}),
+            };
           }
           if (!calls.every(isStructurallyValidToolCall)) {
             throw new ThoughtContractError(
@@ -903,8 +908,7 @@ export function createThoughtGenerator(
           }
           const kinds = calls.map((call) => toolRuntime.classify(call.function.name));
           const responseHasRead = kinds.includes("read");
-          const responseHasMutation = kinds.includes("mutation");
-          let mutationStageAttempted = false;
+          let executedToolCall = false;
 
           messages.push({
             role: "assistant",
@@ -925,7 +929,15 @@ export function createThoughtGenerator(
             const isDuplicate = seenToolFingerprints.has(fingerprint);
             let execution: ThoughtToolExecutionResult;
 
-            if (isDuplicate) {
+            if (index >= MAX_TOOL_CALLS_PER_RESPONSE) {
+              execution = {
+                output: {
+                  ok: false,
+                  code: "TOOL_BATCH_DEFERRED",
+                  error: `Only the first ${MAX_TOOL_CALLS_PER_RESPONSE} tool calls run in one model response. Continue with any remaining work in the next response.`,
+                },
+              };
+            } else if (isDuplicate) {
               execution = {
                 output: {
                   ok: false,
@@ -933,8 +945,6 @@ export function createThoughtGenerator(
                   error: "The duplicate tool call did not run. Use the existing result and finish the current stage.",
                 },
               };
-              if (kind === "read") readCalls = maxReadCalls;
-              if (kind === "mutation") mutationStageAttempted = true;
             } else if (kind === null) {
               execution = {
                 output: {
@@ -983,14 +993,13 @@ export function createThoughtGenerator(
                   error: `The turn already used its ${maxMutationCalls} mutation calls.`,
                 },
               };
-              mutationStageAttempted = true;
             } else {
               seenToolFingerprints.add(fingerprint);
               execution = await toolRuntime.execute(call);
+              executedToolCall = true;
               if (kind === "read") readCalls += 1;
               if (kind === "mutation") {
                 mutationCalls += 1;
-                mutationStageAttempted = true;
               }
             }
 
@@ -1059,11 +1068,7 @@ export function createThoughtGenerator(
               content: JSON.stringify(execution.output),
             });
           }
-          if (responseHasMutation && !responseHasRead) {
-            forceFinal = true;
-          } else if (mutationStageAttempted) {
-            forceFinal = true;
-          }
+          if (!executedToolCall) forceFinal = true;
           continue;
         }
 
@@ -1091,11 +1096,25 @@ export function createThoughtGenerator(
         } catch (error) {
           if (!(error instanceof OpenRouterError)) throw error;
           if (parseFailure) {
-            throw new ThoughtContractError(
-              "The Thought model returned invalid final JSON or violated its schema twice.",
-              completionEvidence(completions),
-              false,
-            );
+            return {
+              thought: {
+                messageMode: "help",
+                contextRelation: "immediate_context",
+                applicationActionDecision: "none",
+                replyPoints: [
+                  "I couldn't finish that cleanly.",
+                ],
+                question: "send that again?",
+              },
+              completion: combinedCompletion(),
+              ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
+              ...(applicationResults.length > 0
+                ? {
+                    applicationResult: applicationResults[0],
+                    applicationResults,
+                  }
+                : {}),
+            };
           }
           parseFailure = error;
           forceFinal = true;
@@ -1106,11 +1125,27 @@ export function createThoughtGenerator(
         }
       }
 
-      throw new ThoughtContractError(
-        "The Thought model did not finish within the bounded tool loop.",
-        completionEvidence(completions),
-        false,
-      );
+      return {
+        thought: {
+          messageMode: "help",
+          contextRelation: "immediate_context",
+          applicationActionDecision: "none",
+          replyPoints: [
+            applicationResults.length > 0
+              ? "I got part of that done, but couldn't finish the rest cleanly."
+              : "I couldn't finish that cleanly.",
+          ],
+          question: applicationResults.length > 0 ? null : "send that again?",
+        },
+        completion: combinedCompletion(),
+        ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
+        ...(applicationResults.length > 0
+          ? {
+              applicationResult: applicationResults[0],
+              applicationResults,
+            }
+          : {}),
+      };
     },
   };
 }

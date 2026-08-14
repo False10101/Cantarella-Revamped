@@ -41,7 +41,7 @@ export const listMemoriesQuerySchema = z
 
 export const createMemoryInputSchema = z
   .object({
-    content: z.string().trim().min(1).max(500),
+    content: z.string().trim().min(1).max(1_500),
     type: publicMemoryTypeSchema,
     topic: publicMemoryTopicSchema.default("other"),
     subject: z.string().trim().min(1).max(120).nullable().default(null),
@@ -61,7 +61,7 @@ export const createMemoryInputSchema = z
 
 export const updateMemoryInputSchema = z
   .object({
-    content: z.string().trim().min(1).max(500).optional(),
+    content: z.string().trim().min(1).max(1_500).optional(),
     type: publicMemoryTypeSchema.optional(),
     topic: publicMemoryTopicSchema.optional(),
     subject: z.string().trim().min(1).max(120).nullable().optional(),

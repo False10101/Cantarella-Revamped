@@ -473,7 +473,7 @@ export function createTurnProcessor(dependencies: {
             ? [thoughtGeneration.applicationResult]
             : []);
         const memoryResults = applicationResults.filter(
-          (result) => result.kind === "memory",
+          (result) => result.kind === "memory" || result.kind === "memory_batch",
         );
         const reminderResults = applicationResults.filter(
           (result) => result.kind === "reminder",
@@ -525,7 +525,9 @@ export function createTurnProcessor(dependencies: {
               (result) => result.reminderIds,
             ),
             memoryId:
-              latestMemoryResult?.memoryId ?? null,
+              latestMemoryResult?.kind === "memory"
+                ? latestMemoryResult.memoryId
+                : latestMemoryResult?.memoryIds.at(-1) ?? null,
             deletedMemoryCount:
               memoryResults.reduce(
                 (total, result) => total + (result.deletedMemoryCount ?? 0),

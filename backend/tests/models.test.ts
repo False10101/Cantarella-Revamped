@@ -9,7 +9,6 @@ import {
 import {
   createThoughtGenerator,
   MAX_REPLY_POINT_CHARACTERS,
-  MAX_REPLY_POINT_WORDS,
   suppressAutomaticMemoryNarration,
   ThoughtContractError,
   thoughtSchema,
@@ -181,13 +180,15 @@ describe("production request parity", () => {
 });
 
 describe("application deletion tools", () => {
-  it("exposes only the consolidated memory and reminder tools", () => {
+  it("exposes consolidated single and batch memory tools", () => {
     const toolNames = applicationTools.map((tool) => tool.function.name);
 
     expect(toolNames).toEqual([
       "find_memories",
       "save_memory",
+      "save_memories",
       "delete_memory",
+      "delete_memories",
       "find_reminders",
       "save_reminder",
       "delete_reminder",
@@ -305,6 +306,9 @@ describe("time-bound memory expiry contract", () => {
         arguments: JSON.stringify({
           canonicalText: "The user studies at KMUTT.",
           type: "profile",
+          topic: "university",
+          subject: "KMUTT",
+          retrievalFacets: [],
           expiresAt: null,
         }),
       },
@@ -317,7 +321,7 @@ describe("time-bound memory expiry contract", () => {
     });
   });
 
-  it("withholds save_memory from the model until find_memories succeeds", async () => {
+  it("keeps the complete memory tool surface visible from the first model step", async () => {
     const requests: CompletionRequest[] = [];
     const generator = createThoughtGenerator({
       async complete(request) {
@@ -350,6 +354,9 @@ describe("time-bound memory expiry contract", () => {
                 arguments: JSON.stringify({
                   canonicalText: "The internship report is due August 20, 2026.",
                   type: "event",
+                  topic: "university",
+                  subject: "Internship report",
+                  retrievalFacets: [],
                   expiresAt: "2026-08-21T17:00:00.000Z",
                 }),
               },
@@ -394,7 +401,7 @@ describe("time-bound memory expiry contract", () => {
       },
     );
 
-    expect(requests[0]?.tools?.map((tool) => tool.function.name)).not.toContain(
+    expect(requests[0]?.tools?.map((tool) => tool.function.name)).toContain(
       "save_memory",
     );
     expect(requests[0]?.tools?.map((tool) => tool.function.name)).toContain(
@@ -414,7 +421,7 @@ describe("time-bound memory expiry contract", () => {
     );
 
     expect(saveMemory?.function.parameters).toMatchObject({
-      required: ["canonicalText", "type", "expiresAt"],
+      required: ["canonicalText", "type", "topic", "subject", "retrievalFacets", "expiresAt"],
     });
     expect(saveMemory?.function.description).toContain(
       "Always supply expiresAt",
@@ -486,6 +493,9 @@ describe("time-bound memory expiry contract", () => {
           canonicalText:
             "The user's internship final report is due on August 20, 2026.",
           type: "situation",
+          topic: "university",
+          subject: "Internship report",
+          retrievalFacets: [],
           expiresAt: null,
         }),
       },
@@ -536,23 +546,23 @@ describe("two-pass model contracts", () => {
     ).toBe(false);
   });
 
-  it("rejects paragraph-length reply points", () => {
-    const tooManyWords = Array.from(
-      { length: MAX_REPLY_POINT_WORDS + 1 },
-      () => "a",
+  it("allows detailed reply points but rejects an abusive payload", () => {
+    const detailedPoint = Array.from(
+      { length: 40 },
+      () => "meaningful",
     ).join(" ");
     const tooManyCharacters = "a".repeat(MAX_REPLY_POINT_CHARACTERS + 1);
 
     expect(
       thoughtSchema.safeParse({
-        replyPoints: [tooManyWords],
-        question: null,
+        ...validThought,
+        replyPoints: [detailedPoint],
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       thoughtSchema.safeParse({
+        ...validThought,
         replyPoints: [tooManyCharacters],
-        question: null,
       }).success,
     ).toBe(false);
   });
@@ -1020,7 +1030,7 @@ describe("two-pass model contracts", () => {
     ]);
   });
 
-  it("rejects more than three tool calls in one stage", async () => {
+  it("defers extra tool calls instead of failing the whole turn", async () => {
     const generator = createThoughtGenerator({
       async complete(request) {
         return {
@@ -1041,8 +1051,7 @@ describe("two-pass model contracts", () => {
       },
     });
 
-    await expect(
-      generator.generate(
+    const result = await generator.generate(
         {
           currentMessages: ["remember these four unrelated things"],
           recentConversation: [],
@@ -1060,8 +1069,15 @@ describe("two-pass model contracts", () => {
             return { output: { ok: true } };
           },
         },
-      ),
-    ).rejects.toBeInstanceOf(ThoughtContractError);
+      );
+
+    expect(result.toolExecutions).toHaveLength(8);
+    expect(result.toolExecutions?.slice(0, 3).every((execution) =>
+      (execution.output as { ok: boolean }).ok,
+    )).toBe(true);
+    expect(result.toolExecutions?.[3]?.output).toMatchObject({
+      code: "TOOL_BATCH_DEFERRED",
+    });
   });
 
   it("uses DeepSeek V4 Pro with official-provider preference and fallback", async () => {
@@ -1097,7 +1113,7 @@ describe("two-pass model contracts", () => {
       maxPrice: { prompt: 3, completion: 5 },
     });
     expect(requests[0]?.parallelToolCalls).toBeUndefined();
-    expect(requests[0]?.maxTokens).toBe(2_400);
+    expect(requests[0]?.maxTokens).toBe(6_000);
     expect(requests[0]?.responseFormat).toBeUndefined();
   });
 
@@ -1405,7 +1421,7 @@ describe("two-pass model contracts", () => {
       "Treat social conversation as a complete first-class purpose",
     );
     expect(requests[0]?.responseFormat).toBeUndefined();
-    expect(requests[0]?.maxTokens).toBe(2_400);
+    expect(requests[0]?.maxTokens).toBe(6_000);
     expect(requests[1]?.messages.every((message) => !message.content.includes("not json")))
       .toBe(true);
   });

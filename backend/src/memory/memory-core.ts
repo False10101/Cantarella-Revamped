@@ -31,6 +31,7 @@ export const memoryEmbeddingRoles = [
   "facet_1",
   "facet_2",
   "facet_3",
+  "facet_4",
 ] as const;
 
 export type MemoryEmbeddingRole = (typeof memoryEmbeddingRoles)[number];
