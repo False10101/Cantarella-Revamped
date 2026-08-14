@@ -8,7 +8,7 @@ import {
   executeMemoryAction,
   InvalidMemoryActionError,
 } from "../memory/memory-action.js";
-import { memoryTypes } from "../memory/memory-core.js";
+import { memoryTopics, memoryTypes } from "../memory/memory-core.js";
 import type { MemoryRetriever } from "../memory/memory-retrieval.js";
 import type {
   ModelFunctionTool,
@@ -196,11 +196,18 @@ export const applicationTools: ModelFunctionTool[] = [
   ),
   functionTool(
     "save_memory",
-    "After find_memories succeeds in this turn, silently create or update useful memory from ordinary conversation. Omit memoryId only when no relevant memory was found; use allowedTargetId for an update and merge existing useful details with the new information. Always supply expiresAt: use an absolute RFC 3339 timestamp for a deadline-bound or otherwise time-bounded current memory, and null only for stable or genuinely open-ended memory.",
+    "After find_memories succeeds in this turn, silently create or update useful memory from ordinary conversation. Omit memoryId only when no relevant memory was found; for an update choose one ID returned by find_memories and merge its useful details with the new information. retrievalFacets contains only independently searchable details, never paraphrases; use [] for simple memories and at most three facets. Always supply expiresAt: use an absolute RFC 3339 timestamp for a deadline-bound or otherwise time-bounded current memory, and null only for stable or genuinely open-ended memory.",
     {
       memoryId: { type: ["string", "null"], format: "uuid" },
       canonicalText: { type: "string", minLength: 1, maxLength: 500 },
       type: { type: "string", enum: memoryTypes },
+      topic: { type: "string", enum: memoryTopics },
+      subject: { type: ["string", "null"], minLength: 1, maxLength: 120 },
+      retrievalFacets: {
+        type: "array",
+        items: { type: "string", minLength: 1, maxLength: 300 },
+        maxItems: 3,
+      },
       importance: { type: "number", minimum: 0, maximum: 1 },
       expiresAt: {
         type: ["string", "null"],
@@ -209,7 +216,7 @@ export const applicationTools: ModelFunctionTool[] = [
           "Absolute expiry after the bounded situation ends, including a short grace period; null only when the memory is stable or genuinely open-ended.",
       },
     },
-    ["canonicalText", "type", "expiresAt"],
+    ["canonicalText", "type", "topic", "subject", "retrievalFacets", "expiresAt"],
   ),
   functionTool(
     "delete_memory",
@@ -268,6 +275,9 @@ const saveMemorySchema = z.object({
   memoryId: z.string().uuid().nullable().optional(),
   canonicalText: z.string().trim().min(1).max(500),
   type: z.enum(memoryTypes),
+  topic: z.enum(memoryTopics),
+  subject: z.string().trim().min(1).max(120).nullable(),
+  retrievalFacets: z.array(z.string().trim().min(1).max(300)).max(3),
   importance: z.number().min(0).max(1).optional(),
   expiresAt: z.string().datetime({ offset: true }).nullable(),
 });
@@ -301,6 +311,8 @@ function memoryRecord(record: typeof memories.$inferSelect) {
   return {
     id: record.id,
     type: record.type,
+    topic: record.topic,
+    subject: record.subject,
     content: record.canonicalText,
     importance: record.importance,
     confidence: record.confidence,
@@ -378,7 +390,6 @@ export function createApplicationToolRuntime(
 ): ThoughtToolRuntime {
   const retrievedMemoryIds = new Set<string>();
   const retrievedReminderIds = new Set<string>();
-  const allowedMemoryIds = new Set<string>();
   const allowedReminderIds = new Set<string>();
   const mutatedMemoryIds = new Set<string>();
   const mutatedReminderIds = new Set<string>();
@@ -392,9 +403,9 @@ export function createApplicationToolRuntime(
     return targetResolutionOutput(resolution);
   };
   const requireSafeMemoryTarget = (memoryId: string) => {
-    if (!retrievedMemoryIds.has(memoryId) || !allowedMemoryIds.has(memoryId)) {
+    if (!retrievedMemoryIds.has(memoryId)) {
       throw new InvalidMemoryActionError(
-        "The memory target was not uniquely resolved by find_memories.",
+        "The memory target was not returned by find_memories in this turn.",
       );
     }
     if (mutatedMemoryIds.has(memoryId)) {
@@ -458,21 +469,13 @@ export function createApplicationToolRuntime(
             const records = await context.memoryRetriever.retrieve({
               userId: context.userId,
               queryTexts: [input.query],
-              limit: Math.min(input.limit ?? 8, 20),
+            limit: Math.min(input.limit ?? 8, 12),
               minimumSimilarity: 0.18,
             });
             const filtered = input.types
               ? records.filter((record) => input.types?.includes(record.type))
               : records;
             for (const record of filtered) retrievedMemoryIds.add(record.id);
-            const resolution = resolveMutationTarget(
-              context.originalRequest,
-              filtered.map((record) => ({
-                id: record.id,
-                label: record.canonicalText,
-                similarity: record.similarity,
-              })),
-            );
             memoryLookupPerformed = true;
             return {
               output: {
@@ -481,16 +484,23 @@ export function createApplicationToolRuntime(
                 memories: filtered.map((record) => ({
                   id: record.id,
                   type: record.type,
+                  topic: record.topic,
+                  subject: record.subject,
                   content: record.canonicalText,
                   importance: record.importance,
                   confidence: record.confidence,
                   similarity: record.similarity,
+                  matchKinds: record.matchKinds ?? [],
                   expiresAt: record.expiresAt?.toISOString() ?? null,
                 })),
-                targetResolution: rememberResolution(
-                  resolution,
-                  allowedMemoryIds,
-                ),
+                targetResolution: {
+                  status: filtered.length === 0 ? "none" : "candidates",
+                  candidateIds: filtered.map((record) => record.id),
+                  instruction:
+                    filtered.length === 0
+                      ? "No matching active memory was found. Create only a clearly warranted new record."
+                      : "For an update or deletion, choose only one returned candidate ID. If ordinary passive memory work is uncertain, skip it; explicit edits or deletions may ask one short target clarification.",
+                },
               },
             };
           }
@@ -511,20 +521,17 @@ export function createApplicationToolRuntime(
             .where(and(...conditions))
             .orderBy(desc(memories.importance), desc(memories.updatedAt))
             .limit(input.limit ?? 100);
-          for (const record of records) retrievedMemoryIds.add(record.id);
-          const resolution = resolveMutationTarget(
-            context.originalRequest,
-            records.map((record) => ({ id: record.id, label: record.canonicalText })),
-          );
           memoryLookupPerformed = true;
           return {
             output: {
               ok: true,
               memories: records.map(memoryRecord),
-              targetResolution: rememberResolution(
-                resolution,
-                allowedMemoryIds,
-              ),
+              targetResolution: {
+                status: "list_only",
+                candidateIds: [],
+                instruction:
+                  "This unfiltered list cannot authorize a memory mutation. Search with a resolved query before editing or deleting.",
+              },
             },
           };
         }
@@ -542,7 +549,10 @@ export function createApplicationToolRuntime(
               userId: context.userId,
               sourceMessageId: context.sourceMessageId,
               type: input.type,
+              topic: input.topic,
+              subject: input.subject,
               canonicalText: input.canonicalText,
+              retrievalFacets: input.retrievalFacets,
               importance: input.importance ?? 0.7,
               expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
             });
@@ -566,6 +576,9 @@ export function createApplicationToolRuntime(
             userId: context.userId,
             sourceMessageId: context.sourceMessageId,
             replacementType: input.type,
+            replacementTopic: input.topic,
+            replacementSubject: input.subject,
+            replacementRetrievalFacets: input.retrievalFacets,
             ...(input.importance !== undefined
               ? { replacementImportance: input.importance }
               : {}),

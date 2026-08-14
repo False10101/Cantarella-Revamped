@@ -23,9 +23,23 @@ type MemoryType =
   | "situation"
   | "event";
 
+type MemoryTopic =
+  | "personal"
+  | "finances"
+  | "university"
+  | "projects"
+  | "people"
+  | "health"
+  | "routines"
+  | "home"
+  | "logistics"
+  | "other";
+
 type MemoryRecord = {
   id: string;
   type: MemoryType;
+  topic: MemoryTopic;
+  subject: string | null;
   content: string;
   importance: number;
   confidence: number;
@@ -39,6 +53,8 @@ type MemoryRecord = {
 type MemoryDraft = {
   content: string;
   type: MemoryType;
+  topic: MemoryTopic;
+  subject: string;
   expiresAt: string;
 };
 
@@ -55,41 +71,28 @@ const memoryTypes: Array<{ id: MemoryType; label: string }> = [
   { id: "event", label: "Event" },
 ];
 
-const categories: Array<{
-  id: string;
+const memoryTopics: Array<{
+  id: MemoryTopic;
   label: string;
   color: string;
-  types: MemoryType[];
 }> = [
-  {
-    id: "about",
-    label: "About you",
-    color: "#C9935A",
-    types: ["profile", "preference", "boundary"],
-  },
-  {
-    id: "relationships",
-    label: "People & relationships",
-    color: "#B98AA5",
-    types: ["relationship"],
-  },
-  {
-    id: "context",
-    label: "Current context",
-    color: "#9090D0",
-    types: ["situation"],
-  },
-  {
-    id: "events",
-    label: "Important events",
-    color: "#7A9E7A",
-    types: ["event"],
-  },
+  { id: "personal", label: "About you", color: "#C9935A" },
+  { id: "finances", label: "Finances", color: "#73A39B" },
+  { id: "university", label: "University", color: "#9090D0" },
+  { id: "projects", label: "Projects", color: "#B98AA5" },
+  { id: "people", label: "People & relationships", color: "#C88282" },
+  { id: "health", label: "Health & wellbeing", color: "#8FAF7A" },
+  { id: "routines", label: "Routines", color: "#B4A078" },
+  { id: "home", label: "Home", color: "#9A9A9A" },
+  { id: "logistics", label: "Logistics", color: "#7D9DBF" },
+  { id: "other", label: "Other", color: "#83808F" },
 ];
 
 const emptyDraft: MemoryDraft = {
   content: "",
   type: "profile",
+  topic: "other",
+  subject: "",
   expiresAt: "",
 };
 
@@ -104,6 +107,8 @@ function draftFor(memory: MemoryRecord): MemoryDraft {
   return {
     content: memory.content,
     type: memory.type,
+    topic: memory.topic,
+    subject: memory.subject ?? "",
     expiresAt: localInputValue(memory.expiresAt),
   };
 }
@@ -112,6 +117,8 @@ function requestBody(draft: MemoryDraft) {
   return {
     content: draft.content.trim(),
     type: draft.type,
+    topic: draft.topic,
+    subject: draft.subject.trim() || null,
     expiresAt:
       draft.type === "situation" && draft.expiresAt
         ? new Date(draft.expiresAt).toISOString()
@@ -181,6 +188,23 @@ function MemoryEditor({
             />
           </label>
         )}
+
+        <label className="flex min-w-[150px] flex-col gap-1.5 text-[10px] uppercase tracking-[0.12em] text-[var(--text-dim)]">
+          Topic
+          <select
+            value={draft.topic}
+            onChange={(event) =>
+              onChange({ ...draft, topic: event.target.value as MemoryTopic })
+            }
+            className="h-10 rounded-lg border border-[var(--border2)] bg-[var(--surface2)] px-3 text-[12px] normal-case tracking-normal text-[var(--text)] outline-none focus:border-[rgba(201,147,90,0.4)]"
+          >
+            {memoryTopics.map((topic) => (
+              <option key={topic.id} value={topic.id}>
+                {topic.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div className="ml-auto flex gap-2">
           <button
@@ -289,14 +313,14 @@ export default function MemoriesPage() {
 
   const groupedMemories = useMemo(
     () =>
-      categories
-        .map((category) => ({
-          ...category,
+      memoryTopics
+        .map((topic) => ({
+          ...topic,
           memories: visibleMemories.filter((memory) =>
-            category.types.includes(memory.type),
+            memory.topic === topic.id,
           ),
         }))
-        .filter((category) => category.memories.length > 0),
+        .filter((topic) => topic.memories.length > 0),
     [visibleMemories],
   );
 
@@ -474,21 +498,21 @@ export default function MemoriesPage() {
               </div>
             ) : (
               <div className="mt-6 pb-6">
-                {groupedMemories.map((category) => (
-                  <section key={category.id} className="mb-7">
+                {groupedMemories.map((topic) => (
+                  <section key={topic.id} className="mb-7">
                     <div className="mb-2.5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--text-dim)]">
                       <span
                         className="h-1.5 w-1.5 rounded-full"
-                        style={{ background: category.color }}
+                        style={{ background: topic.color }}
                       />
-                      {category.label}
+                      {topic.label}
                       <span className="ml-1 text-[9px] text-[var(--text-dim)] opacity-60">
-                        {category.memories.length}
+                        {topic.memories.length}
                       </span>
                     </div>
 
                     <div className="space-y-1.5">
-                      {category.memories.map((memory) =>
+                      {topic.memories.map((memory) =>
                         editingId === memory.id ? (
                           <MemoryEditor
                             key={memory.id}
@@ -517,6 +541,7 @@ export default function MemoriesPage() {
                                 {memory.content}
                               </p>
                               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--text-dim)]">
+                                {memory.subject && <span>{memory.subject.replaceAll("_", " ")}</span>}
                                 <span>stored {formatStoredDate(memory.createdAt)}</span>
                                 {memory.expiresAt && (
                                   <span>expires {formatStoredDate(memory.expiresAt)}</span>

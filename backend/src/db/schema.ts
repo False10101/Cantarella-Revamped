@@ -67,6 +67,19 @@ const memoryTypes = [
   "situation",
   "event",
 ] as const;
+const memoryTopics = [
+  "personal",
+  "finances",
+  "university",
+  "projects",
+  "people",
+  "health",
+  "routines",
+  "home",
+  "logistics",
+  "other",
+] as const;
+const memoryEmbeddingRoles = ["canonical", "facet_1", "facet_2", "facet_3"] as const;
 const memoryStatuses = [
   "pending",
   "active",
@@ -498,6 +511,8 @@ export const memories = pgTable(
       { onDelete: "restrict" },
     ),
     type: text("type", { enum: memoryTypes }).notNull(),
+    topic: text("topic", { enum: memoryTopics }).notNull().default("other"),
+    subject: varchar("subject", { length: 120 }),
     canonicalText: text("canonical_text").notNull(),
     importance: numeric("importance", {
       precision: 4,
@@ -531,10 +546,20 @@ export const memories = pgTable(
       table.expiresAt,
     ),
     index("memories_lineage_idx").on(table.userId, table.lineageId),
+    index("memories_user_topic_idx").on(
+      table.userId,
+      table.status,
+      table.topic,
+      table.updatedAt,
+    ),
     index("memories_search_idx").using("gin", table.searchDocument),
     check(
       "memories_type_check",
       sql`${table.type} in ('profile', 'preference', 'relationship', 'boundary', 'situation', 'event')`,
+    ),
+    check(
+      "memories_topic_check",
+      sql`${table.topic} in ('personal', 'finances', 'university', 'projects', 'people', 'health', 'routines', 'home', 'logistics', 'other')`,
     ),
     check(
       "memories_status_check",
@@ -607,6 +632,10 @@ export const memoryEmbeddings = pgTable(
       .notNull()
       .references(() => memories.id, { onDelete: "cascade" }),
     embeddingModel: text("embedding_model").notNull(),
+    embeddingRole: text("embedding_role", { enum: memoryEmbeddingRoles })
+      .notNull()
+      .default("canonical"),
+    sourceText: text("source_text").notNull(),
     embeddingDimensions: integer("embedding_dimensions").notNull(),
     contentHash: varchar("content_hash", { length: 64 }).notNull(),
     embedding: vector("embedding", { dimensions: 1536 }).notNull(),
@@ -620,14 +649,24 @@ export const memoryEmbeddings = pgTable(
     uniqueIndex("memory_embeddings_content_unique").on(
       table.memoryId,
       table.embeddingModel,
+      table.embeddingRole,
       table.contentHash,
     ),
     uniqueIndex("memory_embeddings_current_unique")
-      .on(table.memoryId)
+      .on(table.memoryId, table.embeddingRole)
       .where(sql`${table.isCurrent} = true`),
+    index("memory_embeddings_current_role_idx").on(
+      table.memoryId,
+      table.embeddingRole,
+      table.isCurrent,
+    ),
     check(
       "memory_embeddings_dimensions_check",
       sql`${table.embeddingDimensions} = 1536`,
+    ),
+    check(
+      "memory_embeddings_role_check",
+      sql`${table.embeddingRole} in ('canonical', 'facet_1', 'facet_2', 'facet_3')`,
     ),
     check(
       "memory_embeddings_superseded_check",

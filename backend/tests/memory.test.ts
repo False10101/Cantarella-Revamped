@@ -18,15 +18,18 @@ describe("memory core", () => {
           {
             id: "old-8k-vector",
             embeddingModel: "text-embedding-3-small",
+            embeddingRole: "canonical",
             contentHash: "8k-hash",
           },
           {
             id: "current-2k-vector",
             embeddingModel: "text-embedding-3-small",
+            embeddingRole: "canonical",
             contentHash: "2k-hash",
           },
         ],
         "text-embedding-3-small",
+        "canonical",
         "8k-hash",
       ),
     ).toBe("old-8k-vector");
@@ -48,6 +51,8 @@ describe("memory retrieval ranking", () => {
       {
         id: "2cafb281-a2b2-41c4-b6ee-b85fba970dbe",
         type: "preference",
+        topic: "personal",
+        subject: null,
         canonicalText: "Ian likes concise replies.",
         importance: 0.7,
         confidence: 0.9,
@@ -57,6 +62,8 @@ describe("memory retrieval ranking", () => {
       {
         id: "6ae44432-bfbd-42fe-896d-f9277473a347",
         type: "boundary",
+        topic: "personal",
+        subject: null,
         canonicalText: "Do not use guilt as motivation.",
         importance: 0.95,
         confidence: 1,

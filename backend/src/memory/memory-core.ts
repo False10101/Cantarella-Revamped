@@ -11,6 +11,30 @@ export const memoryTypes = [
 
 export type MemoryType = (typeof memoryTypes)[number];
 
+export const memoryTopics = [
+  "personal",
+  "finances",
+  "university",
+  "projects",
+  "people",
+  "health",
+  "routines",
+  "home",
+  "logistics",
+  "other",
+] as const;
+
+export type MemoryTopic = (typeof memoryTopics)[number];
+
+export const memoryEmbeddingRoles = [
+  "canonical",
+  "facet_1",
+  "facet_2",
+  "facet_3",
+] as const;
+
+export type MemoryEmbeddingRole = (typeof memoryEmbeddingRoles)[number];
+
 export function normalizeMemoryText(text: string): string {
   return text
     .normalize("NFKC")

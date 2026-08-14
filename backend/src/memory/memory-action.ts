@@ -19,7 +19,10 @@ import {
 import type { MemoryAction } from "../models/thought.js";
 import {
   memoryContentHash,
+  memoryEmbeddingRoles,
   normalizeMemoryText,
+  type MemoryEmbeddingRole,
+  type MemoryTopic,
   type MemoryType,
 } from "./memory-core.js";
 import { reusableMemoryEmbeddingId } from "./memory-embedding-history.js";
@@ -35,6 +38,8 @@ function snapshot(memory: Memory): MemorySnapshot {
   return {
     id: memory.id,
     type: memory.type,
+    topic: memory.topic,
+    subject: memory.subject,
     content: memory.canonicalText,
     importance: memory.importance,
     confidence: memory.confidence,
@@ -46,19 +51,52 @@ function snapshot(memory: Memory): MemorySnapshot {
   };
 }
 
+interface EmbeddingSource {
+  role: MemoryEmbeddingRole;
+  text: string;
+}
+
+function normalizedFacets(canonicalText: string, facets: string[] | undefined): string[] {
+  const seen = new Set([normalizeMemoryText(canonicalText)]);
+  const unique: string[] = [];
+  for (const facet of facets ?? []) {
+    const text = facet.trim();
+    const key = normalizeMemoryText(text);
+    if (!text || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(text);
+  }
+  if (unique.length > 3) {
+    throw new InvalidMemoryActionError("A memory can have at most three retrieval facets.");
+  }
+  return unique;
+}
+
+function embeddingSources(canonicalText: string, facets: string[] | undefined): EmbeddingSource[] {
+  const normalized = normalizedFacets(canonicalText, facets);
+  return [
+    { role: "canonical", text: canonicalText },
+    ...normalized.map((text, index) => ({
+      role: memoryEmbeddingRoles[index + 1] as MemoryEmbeddingRole,
+      text,
+    })),
+  ];
+}
+
 function embeddingValues(
   memoryId: string,
-  contentHash: string,
-  generation: EmbeddingGeneration,
+  source: EmbeddingSource,
+  vector: number[],
+  generation: Pick<EmbeddingGeneration, "model" | "dimensions">,
 ) {
-  const vector = generation.vectors[0];
-  if (!vector) throw new Error("The memory embedding response was empty.");
   return {
     id: randomUUID(),
     memoryId,
+    embeddingRole: source.role,
+    sourceText: source.text,
     embeddingModel: generation.model,
     embeddingDimensions: generation.dimensions,
-    contentHash,
+    contentHash: memoryContentHash(normalizeMemoryText(source.text)),
     embedding: vector,
     isCurrent: true,
   };
@@ -73,12 +111,19 @@ export async function createChatMemory(input: {
   userId: string;
   sourceMessageId: string;
   type: MemoryType;
+  topic: MemoryTopic;
+  subject?: string | null;
   canonicalText: string;
+  retrievalFacets?: string[];
   importance: number;
   expiresAt: Date | null;
 }, embeddingClient: EmbeddingClient = createEmbeddingClient()): Promise<MemoryActionResult> {
   const normalizedHash = memoryContentHash(normalizeMemoryText(input.canonicalText));
-  const embedding = await embeddingClient.embed([input.canonicalText]);
+  const sources = embeddingSources(input.canonicalText, input.retrievalFacets);
+  const embedding = await embeddingClient.embed(sources.map((source) => source.text));
+  if (embedding.vectors.length !== sources.length) {
+    throw new Error("The memory embedding response did not match the requested sources.");
+  }
   const now = new Date();
   const memoryId = randomUUID();
 
@@ -106,6 +151,8 @@ export async function createChatMemory(input: {
         userId: input.userId,
         lineageId: memoryId,
         type: input.type,
+        topic: input.topic,
+        subject: input.subject?.trim() || null,
         canonicalText: input.canonicalText,
         importance: input.importance,
         confidence: 1,
@@ -118,7 +165,11 @@ export async function createChatMemory(input: {
     if (!record) throw new InvalidMemoryActionError("The memory could not be stored.");
 
     await transaction.insert(memoryEmbeddings).values(
-      embeddingValues(memoryId, normalizedHash, embedding),
+      sources.map((source, index) => {
+        const vector = embedding.vectors[index];
+        if (!vector) throw new Error("The memory embedding response was empty.");
+        return embeddingValues(memoryId, source, vector, embedding);
+      }),
     );
     await transaction.insert(memoryEvidence).values({
       id: randomUUID(),
@@ -153,6 +204,9 @@ export async function executeMemoryAction(
     userId: string;
     sourceMessageId: string;
     replacementType?: MemoryType;
+    replacementTopic?: MemoryTopic;
+    replacementSubject?: string | null;
+    replacementRetrievalFacets?: string[];
     replacementImportance?: number;
     replacementExpiresAt?: Date | null;
   },
@@ -237,10 +291,11 @@ export async function executeMemoryAction(
   }
   const normalizedHash = memoryContentHash(normalizeMemoryText(replacementText));
   const contentChanged = replacementText !== existing.canonicalText;
-  const embeddingChanged = normalizedHash !== existing.normalizedHash;
-  const embedding = embeddingChanged
-    ? await embeddingClient.embed([replacementText])
-    : null;
+  const sources = embeddingSources(replacementText, input.replacementRetrievalFacets);
+  const embedding = await embeddingClient.embed(sources.map((source) => source.text));
+  if (embedding.vectors.length !== sources.length) {
+    throw new Error("The memory embedding response did not match the requested sources.");
+  }
 
   const updated = await database.transaction(async (transaction) => {
     const [locked] = await transaction
@@ -290,6 +345,10 @@ export async function executeMemoryAction(
         ...(input.replacementType
           ? { type: input.replacementType }
           : {}),
+        ...(input.replacementTopic ? { topic: input.replacementTopic } : {}),
+        ...(input.replacementSubject !== undefined
+          ? { subject: input.replacementSubject?.trim() || null }
+          : {}),
         ...(input.replacementImportance !== undefined
           ? { importance: input.replacementImportance }
           : {}),
@@ -309,20 +368,16 @@ export async function executeMemoryAction(
       );
     }
 
-    if (embeddingChanged && embedding) {
+    {
       const historicalEmbeddings = await transaction
         .select({
           id: memoryEmbeddings.id,
           embeddingModel: memoryEmbeddings.embeddingModel,
+          embeddingRole: memoryEmbeddings.embeddingRole,
           contentHash: memoryEmbeddings.contentHash,
         })
         .from(memoryEmbeddings)
         .where(eq(memoryEmbeddings.memoryId, memoryId));
-      const reusableEmbeddingId = reusableMemoryEmbeddingId(
-        historicalEmbeddings,
-        embedding.model,
-        normalizedHash,
-      );
       await transaction
         .update(memoryEmbeddings)
         .set({ isCurrent: false, supersededAt: now })
@@ -332,24 +387,34 @@ export async function executeMemoryAction(
             eq(memoryEmbeddings.isCurrent, true),
           ),
         );
-      if (reusableEmbeddingId) {
-        const vector = embedding.vectors[0];
+      for (const [index, source] of sources.entries()) {
+        const sourceHash = memoryContentHash(normalizeMemoryText(source.text));
+        const reusableEmbeddingId = reusableMemoryEmbeddingId(
+          historicalEmbeddings,
+          embedding.model,
+          source.role,
+          sourceHash,
+        );
+        const vector = embedding.vectors[index];
         if (!vector) {
           throw new Error("The memory embedding response was empty.");
         }
-        await transaction
-          .update(memoryEmbeddings)
-          .set({
-            embeddingDimensions: embedding.dimensions,
-            embedding: vector,
-            isCurrent: true,
-            supersededAt: null,
-          })
-          .where(eq(memoryEmbeddings.id, reusableEmbeddingId));
-      } else {
-        await transaction.insert(memoryEmbeddings).values(
-          embeddingValues(memoryId, normalizedHash, embedding),
-        );
+        if (reusableEmbeddingId) {
+          await transaction
+            .update(memoryEmbeddings)
+            .set({
+              sourceText: source.text,
+              embeddingDimensions: embedding.dimensions,
+              embedding: vector,
+              isCurrent: true,
+              supersededAt: null,
+            })
+            .where(eq(memoryEmbeddings.id, reusableEmbeddingId));
+        } else {
+          await transaction.insert(memoryEmbeddings).values(
+            embeddingValues(memoryId, source, vector, embedding),
+          );
+        }
       }
     }
 

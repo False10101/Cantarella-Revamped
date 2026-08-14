@@ -9,6 +9,19 @@ export const publicMemoryTypeSchema = z.enum([
   "event",
 ]);
 
+export const publicMemoryTopicSchema = z.enum([
+  "personal",
+  "finances",
+  "university",
+  "projects",
+  "people",
+  "health",
+  "routines",
+  "home",
+  "logistics",
+  "other",
+]);
+
 const expiresAtSchema = z
   .string()
   .datetime({ offset: true })
@@ -19,6 +32,7 @@ export const memoryIdSchema = z.string().uuid();
 export const listMemoriesQuerySchema = z
   .object({
     type: publicMemoryTypeSchema.optional(),
+    topic: publicMemoryTopicSchema.optional(),
     status: z.literal("active").default("active"),
     search: z.string().trim().max(120).optional(),
     limit: z.coerce.number().int().min(1).max(200).default(100),
@@ -29,6 +43,8 @@ export const createMemoryInputSchema = z
   .object({
     content: z.string().trim().min(1).max(500),
     type: publicMemoryTypeSchema,
+    topic: publicMemoryTopicSchema.default("other"),
+    subject: z.string().trim().min(1).max(120).nullable().default(null),
     importance: z.number().min(0).max(1).default(0.7),
     expiresAt: expiresAtSchema.default(null),
   })
@@ -47,6 +63,8 @@ export const updateMemoryInputSchema = z
   .object({
     content: z.string().trim().min(1).max(500).optional(),
     type: publicMemoryTypeSchema.optional(),
+    topic: publicMemoryTopicSchema.optional(),
+    subject: z.string().trim().min(1).max(120).nullable().optional(),
     importance: z.number().min(0).max(1).optional(),
     expiresAt: expiresAtSchema.optional(),
   })
@@ -56,6 +74,7 @@ export const updateMemoryInputSchema = z
   });
 
 export type PublicMemoryType = z.infer<typeof publicMemoryTypeSchema>;
+export type PublicMemoryTopic = z.infer<typeof publicMemoryTopicSchema>;
 export type ListMemoriesQuery = z.infer<typeof listMemoriesQuerySchema>;
 export type CreateMemoryInput = z.infer<typeof createMemoryInputSchema>;
 export type UpdateMemoryInput = z.infer<typeof updateMemoryInputSchema>;
@@ -63,6 +82,8 @@ export type UpdateMemoryInput = z.infer<typeof updateMemoryInputSchema>;
 export interface MemorySnapshot {
   id: string;
   type: PublicMemoryType;
+  topic: PublicMemoryTopic;
+  subject: string | null;
   content: string;
   importance: number;
   confidence: number;

@@ -83,6 +83,8 @@ function toSnapshot(memory: Memory): MemorySnapshot {
   return {
     id: memory.id,
     type: memory.type,
+    topic: memory.topic,
+    subject: memory.subject,
     content: memory.canonicalText,
     importance: memory.importance,
     confidence: memory.confidence,
@@ -143,6 +145,8 @@ function embeddingValues(
   return {
     id: randomUUID(),
     memoryId,
+    embeddingRole: "canonical" as const,
+    sourceText: "",
     embeddingModel: generation.model,
     embeddingDimensions: generation.dimensions,
     contentHash,
@@ -165,6 +169,7 @@ export function createMemoryService(dependencies: {
       ];
 
       if (query.type) conditions.push(eq(memories.type, query.type));
+      if (query.topic) conditions.push(eq(memories.topic, query.topic));
       if (query.search) {
         conditions.push(ilike(memories.canonicalText, `%${query.search}%`));
       }
@@ -213,6 +218,8 @@ export function createMemoryService(dependencies: {
               userId,
               lineageId: memoryId,
               type: input.type,
+              topic: input.topic,
+              subject: input.subject,
               canonicalText: input.content,
               importance: input.importance,
               confidence: 1,
@@ -224,9 +231,10 @@ export function createMemoryService(dependencies: {
             .returning();
           if (!created) throw new Error("The memory was not created.");
 
-          await transaction.insert(memoryEmbeddings).values(
-            embeddingValues(memoryId, normalizedHash, embedding),
-          );
+          await transaction.insert(memoryEmbeddings).values({
+            ...embeddingValues(memoryId, normalizedHash, embedding),
+            sourceText: input.content,
+          });
           await transaction.insert(memoryEvents).values({
             id: randomUUID(),
             userId,
@@ -262,6 +270,8 @@ export function createMemoryService(dependencies: {
 
       const nextContent = input.content ?? existing.canonicalText;
       const nextType = input.type ?? existing.type;
+      const nextTopic = input.topic ?? existing.topic;
+      const nextSubject = input.subject === undefined ? existing.subject : input.subject;
       const nextExpiresAt =
         input.expiresAt === undefined
           ? existing.expiresAt
@@ -314,6 +324,8 @@ export function createMemoryService(dependencies: {
             .set({
               canonicalText: nextContent,
               type: nextType,
+              topic: nextTopic,
+              subject: nextSubject,
               importance: input.importance ?? locked.importance,
               confidence: 1,
               normalizedHash: nextHash,
@@ -330,6 +342,7 @@ export function createMemoryService(dependencies: {
               .select({
                 id: memoryEmbeddings.id,
                 embeddingModel: memoryEmbeddings.embeddingModel,
+                embeddingRole: memoryEmbeddings.embeddingRole,
                 contentHash: memoryEmbeddings.contentHash,
               })
               .from(memoryEmbeddings)
@@ -337,6 +350,7 @@ export function createMemoryService(dependencies: {
             const reusableEmbeddingId = reusableMemoryEmbeddingId(
               historicalEmbeddings,
               embedding.model,
+              "canonical",
               nextHash,
             );
             await transaction
@@ -357,6 +371,7 @@ export function createMemoryService(dependencies: {
                 .update(memoryEmbeddings)
                 .set({
                   embeddingDimensions: embedding.dimensions,
+                  sourceText: nextContent,
                   embedding: vector,
                   isCurrent: true,
                   supersededAt: null,
@@ -364,7 +379,10 @@ export function createMemoryService(dependencies: {
                 .where(eq(memoryEmbeddings.id, reusableEmbeddingId));
             } else {
               await transaction.insert(memoryEmbeddings).values(
-                embeddingValues(memoryId, nextHash, embedding),
+                {
+                  ...embeddingValues(memoryId, nextHash, embedding),
+                  sourceText: nextContent,
+                },
               );
             }
           }
@@ -380,12 +398,16 @@ export function createMemoryService(dependencies: {
               before: {
                 content: locked.canonicalText,
                 type: locked.type,
+                topic: locked.topic,
+                subject: locked.subject,
                 importance: locked.importance,
                 expiresAt: locked.expiresAt?.toISOString() ?? null,
               },
               after: {
                 content: updated.canonicalText,
                 type: updated.type,
+                topic: updated.topic,
+                subject: updated.subject,
                 importance: updated.importance,
                 expiresAt: updated.expiresAt?.toISOString() ?? null,
               },

@@ -17,6 +17,8 @@ const identity = {
 const snapshot: MemorySnapshot = {
   id: memoryId,
   type: "profile",
+  topic: "personal",
+  subject: null,
   content: "User studies at KMUTT.",
   importance: 0.9,
   confidence: 1,
@@ -83,6 +85,8 @@ describe("memory management API", () => {
     expect(service.create).toHaveBeenCalledWith(identity, {
       content: snapshot.content,
       type: "profile",
+      topic: "other",
+      subject: null,
       importance: 0.7,
       expiresAt: null,
     });
