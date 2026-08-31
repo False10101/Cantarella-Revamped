@@ -21,6 +21,7 @@ import {
   messages,
   turns,
   users,
+  // heartbeat,
 } from "../../db/schema.js";
 import { HttpError } from "../../http/http-error.js";
 import { orderRecentContextMessages } from "../../pipeline/message-order.js";
@@ -31,6 +32,7 @@ import type {
   SaveMessageResult,
   SendMessageInput,
 } from "./conversation.types.js";
+// import { nextHeartbeatCheckAt } from "../../heartbeat/heartbeat-schedule.js";
 
 export interface ConversationService {
   assertOwnership(
@@ -58,18 +60,18 @@ export type StoredMessage = {
   clientMessageId: string | null;
   role: "user" | "assistant" | "system";
   content: string;
-  kind: "chat" | "reminder";
+  kind: "chat" | "reminder" | "proactive";
   origin: "web" | "android" | "ios" | "system";
   partIndex: number | null;
   createdAt: Date;
   turnStatus?:
-    | "queued"
-    | "thinking"
-    | "voicing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | null;
+  | "queued"
+  | "thinking"
+  | "voicing"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | null;
 };
 
 const messageSelection = {
@@ -224,12 +226,12 @@ export function createConversationService(): ConversationService {
 
       const cursorCondition = cursor
         ? or(
-            lt(messages.createdAt, cursor.createdAt),
-            and(
-              eq(messages.createdAt, cursor.createdAt),
-              lt(messages.id, cursor.id),
-            ),
-          )
+          lt(messages.createdAt, cursor.createdAt),
+          and(
+            eq(messages.createdAt, cursor.createdAt),
+            lt(messages.id, cursor.id),
+          ),
+        )
         : undefined;
 
       const records = await database
@@ -261,7 +263,10 @@ export function createConversationService(): ConversationService {
     async saveUserMessage(identity, conversationId, input) {
       return database.transaction(async (transaction) => {
         const [ownedConversation] = await transaction
-          .select({ id: conversations.id })
+          .select({
+            id: conversations.id,
+            // ownerUserId: conversations.ownerUserId, // V2 heartbeat scheduling
+          })
           .from(conversations)
           .innerJoin(users, eq(users.id, conversations.ownerUserId))
           .where(
@@ -364,8 +369,29 @@ export function createConversationService(): ConversationService {
           };
         }
 
-        const environment = getEnvironment();
         const now = new Date();
+        // V2 heartbeat scheduling is intentionally paused until its durable
+        // job-worker flow is complete. Do not enable this partial upsert by
+        // itself: it would only write schedule rows and never send a message.
+        //
+        // const nextCheckAt = nextHeartbeatCheckAt(now);
+        // await transaction
+        //   .insert(heartbeat)
+        //   .values({
+        //     conversationId,
+        //     userId: ownedConversation.ownerUserId,
+        //     lastUserMessageAt: storedMessage.createdAt,
+        //     nextCheckAt,
+        //   })
+        //   .onConflictDoUpdate({
+        //     target: heartbeat.conversationId,
+        //     set: {
+        //       lastUserMessageAt: storedMessage.createdAt,
+        //       nextCheckAt,
+        //       updatedAt: now,
+        //     },
+        //   });
+        const environment = getEnvironment();
         const settleAt = new Date(now.getTime() + environment.MESSAGE_SETTLE_MS);
         const [collectingBatch] = await transaction
           .select({ id: inputBatches.id })

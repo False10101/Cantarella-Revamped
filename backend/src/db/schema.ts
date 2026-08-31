@@ -33,7 +33,7 @@ const timestampColumns = {
 };
 
 const messageRoles = ["user", "assistant", "system"] as const;
-const messageKinds = ["chat", "reminder"] as const;
+const messageKinds = ["chat", "reminder", "proactive"] as const;
 const messageOrigins = ["web", "android", "ios", "system"] as const;
 const inputBatchStatuses = [
   "collecting",
@@ -268,7 +268,10 @@ export const messages = pgTable(
       .on(table.turnId, table.partIndex)
       .where(sql`${table.turnId} is not null and ${table.role} = 'assistant'`),
     check("messages_role_check", sql`${table.role} in ('user', 'assistant', 'system')`),
-    check("messages_kind_check", sql`${table.kind} in ('chat', 'reminder')`),
+    check(
+      "messages_kind_check",
+      sql`${table.kind} in ('chat', 'reminder', 'proactive')`,
+    ),
     check(
       "messages_origin_check",
       sql`${table.origin} in ('web', 'android', 'ios', 'system')`,
@@ -708,6 +711,41 @@ export const conversationSummaryEmbeddings = pgTable(
     check(
       "conversation_summary_embeddings_superseded_check",
       sql`(${table.isCurrent} = true and ${table.supersededAt} is null) or (${table.isCurrent} = false and ${table.supersededAt} is not null)`,
+    ),
+  ],
+);
+
+export const heartbeat = pgTable(
+  "heartbeat",
+  {
+    conversationId: uuid("conversation_id")
+      .primaryKey()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    lastUserMessageAt: timestamp("last_user_message_at", {
+      withTimezone: true,
+    }).notNull(),
+    // Incremented on every user message or reschedule. A queued heartbeat job
+    // may only act when its version still matches this current state.
+    scheduleVersion: integer("schedule_version").notNull().default(1),
+    lastProactiveMessageId: uuid("last_proactive_message_id").references(
+      () => messages.id,
+      { onDelete: "set null" },
+    ),
+    lastProactiveAt: timestamp("last_proactive_at", { withTimezone: true }),
+    // Null while Cantarella is waiting for a reply to a proactive message.
+    nextCheckAt: timestamp("next_check_at", { withTimezone: true }),
+    awaitingReply: boolean("awaiting_reply").notNull().default(false),
+    pausedUntil: timestamp("paused_until", { withTimezone: true }),
+    ...timestampColumns,
+  },
+  (table) => [
+    index("heartbeat_due_idx").on(table.nextCheckAt),
+    check(
+      "heartbeat_schedule_version_positive_check",
+      sql`${table.scheduleVersion} > 0`,
     ),
   ],
 );

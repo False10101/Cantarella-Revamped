@@ -31,7 +31,7 @@ export interface MessageSnapshot {
   clientMessageId: string | null;
   sender: "user" | "assistant" | "system";
   content: string;
-  messageKind: "chat" | "reminder";
+  messageKind: "chat" | "reminder" | "proactive";
   source: "web" | "android" | "ios" | "system";
   partIndex: number | null;
   status: "sent" | "seen" | "delivered" | "failed";

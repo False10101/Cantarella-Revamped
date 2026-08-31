@@ -20,6 +20,7 @@ import {
   createReminderVoiceGenerator,
   type ReminderVoiceGenerator,
 } from "../models/reminder-voice.js";
+import { VoiceOutputLeakageError } from "../models/voice.js";
 import { nextReminderOccurrence } from "./reminder-schedule.js";
 
 export interface ClaimedReminder {
@@ -283,6 +284,10 @@ export function createReminderProcessor(dependencies: {
           .update(modelRuns)
           .set({
             status: "failed",
+            rawOutput:
+              error instanceof VoiceOutputLeakageError
+                ? error.rawOutput.slice(0, 20_000)
+                : undefined,
             errorCode: error instanceof Error ? error.name : "REMINDER_VOICE_ERROR",
             errorMessage: (error instanceof Error ? error.message : String(error)).slice(
               0,

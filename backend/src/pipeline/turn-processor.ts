@@ -558,8 +558,8 @@ export function createTurnProcessor(dependencies: {
           await failModelRun(voiceRunId, error);
 
           if (
-            applicationResults.length > 0 ||
-            error instanceof VoiceOutputLeakageError
+            applicationResults.length > 0 &&
+            !(error instanceof VoiceOutputLeakageError)
           ) {
             const fallbackBubbles = [
               ...voiceBrief.replyPoints,

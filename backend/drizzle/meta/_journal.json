@@ -43,6 +43,27 @@
       "when": 1786639980000,
       "tag": "0005_memory_retrieval_overhaul",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787993079784,
+      "tag": "0006_expand_memory_facets",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787993079785,
+      "tag": "0007_add_heartbeat",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788080000000,
+      "tag": "0008_finalize_heartbeat",
+      "breakpoints": true
     }
   ]
 }

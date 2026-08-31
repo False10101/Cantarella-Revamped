@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth0 } from "@auth0/auth0-react";
-import { Check, Save } from "lucide-react";
+import { Bell, Check, Save } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useAuthSession } from "../auth/AuthBootstrap";
@@ -102,6 +102,28 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("default");
+
+  useEffect(() => {
+    if (!("Notification" in window)) {
+      setNotificationPermission("unsupported");
+      return;
+    }
+
+    setNotificationPermission(Notification.permission);
+  }, []);
+
+  const enableDesktopNotifications = async () => {
+    if (!("Notification" in window)) {
+      setNotificationPermission("unsupported");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+  };
 
   useEffect(() => {
     if (!account) return;
@@ -407,6 +429,41 @@ export default function SettingsPage() {
                     Your instruction wins only where it directly conflicts with the core or selected direction.
                   </span>
                 </label>
+              </div>
+            </section>
+
+            <section className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 max-sm:p-4">
+              <div className="flex items-center justify-between gap-5">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border2)] bg-[var(--surface2)] text-[var(--amber-soft)]">
+                    <Bell className="h-3.5 w-3.5" strokeWidth={1.6} />
+                  </span>
+                  <div>
+                    <h2 className="font-[family-name:var(--font-display)] text-[15px] font-light italic tracking-wide text-[var(--amber-soft)]">
+                      Desktop messages
+                    </h2>
+                    <p className="mt-1 text-[11px] leading-5 text-[var(--text-dim)]">
+                      Get a browser alert when Cantarella replies while she is open in a background tab.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void enableDesktopNotifications()}
+                  disabled={
+                    notificationPermission === "granted" ||
+                    notificationPermission === "unsupported"
+                  }
+                  className="shrink-0 rounded-lg border border-[rgba(201,147,90,0.28)] bg-[var(--amber-dim)] px-3 py-2 text-[10px] font-medium text-[var(--amber-soft)] transition hover:border-[rgba(201,147,90,0.5)] hover:bg-[rgba(201,147,90,0.12)] disabled:cursor-default disabled:opacity-60"
+                >
+                  {notificationPermission === "granted"
+                    ? "Enabled"
+                    : notificationPermission === "denied"
+                      ? "Blocked in browser"
+                      : notificationPermission === "unsupported"
+                        ? "Not supported"
+                        : "Enable"}
+                </button>
               </div>
             </section>
 

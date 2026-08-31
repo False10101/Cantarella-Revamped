@@ -96,6 +96,26 @@ function stagedBubbleDelay(message: ChatMessage) {
     return Math.min(1_300, Math.max(550, 350 + message.content.length * 12));
 }
 
+function showAssistantNotification(message: ChatMessage) {
+    if (
+        message.sender !== "assistant" ||
+        message.partIndex !== 0 ||
+        !document.hidden ||
+        !("Notification" in window) ||
+        Notification.permission !== "granted"
+    ) return;
+
+    const notification = new Notification("Cantarella", {
+        body: message.content,
+        tag: `cantarella-message-${message.id}`,
+    });
+
+    notification.onclick = () => {
+        window.focus();
+        notification.close();
+    };
+}
+
 async function consumeEventStream(
     response: Response,
     onEvent: (event: ConversationEvent) => void,
@@ -348,6 +368,7 @@ export default function Page() {
             }
             if (event.type === "message.created") {
                 const createdMessage = event.data.message;
+                showAssistantNotification(createdMessage);
                 if (
                     createdMessage.sender === "assistant" &&
                     createdMessage.partIndex !== null &&

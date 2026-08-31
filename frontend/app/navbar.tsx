@@ -27,7 +27,7 @@ export default function Navbar() {
 
             <div className="navigation-section flex flex-col w-full px-[16px] pt-[20px] pb-[8px]">
                 <span className="text-[var(--text-dim)] font-[family-name:var(--font-body)] text-[clamp(5px,3vw,10px)] uppercase font-bold tracking-[0.12em] ml-[8px] mb-[6px] max-[820px]:hidden">navigation</span>
-                <Link href="/chat" aria-label="Chat" className={`flex group px-[12px] py-[9px] rounded-[8px] font-[family-name:var(--font-body)] text-[clamp(6.5px,3vw,13px)] ${pathname.includes('/chat') ? "bg-[var(--amber-dim)]" : "hover:bg-[var(--surface2)]"} cursor-pointer items-center max-[820px]:justify-center`}>
+                <Link href="/chat" aria-label="Chat" className={`flex w-full group px-[12px] py-[9px] rounded-[8px] font-[family-name:var(--font-body)] text-[clamp(6.5px,3vw,13px)] ${pathname.includes('/chat') ? "bg-[var(--amber-dim)]" : "hover:bg-[var(--surface2)]"} cursor-pointer items-center max-[820px]:justify-center`}>
                     <MessagesSquare className={`w-[16px] h-[16px] text-[var(--text-secondary)] ${pathname.includes('/chat') ? "opacity-100 !text-[var(--amber-soft)]" : "opacity-75 group-hover:!text-[var(--text)]"} mr-[10px] max-[820px]:mr-0`} strokeWidth={1.5} />
                     <span className={`text-[var(--text-secondary)] font-[family-name:var(--font-body)] text-[clamp(6.5px,3vw,13px)] ${pathname.includes('/chat') ? "opacity-100 !text-[var(--amber-soft)]" : "opacity-75 group-hover:!text-[var(--text)]"} max-[820px]:hidden`}>Chat</span>
                 </Link>
