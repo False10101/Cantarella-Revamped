@@ -1090,7 +1090,7 @@ describe("two-pass model contracts", () => {
     ]);
   });
 
-  it("defers extra tool calls instead of failing the whole turn", async () => {
+  it("fails after deferred tool calls never produce a final Thought response", async () => {
     const generator = testThoughtGenerator({
       async complete(request) {
         return {
@@ -1111,7 +1111,7 @@ describe("two-pass model contracts", () => {
       },
     });
 
-    const result = await generator.generate(
+    await expect(generator.generate(
         {
           currentMessages: ["remember these four unrelated things"],
           recentConversation: [],
@@ -1129,14 +1129,10 @@ describe("two-pass model contracts", () => {
             return { output: { ok: true } };
           },
         },
-      );
-
-    expect(result.toolExecutions).toHaveLength(8);
-    expect(result.toolExecutions?.slice(0, 3).every((execution) =>
-      (execution.output as { ok: boolean }).ok,
-    )).toBe(true);
-    expect(result.toolExecutions?.[3]?.output).toMatchObject({
-      code: "TOOL_BATCH_DEFERRED",
+      )).rejects.toMatchObject({
+      name: "ThoughtContractError",
+      message: "The Thought model requested a tool after tools were closed for its final response.",
+      retryable: false,
     });
   });
 
@@ -1485,6 +1481,37 @@ describe("two-pass model contracts", () => {
     expect(requests[0]?.maxTokens).toBe(6_000);
     expect(requests[1]?.messages.every((message) => !message.content.includes("not json")))
       .toBe(true);
+  });
+
+  it("fails instead of fabricating a visible reply after two invalid Thought finals", async () => {
+    const requests: CompletionRequest[] = [];
+    const generator = testThoughtGenerator({
+      async complete(request) {
+        requests.push(request);
+        return {
+          content: "not valid json",
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    });
+
+    await expect(generator.generate({
+      currentMessages: ["yo babe"],
+      recentConversation: [],
+      conversationSummary: null,
+      memories: [],
+      reminders: [],
+      localTime: "Tuesday, September 2, 2026 at 5:00 PM GMT+7",
+    })).rejects.toMatchObject({
+      name: "ThoughtContractError",
+      message: "The Thought model returned invalid final JSON or violated its schema twice.",
+      retryable: false,
+    });
+
+    expect(requests).toHaveLength(2);
   });
 
   it("normalizes a single fenced final JSON object", async () => {

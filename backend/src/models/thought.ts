@@ -923,24 +923,11 @@ for (let round = 0; round < maxModelSteps; round += 1) {
       );
     }
     if (forceFinal || availableTools.length === 0) {
-      return {
-        thought: {
-          messageMode: "help",
-          contextRelation: "immediate_context",
-          applicationActionDecision: "none",
-          voiceContext: [],
-          replyPoints: ["I couldn't finish that cleanly."],
-          question: "send that again?",
-        },
-        completion: combinedCompletion(),
-        ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
-        ...(applicationResults.length > 0
-          ? {
-              applicationResult: applicationResults[0],
-              applicationResults,
-            }
-          : {}),
-      };
+      throw thoughtContractError(
+        "The Thought model requested a tool after tools were closed for its final response.",
+        completionEvidence(completions),
+        false,
+      );
     }
     if (!calls.every(isStructurallyValidToolCall)) {
       throw thoughtContractError(
@@ -1147,26 +1134,11 @@ for (let round = 0; round < maxModelSteps; round += 1) {
   } catch (error) {
     if (!isOpenRouterError(error)) throw error;
     if (parseFailure) {
-      return {
-        thought: {
-          messageMode: "help",
-          contextRelation: "immediate_context",
-          applicationActionDecision: "none",
-          voiceContext: [],
-          replyPoints: [
-            "I couldn't finish that cleanly.",
-          ],
-          question: "send that again?",
-        },
-        completion: combinedCompletion(),
-        ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
-        ...(applicationResults.length > 0
-          ? {
-              applicationResult: applicationResults[0],
-              applicationResults,
-            }
-          : {}),
-      };
+      throw thoughtContractError(
+        "The Thought model returned invalid final JSON or violated its schema twice.",
+        completionEvidence(completions),
+        false,
+      );
     }
     parseFailure = error;
     forceFinal = true;
@@ -1177,26 +1149,9 @@ for (let round = 0; round < maxModelSteps; round += 1) {
   }
 }
 
-return {
-  thought: {
-    messageMode: "help",
-    contextRelation: "immediate_context",
-    applicationActionDecision: "none",
-    voiceContext: [],
-    replyPoints: [
-      applicationResults.length > 0
-        ? "I got part of that done, but couldn't finish the rest cleanly."
-        : "I couldn't finish that cleanly.",
-    ],
-    question: applicationResults.length > 0 ? null : "send that again?",
-  },
-  completion: combinedCompletion(),
-  ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
-  ...(applicationResults.length > 0
-    ? {
-        applicationResult: applicationResults[0],
-        applicationResults,
-      }
-    : {}),
-};
+throw thoughtContractError(
+  "The Thought model exceeded the bounded application tool-round limit.",
+  completionEvidence(completions),
+  false,
+);
 }
