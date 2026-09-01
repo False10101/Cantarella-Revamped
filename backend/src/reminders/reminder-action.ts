@@ -9,11 +9,20 @@ import { reminderDeliveries, reminders } from "../db/schema.js";
 import type { ReminderAction } from "../models/thought.js";
 import { nextReminderOccurrence } from "./reminder-schedule.js";
 
-export class InvalidReminderActionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidReminderActionError";
-  }
+export type InvalidReminderActionError = Error;
+
+export function invalidReminderAction(
+  message: string,
+): InvalidReminderActionError {
+  const error = new Error(message);
+  error.name = "InvalidReminderActionError";
+  return error;
+}
+
+export function isInvalidReminderActionError(
+  error: unknown,
+): error is InvalidReminderActionError {
+  return error instanceof Error && error.name === "InvalidReminderActionError";
 }
 
 export function resolveReminderActionTime(
@@ -22,12 +31,12 @@ export function resolveReminderActionTime(
   referenceAt: Date,
 ): Date {
   if (action.operation !== "create" && action.operation !== "reschedule") {
-    throw new InvalidReminderActionError(
+    throw invalidReminderAction(
       "This reminder operation does not contain a schedule.",
     );
   }
   if (action.scheduleKind === null) {
-    throw new InvalidReminderActionError("The reminder time is missing.");
+    throw invalidReminderAction("The reminder time is missing.");
   }
 
   let scheduledFor: Date;
@@ -36,7 +45,7 @@ export function resolveReminderActionTime(
     const amount = action.delayAmount;
     const unit = action.delayUnit;
     if (amount === null || unit === null) {
-      throw new InvalidReminderActionError("The relative reminder is incomplete.");
+      throw invalidReminderAction("The relative reminder is incomplete.");
     }
     const unitMillis =
       unit === "minutes"
@@ -47,20 +56,20 @@ export function resolveReminderActionTime(
     scheduledFor = new Date(referenceAt.getTime() + amount * unitMillis);
   } else {
     if (action.localDateTime === null) {
-      throw new InvalidReminderActionError("The reminder time is missing.");
+      throw invalidReminderAction("The reminder time is missing.");
     }
     const local = DateTime.fromISO(action.localDateTime, { zone: timezone });
     if (!local.isValid) {
-      throw new InvalidReminderActionError("The reminder time is invalid.");
+      throw invalidReminderAction("The reminder time is invalid.");
     }
     scheduledFor = local.toUTC().toJSDate();
   }
 
   if (scheduledFor <= referenceAt) {
-    throw new InvalidReminderActionError("The reminder time is not in the future.");
+    throw invalidReminderAction("The reminder time is not in the future.");
   }
   if (scheduledFor.getTime() - referenceAt.getTime() > 366 * 24 * 60 * 60_000) {
-    throw new InvalidReminderActionError(
+    throw invalidReminderAction(
       "Chat reminders cannot be scheduled more than one year ahead.",
     );
   }
@@ -140,7 +149,7 @@ export async function executeReminderAction(input: {
   if (input.action.operation !== "create") {
     const reminderId = input.action.targetReminderRef;
     if (!reminderId) {
-      throw new InvalidReminderActionError(
+      throw invalidReminderAction(
         "The reminder action has no resolved target.",
       );
     }
@@ -159,7 +168,7 @@ export async function executeReminderAction(input: {
         .limit(1)
         .for("update");
       if (!existing) {
-        throw new InvalidReminderActionError(
+        throw invalidReminderAction(
           "The selected reminder no longer exists.",
         );
       }
@@ -176,7 +185,7 @@ export async function executeReminderAction(input: {
           )
           .returning();
         if (!deleted) {
-          throw new InvalidReminderActionError(
+          throw invalidReminderAction(
             "The selected reminder could not be deleted.",
           );
         }
@@ -190,7 +199,7 @@ export async function executeReminderAction(input: {
       }
 
       if (existing.status === "cancelled") {
-        throw new InvalidReminderActionError(
+        throw invalidReminderAction(
           "The selected reminder is already cancelled.",
         );
       }
@@ -245,7 +254,7 @@ export async function executeReminderAction(input: {
             now,
           );
         } else {
-          throw new InvalidReminderActionError(
+          throw invalidReminderAction(
             "The reminder needs a new future time before it can resume.",
           );
         }
@@ -284,7 +293,7 @@ export async function executeReminderAction(input: {
         .where(eq(reminders.id, reminderId))
         .returning();
       if (!updated) {
-        throw new InvalidReminderActionError(
+        throw invalidReminderAction(
           "The selected reminder could not be updated.",
         );
       }
@@ -300,7 +309,7 @@ export async function executeReminderAction(input: {
 
   const creationKey = `chat:${input.turnId}`;
   if (!input.action.title || input.action.recurrence === "unchanged") {
-    throw new InvalidReminderActionError(
+    throw invalidReminderAction(
       "The create reminder action is incomplete.",
     );
   }

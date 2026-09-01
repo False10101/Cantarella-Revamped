@@ -23,7 +23,7 @@ import {
   users,
   // heartbeat,
 } from "../../db/schema.js";
-import { HttpError } from "../../http/http-error.js";
+import { httpError, type HttpError } from "../../http/http-error.js";
 import { orderRecentContextMessages } from "../../pipeline/message-order.js";
 import type {
   MessageHistoryPage,
@@ -120,7 +120,7 @@ export function toMessageSnapshot(message: StoredMessage): MessageSnapshot {
 }
 
 function conversationNotFound(): HttpError {
-  return new HttpError(
+  return httpError(
     404,
     "CONVERSATION_NOT_FOUND",
     "The conversation does not exist.",
@@ -128,7 +128,7 @@ function conversationNotFound(): HttpError {
 }
 
 function accountNotInitialized(): HttpError {
-  return new HttpError(
+  return httpError(
     404,
     "ACCOUNT_NOT_INITIALIZED",
     "Complete the login bootstrap before accessing this account.",
@@ -216,7 +216,7 @@ export function createConversationService(): ConversationService {
           .limit(1);
 
         if (!cursor) {
-          throw new HttpError(
+          throw httpError(
             400,
             "INVALID_MESSAGE_CURSOR",
             "The message cursor is invalid for this conversation.",
@@ -327,7 +327,7 @@ export function createConversationService(): ConversationService {
             .limit(1);
 
           if (!storedMessage) {
-            throw new HttpError(
+            throw httpError(
               500,
               "MESSAGE_SAVE_FAILED",
               "The message could not be saved.",
@@ -340,7 +340,7 @@ export function createConversationService(): ConversationService {
             storedMessage.content !== input.content ||
             storedMessage.origin !== input.source
           ) {
-            throw new HttpError(
+            throw httpError(
               409,
               "CLIENT_MESSAGE_ID_REUSED",
               "The client message ID was already used for different content.",
@@ -434,7 +434,7 @@ export function createConversationService(): ConversationService {
             .limit(1);
 
           if (!existingTurn || existingTurn.status !== "queued") {
-            throw new HttpError(
+            throw httpError(
               500,
               "TURN_BATCH_INVALID",
               "The collecting message batch has no queued turn.",

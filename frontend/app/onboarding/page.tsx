@@ -14,22 +14,22 @@ const voicePresets = [
   {
     id: "default",
     label: "Default",
-    description: "Warm, direct, human",
+    description: "Balanced, warm, candid",
   },
   {
     id: "softer",
     label: "Softer",
-    description: "Gentler when it matters",
+    description: "Patient, gentle, reassuring",
   },
   {
     id: "firmer",
     label: "Firmer",
-    description: "Blunt, no excuses",
+    description: "Direct accountability",
   },
   {
     id: "playful",
     label: "Playful",
-    description: "Teasing, still grounded",
+    description: "Light banter, still kind",
   },
   {
     id: "nurturing",

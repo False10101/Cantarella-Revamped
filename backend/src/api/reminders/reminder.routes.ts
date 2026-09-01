@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 
 import type { AuthenticatedIdentity } from "../../auth/identity.js";
-import { HttpError } from "../../http/http-error.js";
+import { httpError, type HttpError } from "../../http/http-error.js";
 import type { ReminderService } from "./reminder.service.js";
 import {
   createReminderInputSchema,
@@ -12,7 +12,7 @@ import {
 
 function authenticatedIdentity(request: Request): AuthenticatedIdentity {
   if (!request.identity) {
-    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
+    throw httpError(401, "UNAUTHORIZED", "Authentication required.");
   }
   return request.identity;
 }
@@ -20,7 +20,7 @@ function authenticatedIdentity(request: Request): AuthenticatedIdentity {
 function reminderId(value: string): string {
   const parsed = reminderIdSchema.safeParse(value);
   if (!parsed.success) {
-    throw new HttpError(400, "INVALID_REMINDER_ID", "The reminder ID is invalid.");
+    throw httpError(400, "INVALID_REMINDER_ID", "The reminder ID is invalid.");
   }
   return parsed.data;
 }
@@ -31,7 +31,7 @@ export function createReminderRouter(reminderService: ReminderService): Router {
   router.get("/reminders", async (request, response) => {
     const query = listRemindersQuerySchema.safeParse(request.query);
     if (!query.success) {
-      throw new HttpError(
+      throw httpError(
         400,
         "INVALID_REMINDER_QUERY",
         "The reminder query is invalid.",
@@ -47,7 +47,7 @@ export function createReminderRouter(reminderService: ReminderService): Router {
   router.post("/reminders", async (request, response) => {
     const input = createReminderInputSchema.safeParse(request.body);
     if (!input.success) {
-      throw new HttpError(400, "INVALID_REMINDER", "The reminder is invalid.");
+      throw httpError(400, "INVALID_REMINDER", "The reminder is invalid.");
     }
     const reminder = await reminderService.create(
       authenticatedIdentity(request),
@@ -59,7 +59,7 @@ export function createReminderRouter(reminderService: ReminderService): Router {
   router.patch("/reminders/:reminderId", async (request, response) => {
     const input = updateReminderInputSchema.safeParse(request.body);
     if (!input.success) {
-      throw new HttpError(400, "INVALID_REMINDER", "The reminder is invalid.");
+      throw httpError(400, "INVALID_REMINDER", "The reminder is invalid.");
     }
     const reminder = await reminderService.update(
       authenticatedIdentity(request),

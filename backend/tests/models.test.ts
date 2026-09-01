@@ -7,36 +7,95 @@ import {
   resolveMutationTarget,
 } from "../src/tools/application-tools.js";
 import {
-  createThoughtGenerator,
+  generateThought,
   MAX_REPLY_POINT_CHARACTERS,
   suppressAutomaticMemoryNarration,
   ThoughtContractError,
   thoughtSchema,
 } from "../src/models/thought.js";
 import {
-  createOpenRouterClient,
-  OpenRouterError,
+  completeOpenRouter,
   type CompletionRequest,
+  type CompleteModel,
 } from "../src/models/openrouter.js";
 import { limitRecentContext } from "../src/pipeline/turn-processor.js";
 import {
-  createVoiceGenerator,
+  generateVoice,
   splitVoiceBubbles,
   VOICE_BRIEF_REJECTION_SENTINEL,
-  VoiceBriefRejectedError,
-  VoiceOutputLeakageError,
 } from "../src/models/voice.js";
 
 const validThought = {
   messageMode: "help" as const,
   contextRelation: "standalone" as const,
   applicationActionDecision: "none" as const,
+  voiceContext: [],
   replyPoints: [
     "If the client is waiting, send a brief update first.",
     "Otherwise, start the portfolio work.",
   ],
   question: null,
 };
+
+describe("Thought compatibility", () => {
+  it("defaults an omitted voice context from older Thought output", () => {
+    const { voiceContext: _voiceContext, ...olderThought } = validThought;
+
+    expect(thoughtSchema.parse(olderThought).voiceContext).toEqual([]);
+  });
+
+  it("allows contextual social chat to carry facts without a reply point", () => {
+    const socialThought = {
+      ...validThought,
+      messageMode: "social" as const,
+      contextRelation: "immediate_context" as const,
+      voiceContext: ["The active exchange is about the user deciding what to eat."],
+      replyPoints: [],
+    };
+
+    expect(thoughtSchema.parse(socialThought)).toMatchObject({
+      voiceContext: socialThought.voiceContext,
+      replyPoints: [],
+    });
+  });
+
+  it("requires facts for a context-dependent Thought handoff", () => {
+    const result = thoughtSchema.safeParse({
+      ...validThought,
+      contextRelation: "immediate_context",
+      voiceContext: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("requires a factual outcome for help and mixed replies", () => {
+    const result = thoughtSchema.safeParse({
+      ...validThought,
+      replyPoints: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects instructions to Voice in reply points", () => {
+    const result = thoughtSchema.safeParse({
+      ...validThought,
+      messageMode: "social",
+      replyPoints: ["Respond to the user's playful request."],
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+function testThoughtGenerator(client: { complete: CompleteModel }) {
+  return {
+    generate(context: Parameters<typeof generateThought>[0], toolRuntime?: Parameters<typeof generateThought>[1]) {
+      return generateThought(context, toolRuntime, client.complete);
+    },
+  };
+}
 
 describe("automatic memory narration", () => {
   const successfulSave = [
@@ -63,16 +122,14 @@ describe("automatic memory narration", () => {
     ]);
   });
 
-  it("uses a neutral acknowledgment when the model supplied only storage narration", () => {
+  it("removes storage narration without adding a replacement instruction", () => {
     const result = suppressAutomaticMemoryNarration(
       { ...validThought, replyPoints: ["I saved that in memory."] },
       ["my sister is amy"],
       successfulSave,
     );
 
-    expect(result.replyPoints).toEqual([
-      "Acknowledge the user's information or correction briefly.",
-    ]);
+    expect(result.replyPoints).toEqual([]);
   });
 
   it("keeps storage status when the user explicitly asks about it", () => {
@@ -94,7 +151,8 @@ describe("automatic memory narration", () => {
 describe("production request parity", () => {
   it("omits unsupported parallel_tool_calls when the request leaves it unset", async () => {
     let requestBody: Record<string, unknown> | null = null;
-    const client = createOpenRouterClient(async (_input, init) => {
+    const complete = async (...args: Parameters<typeof fetch>) => {
+      const [_input, init] = args;
       requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
       return new Response(JSON.stringify({
         model: "deepseek/deepseek-v4-pro-0813",
@@ -111,9 +169,9 @@ describe("production request parity", () => {
           },
         }],
       }), { status: 200, headers: { "Content-Type": "application/json" } });
-    });
+    };
 
-    await client.complete({
+    await completeOpenRouter({
       model: "deepseek/deepseek-v4-pro-0813",
       messages: [{ role: "user", content: "assignment due in a week" }],
       temperature: 0,
@@ -126,7 +184,7 @@ describe("production request parity", () => {
         allowFallbacks: true,
         maxPrice: { prompt: 3, completion: 5 },
       },
-    });
+    }, complete);
 
     expect(requestBody).not.toBeNull();
     expect(requestBody).not.toHaveProperty("parallel_tool_calls");
@@ -134,7 +192,8 @@ describe("production request parity", () => {
 
   it("does not exclude DeepSeek from its own structured-output round", async () => {
     let requestBody: Record<string, unknown> | null = null;
-    const client = createOpenRouterClient(async (_input, init) => {
+    const complete = async (...args: Parameters<typeof fetch>) => {
+      const [_input, init] = args;
       requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
       return new Response(JSON.stringify({
         model: "deepseek/deepseek-v4-pro-0813",
@@ -144,9 +203,9 @@ describe("production request parity", () => {
           message: { content: JSON.stringify(validThought) },
         }],
       }), { status: 200, headers: { "Content-Type": "application/json" } });
-    });
+    };
 
-    await client.complete({
+    await completeOpenRouter({
       model: "deepseek/deepseek-v4-pro-0813",
       messages: [{ role: "user", content: "return the final brief" }],
       temperature: 0,
@@ -160,7 +219,7 @@ describe("production request parity", () => {
         allowFallbacks: true,
         maxPrice: { prompt: 3, completion: 5 },
       },
-    });
+    }, complete);
 
     expect(requestBody).not.toBeNull();
     const capturedBody = requestBody as unknown as Record<string, unknown>;
@@ -295,7 +354,7 @@ describe("time-bound memory expiry contract", () => {
       originalRequest: "i study at kmutt",
       timezone: "Asia/Bangkok",
       referenceAt: new Date("2026-08-13T08:00:00.000Z"),
-      memoryRetriever: { async retrieve() { return []; } },
+      retrieveMemories: async () => [],
     });
 
     const result = await runtime.execute({
@@ -323,7 +382,7 @@ describe("time-bound memory expiry contract", () => {
 
   it("keeps the complete memory tool surface visible from the first model step", async () => {
     const requests: CompletionRequest[] = [];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         if (requests.length === 1) {
@@ -472,7 +531,7 @@ describe("time-bound memory expiry contract", () => {
       originalRequest: "my internship report is due in a week",
       timezone: "Asia/Bangkok",
       referenceAt: new Date("2026-08-13T08:00:00.000Z"),
-      memoryRetriever: { async retrieve() { return []; } },
+      retrieveMemories: async () => [],
     });
 
     await runtime.execute({
@@ -609,7 +668,7 @@ describe("two-pass model contracts", () => {
         },
       },
     ];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -632,6 +691,7 @@ describe("two-pass model contracts", () => {
     const terminalThought = {
       ...validThought,
       contextRelation: "immediate_context" as const,
+      voiceContext: ["The user corrected their rent from 8,000 THB to 2,000 THB."],
       replyPoints: ["The stored rent was updated to 2,000 THB."],
     };
 
@@ -735,7 +795,7 @@ describe("two-pass model contracts", () => {
         },
       },
     ];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return requests.length === 1
@@ -811,7 +871,7 @@ describe("two-pass model contracts", () => {
       ...validThought,
       replyPoints: ["The stored rent was updated to 2,000 THB."],
     };
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         const toolCalls = requests.length === 1
@@ -880,7 +940,7 @@ describe("two-pass model contracts", () => {
       ...validThought,
       replyPoints: ["The stored rent memory was permanently forgotten."],
     };
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -938,7 +998,7 @@ describe("two-pass model contracts", () => {
 
   it("executes up to three distinct mutations together", async () => {
     const requests: CompletionRequest[] = [];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         if (requests.length === 1) {
@@ -1031,7 +1091,7 @@ describe("two-pass model contracts", () => {
   });
 
   it("defers extra tool calls instead of failing the whole turn", async () => {
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         return {
           content: "",
@@ -1082,7 +1142,7 @@ describe("two-pass model contracts", () => {
 
   it("uses DeepSeek V4 Pro with official-provider preference and fallback", async () => {
     const requests: CompletionRequest[] = [];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -1126,7 +1186,7 @@ describe("two-pass model contracts", () => {
         arguments: JSON.stringify({ query: "the user's rent" }),
       },
     };
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return requests.length === 1
@@ -1181,7 +1241,7 @@ describe("two-pass model contracts", () => {
 
   it("quarantines malformed tool arguments instead of invoking application code", async () => {
     const requests: CompletionRequest[] = [];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return requests.length === 1
@@ -1239,7 +1299,7 @@ describe("two-pass model contracts", () => {
 
   it("tells Qwen that ordinary shorthand can carry tool intent", async () => {
     let capturedRequest: CompletionRequest | undefined;
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         capturedRequest = request;
         return {
@@ -1283,10 +1343,11 @@ describe("two-pass model contracts", () => {
       JSON.stringify({
         ...validThought,
         contextRelation: "immediate_context",
+        voiceContext: ["The user corrected their rent from 8,000 THB to 2,000 THB."],
         replyPoints: ["The corrected rent is 2,000 THB."],
       }),
     ];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -1324,7 +1385,7 @@ describe("two-pass model contracts", () => {
 
   it("instructs clear forget requests to delete immediately without confirmation", async () => {
     const requests: CompletionRequest[] = [];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -1368,7 +1429,7 @@ describe("two-pass model contracts", () => {
   it("retries malformed Thought JSON from the original context", async () => {
     const requests: CompletionRequest[] = [];
     const outputs = ["not json", JSON.stringify(validThought)];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -1428,7 +1489,7 @@ describe("two-pass model contracts", () => {
 
   it("normalizes a single fenced final JSON object", async () => {
     const requests: CompletionRequest[] = [];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -1456,7 +1517,7 @@ describe("two-pass model contracts", () => {
 
   it("rejects a claimed mutation success without a successful mutation tool", async () => {
     const requests: CompletionRequest[] = [];
-    const generator = createThoughtGenerator({
+    const generator = testThoughtGenerator({
       async complete(request) {
         requests.push(request);
         return {
@@ -1493,18 +1554,20 @@ describe("two-pass model contracts", () => {
   });
 
   it("turns every non-empty Aion line into its own bubble", () => {
-    expect(splitVoiceBubbles("yeah\n\nyou know which one\nstart there")).toEqual(
-      ["yeah", "you know which one", "start there"],
-    );
+    expect(splitVoiceBubbles("yeah\n\nyou know which one\nstart there")).toEqual({
+      ok: true,
+      bubbles: ["yeah", "you know which one", "start there"],
+    });
   });
 
   it("never turns Aion's rejected-brief sentinel into a bubble", () => {
-    expect(() => splitVoiceBubbles(VOICE_BRIEF_REJECTION_SENTINEL)).toThrow(
-      VoiceBriefRejectedError,
-    );
-    expect(() =>
+    expect(splitVoiceBubbles(VOICE_BRIEF_REJECTION_SENTINEL)).toMatchObject({
+      ok: false,
+      failure: { reason: "rejected" },
+    });
+    expect(
       splitVoiceBubbles(`cannot render\n${VOICE_BRIEF_REJECTION_SENTINEL}`),
-    ).toThrow(VoiceBriefRejectedError);
+    ).toMatchObject({ ok: false, failure: { reason: "rejected" } });
   });
 
   it("never turns Aion's private analysis into visible bubbles", () => {
@@ -1514,7 +1577,10 @@ describe("two-pass model contracts", () => {
 Now I need to render it through Cantarella's persona.
 got it, 2k thb`;
 
-    expect(() => splitVoiceBubbles(leaked)).toThrow(VoiceOutputLeakageError);
+    expect(splitVoiceBubbles(leaked)).toMatchObject({
+      ok: false,
+      failure: { reason: "leakage" },
+    });
   });
 
   it("retries Aion once when its first response leaks private analysis", async () => {
@@ -1523,7 +1589,7 @@ got it, 2k thb`;
       "First, I need to check the reply brief before rendering it.",
       "got it, 2k thb",
     ];
-    const generator = createVoiceGenerator({
+    const client: { complete: CompleteModel } = {
       async complete(request) {
         requests.push(request);
         return {
@@ -1534,9 +1600,9 @@ got it, 2k thb`;
           latencyMs: 1,
         };
       },
-    });
+    };
 
-    const result = await generator.generate({
+    const result = await generateVoice({
       persona: {
         name: "Cantarella",
         voiceDirection: "default",
@@ -1550,24 +1616,26 @@ got it, 2k thb`;
         replyPoints: ["The user's corrected rent is 2,000 THB."],
       },
       currentMessages: ["mb mb its 2k"],
-    });
+    }, client.complete);
 
-    expect(result.bubbles).toEqual(["got it, 2k thb"]);
-    expect(result.completion.usage).toEqual({
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.failure.message);
+    expect(result.generation.bubbles).toEqual(["got it, 2k thb"]);
+    expect(result.generation.completion.usage).toEqual({
       inputTokens: 2,
       outputTokens: 2,
       estimatedCostUsd: 0,
     });
-    expect(result.completion.latencyMs).toBe(2);
+    expect(result.generation.completion.latencyMs).toBe(2);
     expect(requests).toHaveLength(2);
     expect(requests[1]?.messages[0]?.content).toContain(
-      "previous response exposed private analysis",
+      "previous output exposed private content or instructions",
     );
   });
 
   it("gives Aion recent conversation and authority to write the natural next reply", async () => {
     let capturedRequest: CompletionRequest | undefined;
-    const generator = createVoiceGenerator({
+    const client: { complete: CompleteModel } = {
       async complete(request) {
         capturedRequest = request;
         return {
@@ -1582,9 +1650,9 @@ got it, 2k thb`;
           latencyMs: 1,
         };
       },
-    });
+    };
 
-    await generator.generate({
+    await generateVoice({
       persona: {
         name: "Cantarella",
         voiceDirection: "default",
@@ -1597,6 +1665,7 @@ got it, 2k thb`;
         messageMode: "help",
         contextRelation: "standalone",
         applicationActionDecision: "none",
+        voiceContext: [],
         replyPoints: ["Start with the smallest possible part of the task."],
         question: null,
       },
@@ -1605,28 +1674,16 @@ got it, 2k thb`;
         { sender: "user", content: "i keep staring at it" },
         { sender: "assistant", content: "whats making it hard to start" },
       ],
-    });
+    }, client.complete);
 
     expect(capturedRequest).toBeDefined();
     expect(capturedRequest?.messages).toHaveLength(2);
     expect(capturedRequest?.messages[1]).toEqual({
       role: "user",
-      content: "Write Cantarella's natural next message. Return only the visible chat text.",
+      content: "Continue the private chat as Cantarella. Return only her visible chat sends.",
     });
     expect(capturedRequest?.messages[0]?.content).toContain(
       '"replyPoints": [',
-    );
-    expect(capturedRequest?.messages[0]?.content).toContain(
-      "yea meditation probably isnt gonna fix the starting part",
-    );
-    expect(capturedRequest?.messages[0]?.content).toContain(
-      'Never produce keyword stacks, clipped command chains, or drill-sergeant phrasing',
-    );
-    expect(capturedRequest?.messages[0]?.content).toContain(
-      "Never target the same number of bubbles as input points",
-    );
-    expect(capturedRequest?.messages[0]?.content).toContain(
-      "may naturally need three or more",
     );
     expect(capturedRequest?.messages[0]?.content).toContain(
       VOICE_BRIEF_REJECTION_SENTINEL,
@@ -1635,13 +1692,13 @@ got it, 2k thb`;
       '"how do i start this task"',
     );
     expect(capturedRequest?.messages[0]?.content).toContain(
-      "<authority_mode>GROUNDED</authority_mode>",
+      "<chat_mode>GROUNDED</chat_mode>",
     );
     expect(capturedRequest?.messages[0]?.content).toContain(
       '"content": "whats making it hard to start"',
     );
     expect(capturedRequest?.messages[0]?.content).toContain(
-      "A stiff, repetitive, or overly literal brief is not grounds for rejection",
+      "Stiff or repetitive private context is not a reason to stop",
     );
     expect(capturedRequest?.messages[0]?.content).not.toContain(
       "You have no conversation to interpret",
@@ -1652,7 +1709,7 @@ got it, 2k thb`;
 
   it("gives social replies freedom to avoid repeating the last assistant message", async () => {
     let capturedRequest: CompletionRequest | undefined;
-    const generator = createVoiceGenerator({
+    const client: { complete: CompleteModel } = {
       async complete(request) {
         capturedRequest = request;
         return {
@@ -1663,9 +1720,9 @@ got it, 2k thb`;
           latencyMs: 1,
         };
       },
-    });
+    };
 
-    const result = await generator.generate({
+    const result = await generateVoice({
       persona: {
         name: "Cantarella",
         voiceDirection: "default",
@@ -1684,20 +1741,62 @@ got it, 2k thb`;
         { sender: "assistant", content: "yea that assignment's still hanging over the holiday though" },
       ],
       currentMessages: ["unfortunately :("],
-    });
+    }, client.complete);
 
-    expect(result.bubbles).toEqual(["literally the worst timing"]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.failure.message);
+    expect(result.generation.bubbles).toEqual(["literally the worst timing"]);
     expect(capturedRequest?.messages[0]?.content).toContain(
-      "<authority_mode>SOCIAL</authority_mode>",
+      "<chat_mode>SOCIAL</chat_mode>",
     );
     expect(capturedRequest?.messages[0]?.content).toContain(
-      "do not mechanically repeat a fact or reaction Cantarella just said",
+      "The selected voice direction is mandatory",
     );
+  });
+
+  it("can give Voice resolved facts without raw recent-chat wording", async () => {
+    let capturedRequest: CompletionRequest | undefined;
+    const client: { complete: CompleteModel } = {
+      async complete(request) {
+        capturedRequest = request;
+        return {
+          content: "fair enough",
+          model: request.model,
+          provider: "test",
+          usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
+          latencyMs: 1,
+        };
+      },
+    };
+
+    await generateVoice({
+      persona: {
+        name: "Cantarella",
+        voiceDirection: "intimate",
+        customStyle: "",
+        preferredUserName: null,
+        endearmentPreference: null,
+        boundaries: [],
+      },
+      replyBrief: {
+        ...validThought,
+        contextRelation: "immediate_context",
+      },
+      currentMessages: ["nah not that one"],
+      resolvedContext: ["The user is rejecting the immediately previous option."],
+    }, client.complete);
+
+    const systemPrompt = capturedRequest?.messages[0]?.content ?? "";
+    expect(systemPrompt).toContain("<resolved_context>");
+    expect(systemPrompt).toContain(
+      "The user is rejecting the immediately previous option.",
+    );
+    expect(systemPrompt).not.toContain("<recent_conversation>");
   });
 
   it("keeps successful application results under strict authority", async () => {
     let capturedRequest: CompletionRequest | undefined;
-    const generator = createVoiceGenerator({
+    const client: { complete: CompleteModel } = {
       async complete(request) {
         capturedRequest = request;
         return {
@@ -1708,9 +1807,9 @@ got it, 2k thb`;
           latencyMs: 1,
         };
       },
-    });
+    };
 
-    await generator.generate({
+    await generateVoice({
       persona: {
         name: "Cantarella",
         voiceDirection: "default",
@@ -1726,13 +1825,13 @@ got it, 2k thb`;
       },
       currentMessages: ["remind me at 5"],
       successfulApplicationAction: true,
-    });
+    }, client.complete);
 
     expect(capturedRequest?.messages[0]?.content).toContain(
-      "<authority_mode>APPLICATION</authority_mode>",
+      "<chat_mode>APPLICATION</chat_mode>",
     );
     expect(capturedRequest?.messages[0]?.content).toContain(
-      "Never invent another operation, target, time, result, or confirmation",
+      "Keep the user-facing consequence true",
     );
   });
 });

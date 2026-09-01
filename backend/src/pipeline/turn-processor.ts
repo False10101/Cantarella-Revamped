@@ -29,30 +29,25 @@ import {
 } from "../db/schema.js";
 import { conversationEvents } from "../events/conversation-events.js";
 import {
-  createMemoryRetriever,
-  type MemoryRetriever,
+  retrieveMemories,
 } from "../memory/memory-retrieval.js";
 import {
-  createThoughtGenerator,
-  ThoughtContractError,
+  generateThought,
+  isThoughtContractError,
   type Thought,
   type ThoughtContext,
   type ThoughtGeneration,
-  type ThoughtGenerator,
 } from "../models/thought.js";
 import {
-  createVoiceGenerator,
-  VoiceBriefRejectedError,
-  VoiceOutputLeakageError,
+  generateVoice,
   type VoiceGeneration,
-  type VoiceGenerator,
+  type VoiceFailure,
 } from "../models/voice.js";
 import { createApplicationToolRuntime } from "../tools/application-tools.js";
 import { orderRecentContextMessages } from "./message-order.js";
 import {
-  createSummaryRetriever,
   formatSummaryContext,
-  type SummaryRetriever,
+  retrieveSummaryChunks,
 } from "../summary/summary-retrieval.js";
 
 export interface ClaimedTurnJob {
@@ -62,18 +57,37 @@ export interface ClaimedTurnJob {
   maxAttempts: number;
 }
 
-export class TurnDeferredError extends Error {
-  constructor(public readonly runAt: Date) {
-    super("The input batch is still collecting messages.");
-    this.name = "TurnDeferredError";
-  }
+export type TurnDeferredError = Error & { runAt: Date };
+
+export function turnDeferredError(runAt: Date): TurnDeferredError {
+  const error = new Error(
+    "The input batch is still collecting messages.",
+  ) as TurnDeferredError;
+  error.name = "TurnDeferredError";
+  error.runAt = runAt;
+  return error;
 }
 
-export class ObsoleteTurnJobError extends Error {
-  constructor() {
-    super("The turn job is already terminal.");
-    this.name = "ObsoleteTurnJobError";
-  }
+export function isTurnDeferredError(error: unknown): error is TurnDeferredError {
+  return (
+    error instanceof Error &&
+    error.name === "TurnDeferredError" &&
+    (error as Partial<TurnDeferredError>).runAt instanceof Date
+  );
+}
+
+export type ObsoleteTurnJobError = Error;
+
+export function obsoleteTurnJobError(): ObsoleteTurnJobError {
+  const error = new Error("The turn job is already terminal.");
+  error.name = "ObsoleteTurnJobError";
+  return error;
+}
+
+export function isObsoleteTurnJobError(
+  error: unknown,
+): error is ObsoleteTurnJobError {
+  return error instanceof Error && error.name === "ObsoleteTurnJobError";
 }
 
 interface PreparedTurn {
@@ -115,7 +129,7 @@ async function prepareTurn(turnId: string): Promise<PreparedTurn> {
       .where(eq(turns.id, turnId))
       .limit(1);
 
-    if (!turnReference) throw new ObsoleteTurnJobError();
+    if (!turnReference) throw obsoleteTurnJobError();
 
     await transaction
       .select({ id: conversations.id })
@@ -151,12 +165,12 @@ async function prepareTurn(turnId: string): Promise<PreparedTurn> {
       .limit(1);
 
     if (!record || ["completed", "failed", "cancelled"].includes(record.turnStatus)) {
-      throw new ObsoleteTurnJobError();
+      throw obsoleteTurnJobError();
     }
 
     const now = new Date();
     if (record.batchStatus === "collecting" && record.settleAt > now) {
-      throw new TurnDeferredError(record.settleAt);
+      throw turnDeferredError(record.settleAt);
     }
 
     await transaction
@@ -201,13 +215,13 @@ async function prepareTurn(turnId: string): Promise<PreparedTurn> {
 
 async function loadThoughtContext(
   prepared: PreparedTurn,
-  memoryRetriever: MemoryRetriever,
-  summaryRetriever: SummaryRetriever,
+  retrieveSummaries: typeof retrieveSummaryChunks,
 ): Promise<{
   context: ThoughtContext;
   recentConversation: Array<{
     sender: "user" | "assistant";
     content: string;
+    createdAtLocal: string;
   }>;
   sourceMessageId: string;
   referenceAt: Date;
@@ -259,7 +273,7 @@ async function loadThoughtContext(
     )
     .limit(60);
   const orderedRecentMessages = orderRecentContextMessages(recentMessages);
-  const summaryRetrieval = await summaryRetriever.retrieve({
+  const summaryRetrieval = await retrieveSummaries({
     userId: prepared.userId,
     conversationId: prepared.conversationId,
     queryTexts: [],
@@ -282,18 +296,26 @@ async function loadThoughtContext(
     (message) => ({
       sender: message.role as "user" | "assistant",
       content: message.content,
+      createdAtLocal: localTime(prepared.timezone, message.createdAt),
     }),
+  );
+  const thoughtRecentConversation = recentConversation.map(
+    ({ sender, content }) => ({ sender, content }),
+  );
+  const referenceLocalTime = localTime(
+    prepared.timezone,
+    referenceMessage.createdAt,
   );
 
   return {
     recentConversation,
     context: {
       currentMessages: batchMessages.map((message) => message.content),
-      recentConversation,
+      recentConversation: thoughtRecentConversation,
       conversationSummary: formatSummaryContext(summaryRetrieval),
       memories: memoryContext,
       reminders: reminderContext,
-      localTime: localTime(prepared.timezone, referenceMessage.createdAt),
+      localTime: referenceLocalTime,
     },
     sourceMessageId: referenceMessage.id,
     referenceAt: referenceMessage.createdAt,
@@ -359,18 +381,21 @@ async function completeModelRun(
     .where(eq(modelRuns.id, id));
 }
 
-async function failModelRun(id: string, error: unknown): Promise<void> {
+async function failModelRun(
+  id: string,
+  error: unknown,
+  rawOutput?: string,
+): Promise<void> {
   const message = error instanceof Error ? error.message : String(error);
   await database
     .update(modelRuns)
     .set({
       status: "failed",
       rawOutput:
-        error instanceof VoiceOutputLeakageError
-          ? error.rawOutput.slice(0, 20_000)
-          : error instanceof ThoughtContractError
+        rawOutput?.slice(0, 20_000) ??
+          (isThoughtContractError(error)
             ? error.rawOutput.slice(0, 20_000)
-          : undefined,
+            : undefined),
       errorCode: error instanceof Error ? error.name : "MODEL_ERROR",
       errorMessage: message.slice(0, 2_000),
       completedAt: new Date(),
@@ -382,19 +407,26 @@ export interface TurnProcessor {
   process(job: ClaimedTurnJob): Promise<void>;
 }
 
+function asVoiceError(failure: VoiceFailure): Error {
+  const error = new Error(failure.message);
+  error.name =
+    failure.reason === "rejected"
+      ? "VoiceBriefRejectedError"
+      : failure.reason === "leakage"
+        ? "VoiceOutputLeakageError"
+        : "VoiceTextFormatError";
+  return error;
+}
+
 export function createTurnProcessor(dependencies: {
-  thoughtGenerator?: ThoughtGenerator;
-  voiceGenerator?: VoiceGenerator;
-  memoryRetriever?: MemoryRetriever;
-  summaryRetriever?: SummaryRetriever;
+  generateThought?: typeof generateThought;
+  retrieveMemories?: typeof retrieveMemories;
+  retrieveSummaries?: typeof retrieveSummaryChunks;
 } = {}): TurnProcessor {
-  const thoughtGenerator =
-    dependencies.thoughtGenerator ?? createThoughtGenerator();
-  const voiceGenerator = dependencies.voiceGenerator ?? createVoiceGenerator();
-  const memoryRetriever =
-    dependencies.memoryRetriever ?? createMemoryRetriever();
-  const summaryRetriever =
-    dependencies.summaryRetriever ?? createSummaryRetriever();
+  const runThought = dependencies.generateThought ?? generateThought;
+  const findMemories = dependencies.retrieveMemories ?? retrieveMemories;
+  const findSummaryChunks =
+    dependencies.retrieveSummaries ?? retrieveSummaryChunks;
 
   return {
     async process(job) {
@@ -402,13 +434,13 @@ export function createTurnProcessor(dependencies: {
       const prepared = await prepareTurn(job.turnId);
       const {
         context,
+        recentConversation: voiceRecentConversation,
         sourceMessageId,
         referenceAt,
         originalRequest,
       } = await loadThoughtContext(
         prepared,
-        memoryRetriever,
-        summaryRetriever,
+        findSummaryChunks,
       );
 
       conversationEvents.publish(prepared.conversationId, {
@@ -426,7 +458,7 @@ export function createTurnProcessor(dependencies: {
         originalRequest,
         timezone: prepared.timezone,
         referenceAt,
-        memoryRetriever,
+        retrieveMemories: findMemories,
       });
 
       for (let generationAttempt = 1; generationAttempt <= 2; generationAttempt += 1) {
@@ -444,7 +476,7 @@ export function createTurnProcessor(dependencies: {
 
         let thoughtGeneration: ThoughtGeneration;
         try {
-          thoughtGeneration = await thoughtGenerator.generate(
+          thoughtGeneration = await runThought(
             attemptContext,
             toolRuntime,
           );
@@ -484,9 +516,17 @@ export function createTurnProcessor(dependencies: {
           messageMode: thoughtGeneration.thought.messageMode,
           contextRelation: thoughtGeneration.thought.contextRelation,
           applicationActionDecision: "none",
+          voiceContext: thoughtGeneration.thought.voiceContext,
           replyPoints: thoughtGeneration.thought.replyPoints,
           question: thoughtGeneration.thought.question,
         };
+        const voiceHistory =
+          environment.VOICE_CONTEXT_MODE === "history"
+            ? voiceRecentConversation.slice(-6)
+            : undefined;
+        const voiceHistoryContext = voiceHistory
+          ? { recentConversation: voiceHistory }
+          : {};
 
         await database
           .update(turns)
@@ -510,7 +550,9 @@ export function createTurnProcessor(dependencies: {
           inputJson: {
             replyBrief: voiceBrief,
             currentMessages: context.currentMessages,
-            recentConversation: context.recentConversation.slice(-6),
+            resolvedContext: voiceBrief.voiceContext,
+            ...voiceHistoryContext,
+            localTime: context.localTime,
             authorityMode:
               applicationResults.length > 0
                 ? "application"
@@ -537,13 +579,78 @@ export function createTurnProcessor(dependencies: {
         });
 
         try {
-          voiceGeneration = await voiceGenerator.generate({
+          const voiceResult = await generateVoice({
             persona: prepared.persona,
             replyBrief: voiceBrief,
             currentMessages: context.currentMessages,
-            recentConversation: context.recentConversation.slice(-6),
+            resolvedContext: voiceBrief.voiceContext,
+            ...voiceHistoryContext,
+            localTime: context.localTime,
             successfulApplicationAction: applicationResults.length > 0,
           });
+          if (!voiceResult.ok) {
+            const voiceError = asVoiceError(voiceResult.failure);
+            await failModelRun(
+              voiceRunId,
+              voiceError,
+              voiceResult.failure.rawOutput,
+            );
+
+            if (
+              applicationResults.length > 0 &&
+              voiceResult.failure.reason !== "leakage"
+            ) {
+              const fallbackBubbles = [
+                ...voiceBrief.replyPoints,
+                ...(voiceBrief.question ? [voiceBrief.question] : []),
+              ];
+              if (fallbackBubbles.length > 0) {
+                voiceGeneration = {
+                  rawOutput: fallbackBubbles.join("\n"),
+                  bubbles: fallbackBubbles,
+                  completion: {
+                    content: fallbackBubbles.join("\n"),
+                    model: environment.VOICE_MODEL,
+                    provider: null,
+                    usage: {
+                      inputTokens: null,
+                      outputTokens: null,
+                      estimatedCostUsd: null,
+                    },
+                    latencyMs: 0,
+                  },
+                };
+                break;
+              }
+            }
+
+            if (
+              voiceResult.failure.reason === "rejected" &&
+              generationAttempt === 1
+            ) {
+              rejectedResponse = thoughtGeneration.thought;
+              conversationEvents.publish(prepared.conversationId, {
+                type: "typing.stopped",
+                data: {
+                  conversationId: prepared.conversationId,
+                  sender: "assistant",
+                },
+              });
+              await database
+                .update(turns)
+                .set({ status: "thinking", updatedAt: new Date() })
+                .where(eq(turns.id, prepared.turnId));
+              conversationEvents.publish(prepared.conversationId, {
+                type: "turn.status",
+                data: { turnId: prepared.turnId, status: "thinking" },
+              });
+              continue;
+            }
+
+            throw voiceError;
+          }
+
+          voiceGeneration = voiceResult.generation;
           await completeModelRun(voiceRunId, {
             provider: voiceGeneration.completion.provider,
             model: voiceGeneration.completion.model,
@@ -555,55 +662,45 @@ export function createTurnProcessor(dependencies: {
           });
           break;
         } catch (error) {
+          if (
+            error instanceof Error &&
+            [
+              "VoiceBriefRejectedError",
+              "VoiceOutputLeakageError",
+              "VoiceTextFormatError",
+            ].includes(error.name)
+          ) {
+            throw error;
+          }
+
           await failModelRun(voiceRunId, error);
 
           if (
             applicationResults.length > 0 &&
-            !(error instanceof VoiceOutputLeakageError)
+            !(error instanceof Error && error.name === "VoiceOutputLeakageError")
           ) {
             const fallbackBubbles = [
               ...voiceBrief.replyPoints,
               ...(voiceBrief.question ? [voiceBrief.question] : []),
             ];
-            voiceGeneration = {
-              rawOutput: fallbackBubbles.join("\n"),
-              bubbles: fallbackBubbles,
-              completion: {
-                content: fallbackBubbles.join("\n"),
-                model: environment.VOICE_MODEL,
-                provider: null,
-                usage: {
-                  inputTokens: null,
-                  outputTokens: null,
-                  estimatedCostUsd: null,
+            if (fallbackBubbles.length > 0) {
+              voiceGeneration = {
+                rawOutput: fallbackBubbles.join("\n"),
+                bubbles: fallbackBubbles,
+                completion: {
+                  content: fallbackBubbles.join("\n"),
+                  model: environment.VOICE_MODEL,
+                  provider: null,
+                  usage: {
+                    inputTokens: null,
+                    outputTokens: null,
+                    estimatedCostUsd: null,
+                  },
+                  latencyMs: 0,
                 },
-                latencyMs: 0,
-              },
-            };
-            break;
-          }
-
-          if (
-            error instanceof VoiceBriefRejectedError &&
-            generationAttempt === 1
-          ) {
-            rejectedResponse = thoughtGeneration.thought;
-            conversationEvents.publish(prepared.conversationId, {
-              type: "typing.stopped",
-              data: {
-                conversationId: prepared.conversationId,
-                sender: "assistant",
-              },
-            });
-            await database
-              .update(turns)
-              .set({ status: "thinking", updatedAt: new Date() })
-              .where(eq(turns.id, prepared.turnId));
-            conversationEvents.publish(prepared.conversationId, {
-              type: "turn.status",
-              data: { turnId: prepared.turnId, status: "thinking" },
-            });
-            continue;
+              };
+              break;
+            }
           }
 
           throw error;
@@ -611,7 +708,9 @@ export function createTurnProcessor(dependencies: {
       }
 
       if (!voiceGeneration) {
-        throw new VoiceBriefRejectedError();
+        const error = new Error("The Voice model rejected an unsafe or unusable reply brief.");
+        error.name = "VoiceBriefRejectedError";
+        throw error;
       }
 
       const deliveryStartedAt = new Date();

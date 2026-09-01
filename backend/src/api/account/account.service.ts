@@ -10,7 +10,7 @@ import {
   users,
   userSettings,
 } from "../../db/schema.js";
-import { HttpError } from "../../http/http-error.js";
+import { httpError, type HttpError } from "../../http/http-error.js";
 import type {
   AccountSettingsInput,
   AccountSnapshot,
@@ -92,7 +92,7 @@ async function loadAccount(
 }
 
 function accountNotInitialized(): HttpError {
-  return new HttpError(
+  return httpError(
     404,
     "ACCOUNT_NOT_INITIALIZED",
     "Complete the login bootstrap before accessing this account.",
@@ -130,7 +130,7 @@ export function createAccountService(): AccountService {
             .limit(1);
 
           if (!existingUser) {
-            throw new HttpError(
+            throw httpError(
               500,
               "ACCOUNT_BOOTSTRAP_FAILED",
               "The local account could not be initialized.",

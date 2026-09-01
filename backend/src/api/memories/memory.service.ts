@@ -11,15 +11,15 @@ import {
   users,
   type Memory,
 } from "../../db/schema.js";
-import { HttpError } from "../../http/http-error.js";
+import { httpError, type HttpError } from "../../http/http-error.js";
 import {
   memoryContentHash,
   normalizeMemoryText,
 } from "../../memory/memory-core.js";
 import { reusableMemoryEmbeddingId } from "../../memory/memory-embedding-history.js";
 import {
-  createEmbeddingClient,
-  type EmbeddingClient,
+  embedTexts,
+  type EmbedTexts,
   type EmbeddingGeneration,
 } from "../../models/embedding.js";
 import type {
@@ -51,7 +51,7 @@ export interface MemoryService {
 }
 
 function accountNotInitialized(): HttpError {
-  return new HttpError(
+  return httpError(
     404,
     "ACCOUNT_NOT_INITIALIZED",
     "Complete the login bootstrap before accessing memories.",
@@ -59,11 +59,11 @@ function accountNotInitialized(): HttpError {
 }
 
 function memoryNotFound(): HttpError {
-  return new HttpError(404, "MEMORY_NOT_FOUND", "The memory does not exist.");
+  return httpError(404, "MEMORY_NOT_FOUND", "The memory does not exist.");
 }
 
 function memoryConflict(): HttpError {
-  return new HttpError(
+  return httpError(
     409,
     "MEMORY_ALREADY_EXISTS",
     "That memory is already stored.",
@@ -102,7 +102,7 @@ function parsedExpiry(value: string | null): Date | null {
 
 function validateExpiry(type: PublicMemoryType, expiresAt: Date | null): void {
   if (type === "situation" && expiresAt === null) {
-    throw new HttpError(
+    throw httpError(
       400,
       "INVALID_MEMORY",
       "Situation memories require an expiry time.",
@@ -110,7 +110,7 @@ function validateExpiry(type: PublicMemoryType, expiresAt: Date | null): void {
   }
 
   if (expiresAt && expiresAt <= new Date()) {
-    throw new HttpError(
+    throw httpError(
       400,
       "INVALID_MEMORY",
       "Memory expiry must be in the future.",
@@ -156,9 +156,9 @@ function embeddingValues(
 }
 
 export function createMemoryService(dependencies: {
-  embeddingClient?: EmbeddingClient;
+  embed?: EmbedTexts;
 } = {}): MemoryService {
-  const embeddingClient = dependencies.embeddingClient ?? createEmbeddingClient();
+  const embed = dependencies.embed ?? embedTexts;
 
   return {
     async list(identity, query) {
@@ -205,7 +205,7 @@ export function createMemoryService(dependencies: {
         .limit(1);
       if (duplicate) throw memoryConflict();
 
-      const embedding = await embeddingClient.embed([input.content]);
+      const embedding = await embed([input.content]);
       const now = new Date();
       const memoryId = randomUUID();
 
@@ -283,7 +283,7 @@ export function createMemoryService(dependencies: {
         ? memoryContentHash(normalizeMemoryText(nextContent))
         : existing.normalizedHash;
       const embedding = contentChanged
-        ? await embeddingClient.embed([nextContent])
+        ? await embed([nextContent])
         : null;
 
       try {

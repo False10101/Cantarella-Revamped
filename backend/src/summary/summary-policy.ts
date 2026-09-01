@@ -2,11 +2,12 @@ import { z } from "zod";
 
 import { getEnvironment } from "../config/env.js";
 import {
-  createOpenRouterClient,
-  OpenRouterError,
+  completeOpenRouter,
+  isOpenRouterError,
+  openRouterError,
   type ModelCompletion,
   type ModelMessage,
-  type OpenRouterClient,
+  type CompleteModel,
 } from "../models/openrouter.js";
 
 const summaryPlanSchema = z
@@ -38,10 +39,6 @@ export interface SummaryPolicyGeneration {
   completion: ModelCompletion;
 }
 
-export interface SummaryPolicyGenerator {
-  generate(context: SummaryPolicyContext): Promise<SummaryPolicyGeneration>;
-}
-
 export const summaryPlanJsonSchema: Record<string, unknown> = {
   type: "object",
   additionalProperties: false,
@@ -56,14 +53,33 @@ export const summaryPlanJsonSchema: Record<string, unknown> = {
   required: ["summaryText", "openSituations"],
 };
 
-export class SummaryPolicyOutputError extends OpenRouterError {
-  constructor(
-    message: string,
-    public readonly rawOutput: string,
-  ) {
-    super(message, null, true);
-    this.name = "SummaryPolicyOutputError";
-  }
+export type SummaryPolicyOutputError = Error & {
+  rawOutput: string;
+  retryable: boolean;
+};
+
+export function summaryPolicyOutputError(
+  message: string,
+  rawOutput: string,
+): SummaryPolicyOutputError {
+  const error = openRouterError(
+    message,
+    null,
+    true,
+  ) as unknown as SummaryPolicyOutputError;
+  error.name = "SummaryPolicyOutputError";
+  error.rawOutput = rawOutput;
+  return error;
+}
+
+export function isSummaryPolicyOutputError(
+  error: unknown,
+): error is SummaryPolicyOutputError {
+  return (
+    isOpenRouterError(error) &&
+    error.name === "SummaryPolicyOutputError" &&
+    typeof (error as Partial<SummaryPolicyOutputError>).rawOutput === "string"
+  );
 }
 
 const summaryPolicyPrompt = `You create immutable conversation-summary chunks for Cantarella.
@@ -99,7 +115,7 @@ export function parseSummaryPlan(rawOutput: string): SummaryPlan {
   try {
     parsed = JSON.parse(normalized);
   } catch {
-    throw new SummaryPolicyOutputError(
+    throw summaryPolicyOutputError(
       "The summary model returned invalid JSON.",
       rawOutput,
     );
@@ -107,7 +123,7 @@ export function parseSummaryPlan(rawOutput: string): SummaryPlan {
 
   const result = summaryPlanSchema.safeParse(parsed);
   if (!result.success) {
-    throw new SummaryPolicyOutputError(
+    throw summaryPolicyOutputError(
       `The summary model violated its schema: ${result.error.issues
         .map((issue) => issue.path.join("."))
         .join(", ")}`,
@@ -118,75 +134,72 @@ export function parseSummaryPlan(rawOutput: string): SummaryPlan {
   return result.data;
 }
 
-export function createSummaryPolicyGenerator(
-  client: OpenRouterClient = createOpenRouterClient(),
-): SummaryPolicyGenerator {
-  return {
-    async generate(context) {
-      const environment = getEnvironment();
-      const userMessage = contextMessage(context);
+export async function generateSummaryPlan(
+  context: SummaryPolicyContext,
+  completeModel: CompleteModel = completeOpenRouter,
+): Promise<SummaryPolicyGeneration> {
+const environment = getEnvironment();
+const userMessage = contextMessage(context);
 
-      const request = (retryInstruction: string | null) =>
-        client.complete({
-          model: environment.THOUGHT_MODEL,
-          messages: [
-            {
-              role: "system",
-              content: retryInstruction
-                ? `${summaryPolicyPrompt}\n\n${retryInstruction}`
-                : summaryPolicyPrompt,
-            },
-            userMessage,
-          ],
-          temperature: 0,
-          maxTokens: 6_000,
-          reasoning: { exclude: true },
-          ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
-          "deepseek/deepseek-v4-pro-0813"
-            ? {}
-            : {
-                responseFormat: {
-                  name: "cantarella_conversation_summary_chunk",
-                  schema: summaryPlanJsonSchema,
-                },
-              }),
-          ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
-          "deepseek/deepseek-v4-pro-0813"
-            ? {
-                providerRouting: {
-                  order: ["deepseek"],
-                  allowFallbacks: true,
-                  maxPrice: { prompt: 3, completion: 5 },
-                },
-              }
-            : {}),
-        });
-
-      const firstCompletion = await request(null);
-      try {
-        return {
-          plan: parseSummaryPlan(firstCompletion.content),
-          completion: firstCompletion,
-        };
-      } catch (error) {
-        if (!(error instanceof OpenRouterError)) throw error;
-      }
-
-      const retryCompletion = await request(
-        "Your previous response was malformed. Start again from the original context and return exactly one valid JSON object matching the required schema.",
-      );
-
-      try {
-        return {
-          plan: parseSummaryPlan(retryCompletion.content),
-          completion: retryCompletion,
-        };
-      } catch (error) {
-        if (error instanceof SummaryPolicyOutputError) {
-          throw new SummaryPolicyOutputError(error.message, retryCompletion.content);
+const request = (retryInstruction: string | null) =>
+  completeModel({
+    model: environment.THOUGHT_MODEL,
+    messages: [
+      {
+        role: "system",
+        content: retryInstruction
+          ? `${summaryPolicyPrompt}\n\n${retryInstruction}`
+          : summaryPolicyPrompt,
+      },
+      userMessage,
+    ],
+    temperature: 0,
+    maxTokens: 6_000,
+    reasoning: { exclude: true },
+    ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
+    "deepseek/deepseek-v4-pro-0813"
+      ? {}
+      : {
+          responseFormat: {
+            name: "cantarella_conversation_summary_chunk",
+            schema: summaryPlanJsonSchema,
+          },
+        }),
+    ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
+    "deepseek/deepseek-v4-pro-0813"
+      ? {
+          providerRouting: {
+            order: ["deepseek"],
+            allowFallbacks: true,
+            maxPrice: { prompt: 3, completion: 5 },
+          },
         }
-        throw error;
-      }
-    },
+      : {}),
+  });
+
+const firstCompletion = await request(null);
+try {
+  return {
+    plan: parseSummaryPlan(firstCompletion.content),
+    completion: firstCompletion,
   };
+} catch (error) {
+  if (!isOpenRouterError(error)) throw error;
+}
+
+const retryCompletion = await request(
+  "Your previous response was malformed. Start again from the original context and return exactly one valid JSON object matching the required schema.",
+);
+
+try {
+  return {
+    plan: parseSummaryPlan(retryCompletion.content),
+    completion: retryCompletion,
+  };
+} catch (error) {
+  if (isSummaryPolicyOutputError(error)) {
+    throw summaryPolicyOutputError(error.message, retryCompletion.content);
+  }
+  throw error;
+}
 }

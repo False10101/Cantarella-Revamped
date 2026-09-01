@@ -2,7 +2,7 @@ import { Router, type Request } from "express";
 
 import type { AuthenticatedIdentity } from "../../auth/identity.js";
 import { conversationEvents } from "../../events/conversation-events.js";
-import { HttpError } from "../../http/http-error.js";
+import { httpError, type HttpError } from "../../http/http-error.js";
 import type { ConversationService } from "./conversation.service.js";
 import {
   conversationIdSchema,
@@ -12,7 +12,7 @@ import {
 
 function authenticatedIdentity(request: Request): AuthenticatedIdentity {
   if (!request.identity) {
-    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
+    throw httpError(401, "UNAUTHORIZED", "Authentication required.");
   }
 
   return request.identity;
@@ -22,7 +22,7 @@ function parseConversationId(value: string): string {
   const result = conversationIdSchema.safeParse(value);
 
   if (!result.success) {
-    throw new HttpError(
+    throw httpError(
       400,
       "INVALID_CONVERSATION_ID",
       "The conversation ID is invalid.",
@@ -54,7 +54,7 @@ export function createConversationRouter(
       const query = messageHistoryQuerySchema.safeParse(request.query);
 
       if (!query.success) {
-        throw new HttpError(
+        throw httpError(
           400,
           "INVALID_MESSAGE_HISTORY_QUERY",
           "The message history query is invalid.",
@@ -122,7 +122,7 @@ export function createConversationRouter(
       const input = sendMessageInputSchema.safeParse(request.body);
 
       if (!input.success) {
-        throw new HttpError(
+        throw httpError(
           400,
           "INVALID_MESSAGE",
           "The message is invalid.",

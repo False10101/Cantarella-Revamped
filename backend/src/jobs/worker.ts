@@ -8,18 +8,18 @@ import { database } from "../db/client.js";
 import { inputBatches, jobs, turns } from "../db/schema.js";
 import { conversationEvents } from "../events/conversation-events.js";
 import { logger } from "../lib/logger.js";
-import { EmbeddingError } from "../models/embedding.js";
-import { OpenRouterError } from "../models/openrouter.js";
+import { isEmbeddingError } from "../models/embedding.js";
+import { isOpenRouterError } from "../models/openrouter.js";
 import {
   createTurnProcessor,
-  ObsoleteTurnJobError,
-  TurnDeferredError,
+  isObsoleteTurnJobError,
+  isTurnDeferredError,
   type ClaimedTurnJob,
   type TurnProcessor,
 } from "../pipeline/turn-processor.js";
 import {
   createSummaryProcessor,
-  ObsoleteSummaryJobError,
+  isObsoleteSummaryJobError,
   type SummaryProcessor,
 } from "../summary/summary-processor.js";
 
@@ -123,8 +123,11 @@ async function completeObsoleteJob(job: ClaimedJob): Promise<void> {
 }
 
 function isRetryable(error: unknown): boolean {
-  if (error instanceof OpenRouterError || error instanceof EmbeddingError) {
+  if (isOpenRouterError(error) || isEmbeddingError(error)) {
     return error.retryable;
+  }
+  if (error instanceof Error && error.name === "VoiceBriefRejectedError") {
+    return false;
   }
   return true;
 }
@@ -339,11 +342,11 @@ export function startJobWorker(dependencies: {
           await summaryProcessor.process(job);
         }
       } catch (error) {
-        if (job.kind === "generate_turn" && error instanceof TurnDeferredError) {
+        if (job.kind === "generate_turn" && isTurnDeferredError(error)) {
           await deferJob(job, error.runAt);
         } else if (
-          error instanceof ObsoleteTurnJobError ||
-          error instanceof ObsoleteSummaryJobError
+          isObsoleteTurnJobError(error) ||
+          isObsoleteSummaryJobError(error)
         ) {
           await completeObsoleteJob(job);
         } else if (job.kind === "summarize_conversation") {

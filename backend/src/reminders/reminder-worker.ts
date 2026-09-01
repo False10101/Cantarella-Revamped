@@ -16,11 +16,7 @@ import {
 } from "../db/schema.js";
 import { conversationEvents } from "../events/conversation-events.js";
 import { logger } from "../lib/logger.js";
-import {
-  createReminderVoiceGenerator,
-  type ReminderVoiceGenerator,
-} from "../models/reminder-voice.js";
-import { VoiceOutputLeakageError } from "../models/voice.js";
+import { generateReminderVoice } from "../models/reminder-voice.js";
 import { nextReminderOccurrence } from "./reminder-schedule.js";
 
 export interface ClaimedReminder {
@@ -212,12 +208,7 @@ export interface ReminderProcessor {
   process(claimed: ClaimedReminder): Promise<void>;
 }
 
-export function createReminderProcessor(dependencies: {
-  voiceGenerator?: ReminderVoiceGenerator;
-} = {}): ReminderProcessor {
-  const voiceGenerator =
-    dependencies.voiceGenerator ?? createReminderVoiceGenerator();
-
+export function createReminderProcessor(): ReminderProcessor {
   return {
     async process(claimed) {
       const environment = getEnvironment();
@@ -255,39 +246,63 @@ export function createReminderProcessor(dependencies: {
         inputJson: {
           reminderId: claimed.reminderId,
           deliveryId: claimed.deliveryId,
+          userId: claimed.userId,
           reminderText: claimed.title,
         },
       });
 
       try {
-        const generation = await voiceGenerator.generate({
+        const voiceResult = await generateReminderVoice({
           persona,
           reminderText: claimed.title,
         });
-        bubbles = generation.bubbles;
-        await database
-          .update(modelRuns)
-          .set({
-            status: "completed",
-            provider: generation.completion.provider ?? "openrouter",
-            model: generation.completion.model,
-            rawOutput: generation.rawOutput,
-            inputTokens: generation.completion.usage.inputTokens,
-            outputTokens: generation.completion.usage.outputTokens,
-            estimatedCostUsd: generation.completion.usage.estimatedCostUsd,
-            latencyMs: generation.completion.latencyMs,
-            completedAt: new Date(),
-          })
-          .where(eq(modelRuns.id, modelRunId));
+        if (!voiceResult.ok) {
+          await database
+            .update(modelRuns)
+            .set({
+              status: "failed",
+              rawOutput:
+                voiceResult.failure.reason === "leakage"
+                  ? voiceResult.failure.rawOutput.slice(0, 20_000)
+                  : undefined,
+              errorCode:
+                voiceResult.failure.reason === "rejected"
+                  ? "VoiceBriefRejectedError"
+                  : voiceResult.failure.reason === "leakage"
+                    ? "VoiceOutputLeakageError"
+                    : "VoiceTextFormatError",
+              errorMessage: voiceResult.failure.message,
+              completedAt: new Date(),
+            })
+            .where(eq(modelRuns.id, modelRunId));
+          logger.warn(
+            { reminderId: claimed.reminderId, deliveryId: claimed.deliveryId },
+            "Reminder voice failed; delivering original text",
+          );
+        } else {
+          const generation = voiceResult.generation;
+          bubbles = generation.bubbles;
+          await database
+            .update(modelRuns)
+            .set({
+              status: "completed",
+              provider: generation.completion.provider ?? "openrouter",
+              model: generation.completion.model,
+              rawOutput: generation.rawOutput,
+              inputTokens: generation.completion.usage.inputTokens,
+              outputTokens: generation.completion.usage.outputTokens,
+              estimatedCostUsd: generation.completion.usage.estimatedCostUsd,
+              latencyMs: generation.completion.latencyMs,
+              completedAt: new Date(),
+            })
+            .where(eq(modelRuns.id, modelRunId));
+        }
       } catch (error) {
         await database
           .update(modelRuns)
           .set({
             status: "failed",
-            rawOutput:
-              error instanceof VoiceOutputLeakageError
-                ? error.rawOutput.slice(0, 20_000)
-                : undefined,
+            rawOutput: undefined,
             errorCode: error instanceof Error ? error.name : "REMINDER_VOICE_ERROR",
             errorMessage: (error instanceof Error ? error.message : String(error)).slice(
               0,

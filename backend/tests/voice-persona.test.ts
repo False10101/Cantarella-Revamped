@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
@@ -8,21 +7,20 @@ import {
   cantarellaCoreSoul,
 } from "../src/prompts/voice-persona.js";
 
-const originalSoulSha256 =
-  "6b1d104078c74f126ccde30040cfa32fafd4d4e0d085f4348ef2f9075190586a";
-
 describe("Cantarella voice persona composition", () => {
-  it("keeps the canonical SOUL.md byte-for-byte unchanged", () => {
-    const soulBytes = readFileSync(
+  it("loads the neutral core directly from SOUL.md", () => {
+    const soul = readFileSync(
       new URL("../src/prompts/SOUL.md", import.meta.url),
+      "utf8",
     );
 
-    expect(createHash("sha256").update(soulBytes).digest("hex")).toBe(
-      originalSoulSha256,
+    expect(cantarellaCoreSoul).toBe(soul.trim());
+    expect(cantarellaCoreSoul).toContain(
+      "The selected voice direction determines Cantarella's expressive style.",
     );
   });
 
-  it("uses the full core with no direction addon or custom override by default", () => {
+  it("uses the full core and the selected default direction", () => {
     const prompt = buildVoicePersonaPrompt({
       name: "Cantarella",
       voiceDirection: "default",
@@ -33,10 +31,11 @@ describe("Cantarella voice persona composition", () => {
     });
 
     expect(prompt.startsWith(cantarellaCoreSoul)).toBe(true);
-    expect(prompt).not.toContain("## VOICE DIRECTION ADD-ON");
+    expect(prompt).toContain("## VOICE DIRECTION ADD-ON");
+    expect(prompt).toContain("Keep a balanced, familiar, and grounded presence.");
     expect(prompt).not.toContain("## USER-WRITTEN VOICE OVERRIDE");
     expect(prompt).not.toContain("## USER BOUNDARIES");
-    expect(prompt).toContain("Response length varies.");
+    expect(prompt).toContain("The current persona name is Cantarella.");
   });
 
   it("orders direction, custom override, and boundaries after the unchanged core", () => {

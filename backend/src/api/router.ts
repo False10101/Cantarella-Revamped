@@ -20,12 +20,15 @@ import {
   createReminderService,
   type ReminderService,
 } from "./reminders/reminder.service.js";
+import { createUsageRouter } from "./usage/usage.routes.js";
+import { createUsageService, type UsageService } from "./usage/usage.service.js";
 
 export interface ApiRouterDependencies {
   accountService?: AccountService;
   conversationService?: ConversationService;
   memoryService?: MemoryService;
   reminderService?: ReminderService;
+  usageService?: UsageService;
 }
 
 export function createApiRouter(
@@ -38,11 +41,13 @@ export function createApiRouter(
   const memoryService = dependencies.memoryService ?? createMemoryService();
   const reminderService =
     dependencies.reminderService ?? createReminderService();
+  const usageService = dependencies.usageService ?? createUsageService();
 
   router.use(createAccountRouter(accountService));
   router.use(createConversationRouter(conversationService));
   router.use(createMemoryRouter(memoryService));
   router.use(createReminderRouter(reminderService));
+  router.use(createUsageRouter(usageService));
 
   return router;
 }

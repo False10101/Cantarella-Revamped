@@ -12,7 +12,7 @@ import {
   userSettings,
   type Reminder,
 } from "../../db/schema.js";
-import { HttpError } from "../../http/http-error.js";
+import { httpError, type HttpError } from "../../http/http-error.js";
 import { nextReminderOccurrence } from "../../reminders/reminder-schedule.js";
 import type {
   CreateReminderInput,
@@ -43,7 +43,7 @@ export interface ReminderService {
 }
 
 function accountNotInitialized(): HttpError {
-  return new HttpError(
+  return httpError(
     404,
     "ACCOUNT_NOT_INITIALIZED",
     "Complete the login bootstrap before accessing reminders.",
@@ -51,11 +51,11 @@ function accountNotInitialized(): HttpError {
 }
 
 function reminderNotFound(): HttpError {
-  return new HttpError(404, "REMINDER_NOT_FOUND", "The reminder does not exist.");
+  return httpError(404, "REMINDER_NOT_FOUND", "The reminder does not exist.");
 }
 
 function invalidSchedule(message: string): HttpError {
-  return new HttpError(400, "INVALID_REMINDER_SCHEDULE", message);
+  return httpError(400, "INVALID_REMINDER_SCHEDULE", message);
 }
 
 function parsedFuture(
@@ -173,7 +173,7 @@ export function createReminderService(): ReminderService {
       if (created) return toSnapshot(created);
 
       if (!creationKey) {
-        throw new HttpError(
+        throw httpError(
           409,
           "REMINDER_ALREADY_EXISTS",
           "The reminder could not be created twice.",

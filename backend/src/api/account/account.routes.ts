@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 
 import type { AuthenticatedIdentity } from "../../auth/identity.js";
-import { HttpError } from "../../http/http-error.js";
+import { httpError, type HttpError } from "../../http/http-error.js";
 import type { AccountService } from "./account.service.js";
 import {
   accountSettingsInputSchema,
@@ -10,7 +10,7 @@ import {
 
 function authenticatedIdentity(request: Request): AuthenticatedIdentity {
   if (!request.identity) {
-    throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
+    throw httpError(401, "UNAUTHORIZED", "Authentication required.");
   }
 
   return request.identity;
@@ -43,7 +43,7 @@ export function createAccountRouter(accountService: AccountService): Router {
     const input = onboardingInputSchema.safeParse(request.body);
 
     if (!input.success) {
-      throw new HttpError(
+      throw httpError(
         400,
         "INVALID_ONBOARDING",
         "The onboarding information is invalid.",
@@ -62,7 +62,7 @@ export function createAccountRouter(accountService: AccountService): Router {
     const input = accountSettingsInputSchema.safeParse(request.body);
 
     if (!input.success) {
-      throw new HttpError(
+      throw httpError(
         400,
         "INVALID_SETTINGS",
         "The account settings are invalid.",

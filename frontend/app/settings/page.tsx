@@ -8,10 +8,10 @@ import { useAuthSession } from "../auth/AuthBootstrap";
 import Navbar from "../navbar";
 
 const voicePresets = [
-  { id: "default", label: "Default", description: "Warm, direct, human" },
-  { id: "softer", label: "Softer", description: "Gentler when it matters" },
-  { id: "firmer", label: "Firmer", description: "Blunt, no excuses" },
-  { id: "playful", label: "Playful", description: "Teasing, still grounded" },
+  { id: "default", label: "Default", description: "Balanced, warm, candid" },
+  { id: "softer", label: "Softer", description: "Patient, gentle, reassuring" },
+  { id: "firmer", label: "Firmer", description: "Direct accountability" },
+  { id: "playful", label: "Playful", description: "Light banter, still kind" },
   { id: "nurturing", label: "Nurturing", description: "Protective, mommy-like" },
   { id: "intimate", label: "Intimate", description: "Closer, lightly seductive" },
 ] as const;
@@ -77,6 +77,19 @@ type SettingsDraft = {
   customBoundaries: string;
 };
 
+type UsagePhase = "thought" | "voice" | "memory" | "summary" | "reminder_voice";
+
+type UsagePeriod = {
+  totalUsd: number;
+  byPhase: Record<UsagePhase, number>;
+};
+
+type UsageOverview = {
+  today: UsagePeriod;
+  thisMonth: UsagePeriod;
+  allTime: UsagePeriod;
+};
+
 const inputClassName =
   "mt-2 w-full rounded-lg border border-[var(--border2)] bg-[var(--surface2)] px-3.5 py-2.5 text-[13px] font-light text-[var(--text)] outline-none transition placeholder:italic placeholder:text-[var(--text-dim)] focus:border-[rgba(201,147,90,0.35)] focus:shadow-[0_0_0_3px_rgba(201,147,90,0.05)]";
 
@@ -94,6 +107,15 @@ function serializeDraft(draft: SettingsDraft): string {
   });
 }
 
+function formatUsd(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: value > 0 && value < 0.01 ? 4 : 2,
+    maximumFractionDigits: 4,
+  }).format(value);
+}
+
 export default function SettingsPage() {
   const { getAccessTokenSilently } = useAuth0();
   const { account, refreshAccount } = useAuthSession();
@@ -105,6 +127,39 @@ export default function SettingsPage() {
   const [notificationPermission, setNotificationPermission] = useState<
     NotificationPermission | "unsupported"
   >("default");
+  const [usage, setUsage] = useState<UsageOverview | null>(null);
+  const [usageError, setUsageError] = useState("");
+
+  useEffect(() => {
+    if (!account) return;
+
+    let cancelled = false;
+    const loadUsage = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/usage/costs`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(payload?.error?.message ?? "Couldn't load usage.");
+        }
+        if (!cancelled) setUsage(payload.data as UsageOverview);
+      } catch (loadError) {
+        if (!cancelled) {
+          setUsageError(
+            loadError instanceof Error ? loadError.message : "Couldn't load usage.",
+          );
+        }
+      }
+    };
+
+    void loadUsage();
+    return () => {
+      cancelled = true;
+    };
+  }, [account, getAccessTokenSilently]);
 
   useEffect(() => {
     if (!("Notification" in window)) {
@@ -269,6 +324,45 @@ export default function SettingsPage() {
                 {error}
               </div>
             )}
+
+            <section className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 max-sm:p-4">
+              <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] pb-3">
+                <div>
+                  <h2 className="font-[family-name:var(--font-display)] text-[15px] font-light italic tracking-wide text-[var(--amber-soft)]">
+                    Model usage
+                  </h2>
+                  <p className="mt-1 text-[10px] leading-4 text-[var(--text-dim)]">
+                    Exact costs reported by OpenRouter for completed model calls.
+                  </p>
+                </div>
+                <span className="rounded-full border border-[var(--border2)] bg-[var(--surface2)] px-2.5 py-1 text-[9px] uppercase tracking-[0.1em] text-[var(--text-dim)]">
+                  USD
+                </span>
+              </div>
+              {usageError ? (
+                <p className="mt-4 text-[11px] text-red-300">{usageError}</p>
+              ) : (
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  {[
+                    ["Today", usage?.today],
+                    ["This month", usage?.thisMonth],
+                    ["All time", usage?.allTime],
+                  ].map(([label, period]) => (
+                    <div key={label as string} className="rounded-lg border border-[var(--border)] bg-[var(--surface2)] px-3.5 py-3">
+                      <span className="block text-[10px] text-[var(--text-dim)]">{label as string}</span>
+                      <span className="mt-1 block text-[16px] font-light text-[var(--text)]">
+                        {period ? formatUsd((period as UsagePeriod).totalUsd) : "…"}
+                      </span>
+                      {period && (
+                        <span className="mt-1 block text-[9px] text-[var(--text-dim)]">
+                          Thought {formatUsd((period as UsagePeriod).byPhase.thought)} · Voice {formatUsd((period as UsagePeriod).byPhase.voice)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
             <section className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 max-sm:p-4">
               <h2 className="border-b border-[var(--border)] pb-3 font-[family-name:var(--font-display)] text-[15px] font-light italic tracking-wide text-[var(--amber-soft)]">

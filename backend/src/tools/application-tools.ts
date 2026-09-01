@@ -6,10 +6,11 @@ import { memories, reminders } from "../db/schema.js";
 import {
   createChatMemory,
   executeMemoryAction,
-  InvalidMemoryActionError,
+  invalidMemoryAction,
+  isInvalidMemoryActionError,
 } from "../memory/memory-action.js";
 import { memoryTopics, memoryTypes } from "../memory/memory-core.js";
-import type { MemoryRetriever } from "../memory/memory-retrieval.js";
+import type { RetrieveMemories } from "../memory/memory-retrieval.js";
 import type {
   ModelFunctionTool,
   ModelToolCall,
@@ -22,7 +23,8 @@ import {
 } from "../models/thought.js";
 import {
   executeReminderAction,
-  InvalidReminderActionError,
+  invalidReminderAction,
+  isInvalidReminderActionError,
 } from "../reminders/reminder-action.js";
 
 const reminderStatuses = [
@@ -420,7 +422,7 @@ function enforceMemoryExpiry(
       originalRequest,
     })
   ) {
-    throw new InvalidMemoryActionError(
+    throw invalidMemoryAction(
       "A deadline-bound or time-bounded memory requires an absolute expiresAt timestamp after its relevant window.",
     );
   }
@@ -434,7 +436,7 @@ export interface ApplicationToolContext {
   originalRequest: string;
   timezone: string;
   referenceAt: Date;
-  memoryRetriever: MemoryRetriever;
+  retrieveMemories: RetrieveMemories;
 }
 
 export function createApplicationToolRuntime(
@@ -460,24 +462,24 @@ export function createApplicationToolRuntime(
       !retrievedMemoryIds.has(memoryId) &&
       !(allowListed && listedMemoryIds.has(memoryId))
     ) {
-      throw new InvalidMemoryActionError(
+      throw invalidMemoryAction(
         "The memory target was not returned by find_memories in this turn.",
       );
     }
     if (mutatedMemoryIds.has(memoryId)) {
-      throw new InvalidMemoryActionError(
+      throw invalidMemoryAction(
         "The same memory cannot be mutated twice in one turn.",
       );
     }
   };
   const requireSafeReminderTarget = (reminderId: string) => {
     if (!retrievedReminderIds.has(reminderId) || !allowedReminderIds.has(reminderId)) {
-      throw new InvalidReminderActionError(
+      throw invalidReminderAction(
         "The reminder target was not uniquely resolved by find_reminders.",
       );
     }
     if (mutatedReminderIds.has(reminderId)) {
-      throw new InvalidReminderActionError(
+      throw invalidReminderAction(
         "The same reminder cannot be mutated twice in one turn.",
       );
     }
@@ -513,7 +515,7 @@ export function createApplicationToolRuntime(
     input: z.infer<typeof saveMemorySchema>,
   ): Promise<ThoughtToolExecutionResult> => {
     if (!memoryLookupPerformed) {
-      throw new InvalidMemoryActionError(
+      throw invalidMemoryAction(
         "save_memory requires a successful find_memories call in the same turn.",
       );
     }
@@ -616,7 +618,7 @@ export function createApplicationToolRuntime(
         if (call.function.name === "find_memories") {
           const input = findMemoriesSchema.parse(args);
           if (input.query !== null) {
-            const records = await context.memoryRetriever.retrieve({
+            const records = await context.retrieveMemories({
               userId: context.userId,
               queryTexts: [input.query],
             limit: Math.min(input.limit ?? 8, 12),
@@ -823,7 +825,7 @@ export function createApplicationToolRuntime(
           });
           if (action.operation !== "create") {
             if (!action.targetReminderRef) {
-              throw new InvalidReminderActionError(
+              throw invalidReminderAction(
                 "The reminder operation needs an existing reminder target.",
               );
             }
@@ -863,8 +865,8 @@ export function createApplicationToolRuntime(
       } catch (error) {
         if (
           error instanceof z.ZodError ||
-          error instanceof InvalidMemoryActionError ||
-          error instanceof InvalidReminderActionError
+          isInvalidMemoryActionError(error) ||
+          isInvalidReminderActionError(error)
         ) {
           return { output: errorOutput(error) };
         }

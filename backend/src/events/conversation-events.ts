@@ -35,31 +35,29 @@ export type ConversationEvent =
 
 type ConversationEventListener = (event: ConversationEvent) => void;
 
-class ConversationEventBroker {
-  private readonly listeners = new Map<
-    string,
-    Set<ConversationEventListener>
-  >();
+const listenersByConversation = new Map<
+  string,
+  Set<ConversationEventListener>
+>();
 
-  subscribe(
-    conversationId: string,
-    listener: ConversationEventListener,
-  ): () => void {
-    const listeners = this.listeners.get(conversationId) ?? new Set();
-    listeners.add(listener);
-    this.listeners.set(conversationId, listeners);
+function subscribe(
+  conversationId: string,
+  listener: ConversationEventListener,
+): () => void {
+  const listeners = listenersByConversation.get(conversationId) ?? new Set();
+  listeners.add(listener);
+  listenersByConversation.set(conversationId, listeners);
 
-    return () => {
-      listeners.delete(listener);
-      if (listeners.size === 0) this.listeners.delete(conversationId);
-    };
-  }
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) listenersByConversation.delete(conversationId);
+  };
+}
 
-  publish(conversationId: string, event: ConversationEvent): void {
-    for (const listener of this.listeners.get(conversationId) ?? []) {
-      listener(event);
-    }
+function publish(conversationId: string, event: ConversationEvent): void {
+  for (const listener of listenersByConversation.get(conversationId) ?? []) {
+    listener(event);
   }
 }
 
-export const conversationEvents = new ConversationEventBroker();
+export const conversationEvents = { subscribe, publish };

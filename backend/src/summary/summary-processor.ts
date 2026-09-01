@@ -16,8 +16,8 @@ import {
   userSettings,
 } from "../db/schema.js";
 import {
-  createEmbeddingClient,
-  type EmbeddingClient,
+  embedTexts,
+  type EmbedTexts,
 } from "../models/embedding.js";
 import type { ModelCompletion } from "../models/openrouter.js";
 import {
@@ -26,9 +26,8 @@ import {
 } from "../pipeline/message-order.js";
 import { selectNextSummaryChunk } from "./summary-chunking.js";
 import {
-  createSummaryPolicyGenerator,
-  SummaryPolicyOutputError,
-  type SummaryPolicyGenerator,
+  generateSummaryPlan,
+  isSummaryPolicyOutputError,
 } from "./summary-policy.js";
 
 const MAX_CHUNKS_PER_JOB = 4;
@@ -44,11 +43,18 @@ export interface SummaryProcessor {
   process(job: ClaimedSummaryJob): Promise<void>;
 }
 
-export class ObsoleteSummaryJobError extends Error {
-  constructor() {
-    super("The summary job no longer references a completed turn.");
-    this.name = "ObsoleteSummaryJobError";
-  }
+export type ObsoleteSummaryJobError = Error;
+
+export function obsoleteSummaryJobError(): ObsoleteSummaryJobError {
+  const error = new Error("The summary job no longer references a completed turn.");
+  error.name = "ObsoleteSummaryJobError";
+  return error;
+}
+
+export function isObsoleteSummaryJobError(
+  error: unknown,
+): error is ObsoleteSummaryJobError {
+  return error instanceof Error && error.name === "ObsoleteSummaryJobError";
 }
 
 interface SummaryOwner {
@@ -72,7 +78,7 @@ async function loadOwner(turnId: string): Promise<SummaryOwner> {
     .limit(1);
 
   if (!record || record.status !== "completed") {
-    throw new ObsoleteSummaryJobError();
+    throw obsoleteSummaryJobError();
   }
 
   return record;
@@ -187,7 +193,7 @@ async function failSummaryModelRun(id: string, error: unknown): Promise<void> {
     .set({
       status: "failed",
       rawOutput:
-        error instanceof SummaryPolicyOutputError ? error.rawOutput : undefined,
+        isSummaryPolicyOutputError(error) ? error.rawOutput : undefined,
       errorCode: error instanceof Error ? error.name : "SUMMARY_MODEL_ERROR",
       errorMessage: (error instanceof Error ? error.message : String(error)).slice(
         0,
@@ -213,12 +219,12 @@ async function completeJob(jobId: string): Promise<void> {
 }
 
 export function createSummaryProcessor(dependencies: {
-  policyGenerator?: SummaryPolicyGenerator;
-  embeddingClient?: EmbeddingClient;
+  generateSummaryPlan?: typeof generateSummaryPlan;
+  embed?: EmbedTexts;
 } = {}): SummaryProcessor {
-  const policyGenerator =
-    dependencies.policyGenerator ?? createSummaryPolicyGenerator();
-  const embeddingClient = dependencies.embeddingClient ?? createEmbeddingClient();
+  const runSummaryPlan =
+    dependencies.generateSummaryPlan ?? generateSummaryPlan;
+  const embed = dependencies.embed ?? embedTexts;
 
   return {
     async process(job) {
@@ -266,7 +272,7 @@ export function createSummaryProcessor(dependencies: {
 
         let generation;
         try {
-          generation = await policyGenerator.generate(policyContext);
+          generation = await runSummaryPlan(policyContext);
           await completeSummaryModelRun(
             modelRunId,
             generation.completion,
@@ -281,7 +287,7 @@ export function createSummaryProcessor(dependencies: {
           generation.plan.summaryText,
           generation.plan.openSituations,
         );
-        const embeddingGeneration = await embeddingClient.embed([content]);
+        const embeddingGeneration = await embed([content]);
         const [vector] = embeddingGeneration.vectors;
         if (!vector) throw new Error("The summary embedding response was empty.");
 

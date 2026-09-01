@@ -2,7 +2,7 @@ import { UnauthorizedError } from "express-oauth2-jwt-bearer";
 import type { ErrorRequestHandler } from "express";
 
 import { logger } from "../lib/logger.js";
-import { HttpError } from "./http-error.js";
+import { isHttpError } from "./http-error.js";
 
 export const errorHandler: ErrorRequestHandler = (
   error: unknown,
@@ -22,7 +22,7 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
-  if (error instanceof HttpError) {
+  if (isHttpError(error)) {
     response.status(error.status).json({
       error: {
         code: error.code,

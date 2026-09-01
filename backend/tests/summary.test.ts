@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import type { CompletionRequest } from "../src/models/openrouter.js";
+import type {
+  CompleteModel,
+  CompletionRequest,
+} from "../src/models/openrouter.js";
 import type { RecentContextMessage } from "../src/pipeline/message-order.js";
 import {
   recentRawStartIndex,
   selectNextSummaryChunk,
 } from "../src/summary/summary-chunking.js";
 import {
-  createSummaryPolicyGenerator,
+  generateSummaryPlan,
   parseSummaryPlan,
   SummaryPolicyOutputError,
 } from "../src/summary/summary-policy.js";
@@ -50,8 +53,7 @@ describe("conversation summary policy", () => {
   it("retries malformed output from the original context", async () => {
     const requests: CompletionRequest[] = [];
     const outputs = ["not json", JSON.stringify(validPlan)];
-    const generator = createSummaryPolicyGenerator({
-      async complete(request) {
+    const complete: CompleteModel = async (request) => {
         requests.push(request);
         return {
           content: outputs[requests.length - 1] ?? outputs[1]!,
@@ -60,10 +62,9 @@ describe("conversation summary policy", () => {
           usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
           latencyMs: 1,
         };
-      },
-    });
+    };
 
-    const result = await generator.generate({
+    const result = await generateSummaryPlan({
       timezone: "Asia/Bangkok",
       previousChunk: {
         summaryText: "Earlier context only.",
@@ -78,7 +79,7 @@ describe("conversation summary policy", () => {
           createdAtLocal: "2026-08-04T11:04:00.000+07:00",
         },
       ],
-    });
+    }, complete);
 
     expect(result.plan).toEqual(validPlan);
     expect(requests).toHaveLength(2);
@@ -101,8 +102,7 @@ describe("conversation summary policy", () => {
   });
 
   it("keeps a second malformed output retryable", async () => {
-    const generator = createSummaryPolicyGenerator({
-      async complete(request) {
+    const complete: CompleteModel = async (request) => {
         return {
           content: "still malformed",
           model: request.model,
@@ -110,15 +110,14 @@ describe("conversation summary policy", () => {
           usage: { inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0 },
           latencyMs: 1,
         };
-      },
-    });
+    };
 
     await expect(
-      generator.generate({
+      generateSummaryPlan({
         timezone: "Asia/Bangkok",
         previousChunk: null,
         newMessages: [],
-      }),
+      }, complete),
     ).rejects.toMatchObject({
       name: "SummaryPolicyOutputError",
       retryable: true,

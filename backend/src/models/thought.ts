@@ -2,20 +2,25 @@ import { z } from "zod";
 
 import { getEnvironment } from "../config/env.js";
 import {
-  createOpenRouterClient,
-  OpenRouterError,
+  completeOpenRouter,
+  isOpenRouterError,
+  openRouterError,
   type CompletionRequest,
   type ModelCompletion,
   type ModelFunctionTool,
   type ModelMessage,
   type ModelToolCall,
-  type OpenRouterClient,
+  type CompleteModel,
 } from "./openrouter.js";
 
 export const MAX_REPLY_POINT_CHARACTERS = 500;
 export const THOUGHT_MAX_OUTPUT_TOKENS = 6_000;
 const MAX_TOOL_CALLS_PER_RESPONSE = 3;
 const MAX_MODEL_STEPS = 16;
+
+function isDeepSeekV4Pro(model: string): boolean {
+  return model.split(":", 1)[0] === "deepseek/deepseek-v4-pro-0813";
+}
 
 const thoughtMetaLeakPattern = /\b(?:chain[- ]of[- ]thought|hidden (?:analysis|reasoning)|system prompt|developer message|replyPoints|messageMode|contextRelation|applicationActionDecision|tool call|json schema)\b/i;
 const applicationIntentPattern = /\b(?:remember|save|store|remind|schedule|reschedule|change|update|edit|pause|resume|cancel|delete|remove|forget)\b/i;
@@ -50,6 +55,8 @@ const replyPointSchema = z
   .refine((value) => !thoughtMetaLeakPattern.test(value), {
     message: "Reply points cannot contain model instructions, schema labels, or hidden reasoning.",
   });
+const voiceDeliveryInstructionPattern = /^(?:respond|reply|acknowledge|ask|answer|decline|offer|tease|comfort|reassure|support|say|tell|mention|explain|summarize|write|provide)\b/i;
+const voiceContextFactSchema = z.string().trim().min(1).max(2_000);
 
 const reminderOperationSchema = z.enum([
   "create",
@@ -229,7 +236,8 @@ export const thoughtSchema = z
     messageMode: z.enum(["social", "help", "mixed", "unclear"]),
     contextRelation: z.enum(["standalone", "immediate_context", "older_context"]),
     applicationActionDecision: z.enum(["none", "clarify"]),
-    replyPoints: z.array(replyPointSchema).min(1),
+    voiceContext: z.array(voiceContextFactSchema).default([]),
+    replyPoints: z.array(replyPointSchema),
     question: z.string().trim().min(1).max(2_000).nullable(),
   })
   .strict()
@@ -254,6 +262,26 @@ export const thoughtSchema = z
         message: "An application clarification must use unclear message mode.",
       });
     }
+    if (
+      thought.contextRelation !== "standalone" &&
+      thought.voiceContext.length === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["voiceContext"],
+        message: "A context-dependent reply requires factual voice context.",
+      });
+    }
+    if (
+      ["help", "mixed"].includes(thought.messageMode) &&
+      thought.replyPoints.length === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["replyPoints"],
+        message: "Help and mixed replies require at least one factual outcome.",
+      });
+    }
     const normalizedPoints = thought.replyPoints.map((point) =>
       point.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(),
     );
@@ -262,6 +290,13 @@ export const thoughtSchema = z
         code: "custom",
         path: ["replyPoints"],
         message: "Reply points must not repeat the same meaning verbatim.",
+      });
+    }
+    if (thought.replyPoints.some((point) => voiceDeliveryInstructionPattern.test(point))) {
+      context.addIssue({
+        code: "custom",
+        path: ["replyPoints"],
+        message: "Reply points must state facts or outcomes, not instruct Voice how to respond.",
       });
     }
     if (thought.question && thoughtMetaLeakPattern.test(thought.question)) {
@@ -277,7 +312,8 @@ const modelThoughtSchema = z
   .object({
     messageMode: z.enum(["social", "help", "mixed", "unclear"]),
     contextRelation: z.enum(["standalone", "immediate_context", "older_context"]),
-    replyPoints: z.array(replyPointSchema).min(1),
+    voiceContext: z.array(voiceContextFactSchema).default([]),
+    replyPoints: z.array(replyPointSchema),
     question: z.string().trim().min(1).max(2_000).nullable(),
   })
   .strip();
@@ -347,10 +383,7 @@ export function suppressAutomaticMemoryNarration(
   );
   return {
     ...thought,
-    replyPoints:
-      conversationalPoints.length > 0
-        ? conversationalPoints
-        : ["Acknowledge the user's information or correction briefly."],
+    replyPoints: conversationalPoints,
   };
 }
 
@@ -391,22 +424,34 @@ export interface ThoughtToolRuntime {
   maxMutationCalls?: number;
 }
 
-export class ThoughtContractError extends OpenRouterError {
-  constructor(
-    message: string,
-    public readonly rawOutput: string,
-    retryable: boolean,
-  ) {
-    super(message, null, retryable);
-    this.name = "ThoughtContractError";
-  }
+export type ThoughtContractError = Error & {
+  rawOutput: string;
+  retryable: boolean;
+};
+
+export function thoughtContractError(
+  message: string,
+  rawOutput: string,
+  retryable: boolean,
+): ThoughtContractError {
+  const error = openRouterError(
+    message,
+    null,
+    retryable,
+  ) as unknown as ThoughtContractError;
+  error.name = "ThoughtContractError";
+  error.rawOutput = rawOutput;
+  return error;
 }
 
-export interface ThoughtGenerator {
-  generate(
-    context: ThoughtContext,
-    toolRuntime?: ThoughtToolRuntime,
-  ): Promise<ThoughtGeneration>;
+export function isThoughtContractError(
+  error: unknown,
+): error is ThoughtContractError {
+  return (
+    isOpenRouterError(error) &&
+    error.name === "ThoughtContractError" &&
+    typeof (error as Partial<ThoughtContractError>).rawOutput === "string"
+  );
 }
 
 export const thoughtJsonSchema: Record<string, unknown> = {
@@ -425,13 +470,18 @@ export const thoughtJsonSchema: Record<string, unknown> = {
       description:
         "Whether responding requires no earlier topic, the immediate exchange, or an explicitly resumed older topic.",
     },
+    voiceContext: {
+      type: "array",
+      description:
+        "Compact factual context Voice needs for the current reply. Empty for a standalone topic. Never include tone, style, or old dialogue wording.",
+      items: { type: "string", maxLength: 2_000 },
+    },
     replyPoints: {
       type: "array",
-      minItems: 1,
       items: {
         type: "string",
         maxLength: MAX_REPLY_POINT_CHARACTERS,
-        description: "One distinct semantic requirement. Its count does not specify visible message bubbles.",
+        description: "One factual answer, outcome, constraint, or decision that must be preserved. Empty for social turns with no explicit content that must be said.",
       },
     },
     question: { type: ["string", "null"], minLength: 1, maxLength: 2_000 },
@@ -439,6 +489,7 @@ export const thoughtJsonSchema: Record<string, unknown> = {
   required: [
     "messageMode",
     "contextRelation",
+    "voiceContext",
     "replyPoints",
     "question",
   ],
@@ -448,7 +499,7 @@ const thoughtSystemPrompt = `You are Cantarella's private judgment pass.
 
 Decide what the response must actually mean before a separate voice model phrases it.
 
-Behavioral posture: half trusted friend and half capable personal helper. Be perceptive, concrete, honest, protective without coddling, willing to make a call, never therapist-like, never a generic productivity coach, and never cruel or shaming.
+Behavioral role: determine the accurate, relevant, and necessary meaning of the response. You are not responsible for Cantarella's visible personality, emotional delivery, or wording.
 
 Rules:
 - Classify the current message batch before deciding its meaning:
@@ -465,12 +516,14 @@ Rules:
 - Never describe a time-bound action as upcoming when localTime or the latest visible assistant message shows that its time has passed or it has already fired.
 - When messageMode is "unclear", ask one natural minimal clarification. Do not guess an old topic to make the message answerable.
 - Make the concrete judgment or answer yourself. Do not delegate judgment to the voice model.
-- replyPoints are the complete authoritative meaning the user should receive now. They are semantic requirements for the voice model, not visible dialogue or bubble instructions.
+- replyPoints are only literal facts, answers, constraints, decisions, or completed application outcomes that must be said in the visible reply. They are never instructions to Voice about responding, acknowledging, asking, declining, teasing, comforting, or wording.
+- For social turns with no literal content that must be said, return replyPoints as an empty array. Do not invent a placeholder or an instruction.
+- voiceContext is a compact factual handoff for Voice, not a conversation summary. For immediate or older context, it must contain the active factual thread or resolved referent Voice needs for this reply. Use an empty array only when no prior-chat fact is needed. Never include prior dialogue wording, tone, personality, or delivery instructions.
 - Use the fewest distinct replyPoints that preserve every meaning the user needs. A simple acknowledgment or complete short answer may need one. There is no ordinary target of two.
 - Keep replyPoints concise when that preserves meaning. Each point must be one clear, self-contained, grammatical semantic statement.
 - Never squeeze an assessment and an action into a slogan or compressed command. Put them in separate replyPoints.
 - Use explicit subjects and referents. Avoid ambiguous uses of "it", "this", or "that" when the voice model cannot understand the point by itself.
-- Use plain literal meaning. No slogans, rhetorical fragments, metaphors, wordplay, or polished phrasing.
+- Use plain literal meaning. No slogans, rhetorical fragments, metaphors, wordplay, polished phrasing, teasing, scolding, affection, flirtation, or user-addressed dialogue. Voice owns all visible delivery.
 - For explicit planning, ordering, lists, or comparisons, give each distinct item or step its own replyPoint when combining them would hide structure. Do not compress several ordered items into one point merely to reduce the count.
 - Complex work uses however many short semantic points it genuinely needs, up to the schema limit. Point count follows meaning only and never controls how many visible messages the voice model sends.
 - Give the answer or action only. Do not include its rationale unless the user explicitly asks why, asks for an explanation, or the answer would be misleading without it.
@@ -558,7 +611,7 @@ Tool-stage discipline:
 - A clear memory deletion request must call delete_memory immediately. A clear reminder deletion request must call delete_reminder immediately. Never ask whether the user is sure, never create pending confirmation state, and never substitute archiving or cancellation for deletion.
 - A tool result is authoritative. Never claim success, absence, or failure beyond what the tool result states.
 - Do not narrate memory machinery. Never say "stored memory", "saved to memory", "memory updated", or "memory deleted". When the user explicitly asked to forget something, acknowledge naturally with meaning such as "forgotten" or "gone" without naming storage internals.
-- A final response contains only messageMode, contextRelation, replyPoints, and question. It must be one JSON object with no preface, suffix, commentary, or tool call.
+- A final response contains only messageMode, contextRelation, voiceContext, replyPoints, and question. It must be one JSON object with no preface, suffix, commentary, or tool call.
 - Do not write Cantarella-style prose, dialogue, jokes, pet names, or message bubbles.
 - Do not provide hidden chain-of-thought. Return only the concise structured result.
 - You are the sole live owner of memory and reminder decisions for this turn. No separate memory model will reconsider them later.
@@ -585,7 +638,7 @@ function parseThought(
   try {
     parsed = JSON.parse(jsonPayload);
   } catch {
-    throw new OpenRouterError(
+    throw openRouterError(
       "The Thought model returned invalid JSON.",
       null,
       true,
@@ -595,7 +648,7 @@ function parseThought(
   const modelResult = modelThoughtSchema.safeParse(parsed);
 
   if (!modelResult.success) {
-    throw new OpenRouterError(
+    throw openRouterError(
       `The Thought model violated its schema: ${modelResult.error.issues
         .map((issue) => issue.path.join("."))
         .join(", ")}`,
@@ -611,7 +664,7 @@ function parseThought(
   });
 
   if (!result.success) {
-    throw new OpenRouterError(
+    throw openRouterError(
       `The Thought model violated its schema: ${result.error.issues
         .map((issue) => issue.path.join("."))
         .join(", ")}`,
@@ -632,7 +685,7 @@ function parseThought(
         assertedValues.size > 0 &&
         ![...assertedValues].some((value) => correctedValues.has(value))
       ) {
-        throw new OpenRouterError(
+        throw openRouterError(
           "The Thought model contradicted a numeric correction in the current user messages.",
           null,
           true,
@@ -648,7 +701,7 @@ function parseThought(
       `${result.data.replyPoints.join("\n")}\n${result.data.question ?? ""}`,
     )
   ) {
-    throw new OpenRouterError(
+    throw openRouterError(
       "The Thought model claimed an application mutation without a successful mutation tool result.",
       null,
       true,
@@ -695,450 +748,189 @@ function isStructurallyValidToolCall(call: ModelToolCall): boolean {
   );
 }
 
-export function createThoughtGenerator(
-  client: OpenRouterClient = createOpenRouterClient(),
-): ThoughtGenerator {
-  return {
-    async generate(
-      context: ThoughtContext,
-      toolRuntime?: ThoughtToolRuntime,
-    ): Promise<ThoughtGeneration> {
-      const environment = getEnvironment();
-      const systemMessage: ModelMessage = {
-        role: "system",
-        content: thoughtSystemPrompt,
-      };
-      const userMessage = contextMessage(context);
-      const baseRequest = {
-        model: environment.THOUGHT_MODEL,
-        temperature: 0,
-        maxTokens: THOUGHT_MAX_OUTPUT_TOKENS,
-        reasoning: { exclude: true },
-        ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
-        "deepseek/deepseek-v4-pro-0813"
-          ? {
-              providerRouting: {
-                order: ["deepseek"],
-                allowFallbacks: true,
-                maxPrice: { prompt: 3, completion: 5 },
-              },
-            }
-          : {}),
-      };
-      const completions: ModelCompletion[] = [];
-      const toolExecutions: NonNullable<ThoughtGeneration["toolExecutions"]> = [];
-      const messages: ModelMessage[] = [systemMessage, userMessage];
-
-      const completeWithNitroFallback = async (
-        request: CompletionRequest,
-      ): Promise<ModelCompletion> => {
-        try {
-          return await client.complete(request);
-        } catch (firstError) {
-          const isEmptyNitroResponse =
-            firstError instanceof OpenRouterError &&
-            firstError.message === "OpenRouter returned an empty completion." &&
-            request.model.endsWith(":nitro");
-          if (!isEmptyNitroResponse) throw firstError;
-
-          try {
-            return await client.complete(request);
-          } catch (secondError) {
-            const isSecondEmptyResponse =
-              secondError instanceof OpenRouterError &&
-              secondError.message === "OpenRouter returned an empty completion.";
-            if (!isSecondEmptyResponse) throw secondError;
-            return client.complete({
-              ...request,
-              model: request.model.slice(0, -":nitro".length),
-            });
-          }
-        }
-      };
-
-      const requestCompletion = async (input: {
-        tools?: ModelFunctionTool[];
-        forceFinal?: boolean;
-      } = {}): Promise<ModelCompletion> => {
-        const availableTools = input.tools ?? toolRuntime?.tools ?? [];
-        const useTools = Boolean(
-          toolRuntime && !input.forceFinal && availableTools.length > 0,
-        );
-        const request = {
-          ...baseRequest,
-          messages,
-          ...(useTools
-            ? {
-                tools: availableTools,
-                toolChoice: "auto" as const,
-                ...(environment.THOUGHT_MODEL.split(":", 1)[0] ===
-                "deepseek/deepseek-v4-pro-0813"
-                  ? {}
-                  : { parallelToolCalls: true }),
-              }
-            : environment.THOUGHT_MODEL.split(":", 1)[0] ===
-                "deepseek/deepseek-v4-pro-0813"
-              ? {}
-              : {
-                responseFormat: {
-                  name: "cantarella_thought",
-                  schema: thoughtJsonSchema,
-                },
-                }),
-        };
-        try {
-          return await completeWithNitroFallback(request);
-        } catch (error) {
-          if (
-            useTools ||
-            !(error instanceof OpenRouterError) ||
-            !(
-              error.status === 400 ||
-              (error.status === 404 &&
-                error.message.includes("No endpoints found"))
-            )
-          ) {
-            throw error;
-          }
-          return completeWithNitroFallback({
-            ...baseRequest,
-            messages,
-          });
-        }
-      };
-
-      const combinedCompletion = (): ModelCompletion => {
-        const last = completions.at(-1);
-        if (!last) throw new Error("Thought produced no model completion.");
-        const sum = (
-          values: Array<number | null | undefined>,
-        ): number | null => {
-          const present = values.filter((value): value is number => value !== null && value !== undefined);
-          return present.length === 0
-            ? null
-            : present.reduce((total, value) => total + value, 0);
-        };
-        return {
-          content: completions
-            .map((completion) =>
-              completion.content || JSON.stringify(completion.toolCalls ?? []),
-            )
-            .join("\n"),
-          model: last.model,
-          provider: last.provider,
-          usage: {
-            inputTokens: sum(completions.map((completion) => completion.usage.inputTokens)),
-            outputTokens: sum(completions.map((completion) => completion.usage.outputTokens)),
-            estimatedCostUsd: sum(
-              completions.map((completion) => completion.usage.estimatedCostUsd),
-            ),
-          },
-          latencyMs: completions.reduce(
-            (total, completion) => total + completion.latencyMs,
-            0,
-          ),
-        };
-      };
-
-      const maxReadCalls = toolRuntime?.maxReadCalls ?? 3;
-      const maxMutationCalls = toolRuntime?.maxMutationCalls ?? 3;
-      let parseFailure: OpenRouterError | null = null;
-      let readCalls = 0;
-      let mutationCalls = 0;
-      let forceFinal = false;
-      const seenToolFingerprints = new Set<string>();
-      const applicationResults: ThoughtApplicationResult[] = [];
-      const maxModelSteps = Math.max(
-        MAX_MODEL_STEPS,
-        Math.min(maxReadCalls + maxMutationCalls + 4, 24),
-      );
-
-      for (let round = 0; round < maxModelSteps; round += 1) {
-        // Keep the complete application surface visible for every open tool
-        // stage. Runtime guards—not hidden tool definitions—enforce ordering,
-        // candidate safety, and per-turn limits.
-        const availableTools = toolRuntime && !forceFinal
-          ? toolRuntime.tools
-          : [];
-        const completion = await requestCompletion({
-          tools: availableTools,
-          forceFinal: forceFinal || availableTools.length === 0,
-        });
-        completions.push(completion);
-        const calls = completion.toolCalls ?? [];
-
-        if (calls.length > 0) {
-          if (!toolRuntime) {
-            throw new ThoughtContractError(
-              "The Thought model requested a tool when no tool runtime was available.",
-              completionEvidence(completions),
-              true,
-            );
-          }
-          if (forceFinal || availableTools.length === 0) {
-            return {
-              thought: {
-                messageMode: "help",
-                contextRelation: "immediate_context",
-                applicationActionDecision: "none",
-                replyPoints: ["I couldn't finish that cleanly."],
-                question: "send that again?",
-              },
-              completion: combinedCompletion(),
-              ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
-              ...(applicationResults.length > 0
-                ? {
-                    applicationResult: applicationResults[0],
-                    applicationResults,
-                  }
-                : {}),
-            };
-          }
-          if (!calls.every(isStructurallyValidToolCall)) {
-            throw new ThoughtContractError(
-              "The Thought model returned a structurally invalid tool call.",
-              completionEvidence(completions),
-              true,
-            );
-          }
-          const callIds = calls.map((call) => call.id);
-          if (callIds.some((id) => !id) || new Set(callIds).size !== callIds.length) {
-            throw new ThoughtContractError(
-              "The Thought model returned missing or duplicate tool-call IDs.",
-              completionEvidence(completions),
-              true,
-            );
-          }
-          const kinds = calls.map((call) => toolRuntime.classify(call.function.name));
-          const responseHasRead = kinds.includes("read");
-          let executedToolCall = false;
-
-          messages.push({
-            role: "assistant",
-            content: completion.content,
-            toolCalls: calls,
-            ...(completion.reasoning ? { reasoning: completion.reasoning } : {}),
-            ...(completion.reasoningDetails
-              ? { reasoningDetails: completion.reasoningDetails }
-              : {}),
-          });
-
-          for (const [index, call] of calls.entries()) {
-            const kind = kinds[index] ?? null;
-            const parsedArguments = parseToolArguments(call);
-            const fingerprint = `${call.function.name}:${
-              parsedArguments ? JSON.stringify(parsedArguments) : call.function.arguments
-            }`;
-            const isDuplicate = seenToolFingerprints.has(fingerprint);
-            let execution: ThoughtToolExecutionResult;
-
-            if (index >= MAX_TOOL_CALLS_PER_RESPONSE) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "TOOL_BATCH_DEFERRED",
-                  error: `Only the first ${MAX_TOOL_CALLS_PER_RESPONSE} tool calls run in one model response. Continue with any remaining work in the next response.`,
-                },
-              };
-            } else if (isDuplicate) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "DUPLICATE_TOOL_CALL_REJECTED",
-                  error: "The duplicate tool call did not run. Use the existing result and finish the current stage.",
-                },
-              };
-            } else if (kind === null) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "UNKNOWN_TOOL",
-                  error: `Unknown tool ${call.function.name}. Use only supplied tool names.`,
-                },
-              };
-            } else if (parsedArguments === null) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "MALFORMED_TOOL_ARGUMENTS",
-                  error: "Tool arguments must be exactly one valid JSON object matching the supplied schema.",
-                },
-              };
-            } else if (kind === "read" && mutationCalls > 0) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "READ_STAGE_CLOSED",
-                  error: "The read stage is closed because mutations already ran.",
-                },
-              };
-            } else if (kind === "read" && readCalls >= maxReadCalls) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "READ_LIMIT_REACHED",
-                  error: `The turn already used its ${maxReadCalls} read calls. Use those results.`,
-                },
-              };
-            } else if (kind === "mutation" && responseHasRead) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "MUTATION_MUST_FOLLOW_READS",
-                  error: "This mutation did not run. Review the read results, then emit all intended mutations together.",
-                },
-              };
-            } else if (kind === "mutation" && mutationCalls >= maxMutationCalls) {
-              execution = {
-                output: {
-                  ok: false,
-                  code: "MUTATION_LIMIT_REACHED",
-                  error: `The turn already used its ${maxMutationCalls} mutation calls.`,
-                },
-              };
-            } else {
-              seenToolFingerprints.add(fingerprint);
-              execution = await toolRuntime.execute(call);
-              executedToolCall = true;
-              if (kind === "read") readCalls += 1;
-              if (kind === "mutation") {
-                mutationCalls += 1;
-              }
-            }
-
-            toolExecutions.push({
-              name: call.function.name,
-              arguments: parsedArguments ?? { malformedArguments: call.function.arguments.slice(0, 2_000) },
-              output: execution.output,
-            });
-
-            if (execution.terminalThought) {
-              if (kind !== "mutation") {
-                throw new ThoughtContractError(
-                  "A terminal application mutation violated the sequential tool contract.",
-                  completionEvidence(completions),
-                  false,
-                );
-              }
-              const validatedThought = thoughtSchema.safeParse(
-                execution.terminalThought,
-              );
-              const validatedApplicationResult =
-                thoughtApplicationResultSchema.safeParse(
-                  execution.applicationResult,
-                );
-              if (!validatedThought.success || !validatedApplicationResult.success) {
-                throw new ThoughtContractError(
-                  "The application runtime returned an invalid terminal result.",
-                  completionEvidence(completions),
-                  false,
-                );
-              }
-              return {
-                thought: suppressAutomaticMemoryNarration(
-                  validatedThought.data,
-                  context.currentMessages,
-                  toolExecutions,
-                ),
-                completion: combinedCompletion(),
-                toolExecutions,
-                applicationResult: validatedApplicationResult.data,
-                applicationResults: [
-                  ...applicationResults,
-                  validatedApplicationResult.data,
-                ],
-              };
-            }
-            if (execution.applicationResult) {
-              const validatedApplicationResult =
-                thoughtApplicationResultSchema.safeParse(
-                  execution.applicationResult,
-                );
-              if (!validatedApplicationResult.success) {
-                throw new ThoughtContractError(
-                  "The application runtime returned an invalid mutation result.",
-                  completionEvidence(completions),
-                  false,
-                );
-              }
-              applicationResults.push(validatedApplicationResult.data);
-            }
-
-            messages.push({
-              role: "tool",
-              name: call.function.name,
-              toolCallId: call.id,
-              content: JSON.stringify(execution.output),
-            });
-          }
-          if (!executedToolCall) forceFinal = true;
-          continue;
-        }
-
-        try {
-          const thought = parseThought(
-            completion.content,
-            context,
-            applicationResults.length > 0,
-          );
-          return {
-            thought: suppressAutomaticMemoryNarration(
-              thought,
-              context.currentMessages,
-              toolExecutions,
-            ),
-            completion: combinedCompletion(),
-            ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
-            ...(applicationResults.length > 0
-              ? {
-                  applicationResult: applicationResults[0],
-                  applicationResults,
-                }
-              : {}),
-          };
-        } catch (error) {
-          if (!(error instanceof OpenRouterError)) throw error;
-          if (parseFailure) {
-            return {
-              thought: {
-                messageMode: "help",
-                contextRelation: "immediate_context",
-                applicationActionDecision: "none",
-                replyPoints: [
-                  "I couldn't finish that cleanly.",
-                ],
-                question: "send that again?",
-              },
-              completion: combinedCompletion(),
-              ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
-              ...(applicationResults.length > 0
-                ? {
-                    applicationResult: applicationResults[0],
-                    applicationResults,
-                  }
-                : {}),
-            };
-          }
-          parseFailure = error;
-          forceFinal = true;
-          messages.push({
-            role: "user",
-            content: `Your final response was rejected: ${error.message} Return one corrected JSON object containing only messageMode, contextRelation, replyPoints, and question. Do not call another tool or claim an application change unless a tool already returned success.`,
-          });
-        }
+export async function generateThought(
+  context: ThoughtContext,
+  toolRuntime?: ThoughtToolRuntime,
+  completeModel: CompleteModel = completeOpenRouter,
+): Promise<ThoughtGeneration> {
+const environment = getEnvironment();
+const systemMessage: ModelMessage = {
+  role: "system",
+  content: thoughtSystemPrompt,
+};
+const userMessage = contextMessage(context);
+const baseRequest = {
+  model: environment.THOUGHT_MODEL,
+  temperature: 0,
+  maxTokens: THOUGHT_MAX_OUTPUT_TOKENS,
+  reasoning: { exclude: true },
+  ...(isDeepSeekV4Pro(environment.THOUGHT_MODEL)
+    ? {
+        providerRouting: {
+          order: ["deepseek"],
+          allowFallbacks: true,
+          maxPrice: { prompt: 3, completion: 5 },
+        },
       }
+    : {}),
+};
+const completions: ModelCompletion[] = [];
+const toolExecutions: NonNullable<ThoughtGeneration["toolExecutions"]> = [];
+const messages: ModelMessage[] = [systemMessage, userMessage];
 
+const completeWithNitroFallback = async (
+  request: CompletionRequest,
+): Promise<ModelCompletion> => {
+  try {
+    return await completeModel(request);
+  } catch (firstError) {
+    const isEmptyNitroResponse =
+      isOpenRouterError(firstError) &&
+      firstError.message === "OpenRouter returned an empty completion." &&
+      request.model.endsWith(":nitro");
+    if (!isEmptyNitroResponse) throw firstError;
+
+    try {
+      return await completeModel(request);
+    } catch (secondError) {
+      const isSecondEmptyResponse =
+        isOpenRouterError(secondError) &&
+        secondError.message === "OpenRouter returned an empty completion.";
+      if (!isSecondEmptyResponse) throw secondError;
+      return completeModel({
+        ...request,
+        model: request.model.slice(0, -":nitro".length),
+      });
+    }
+  }
+};
+
+const requestCompletion = async (input: {
+  tools?: ModelFunctionTool[];
+  forceFinal?: boolean;
+} = {}): Promise<ModelCompletion> => {
+  const availableTools = input.tools ?? toolRuntime?.tools ?? [];
+  const useTools = Boolean(
+    toolRuntime && !input.forceFinal && availableTools.length > 0,
+  );
+  const request = {
+    ...baseRequest,
+    messages,
+    ...(useTools
+      ? {
+          tools: availableTools,
+          toolChoice: "auto" as const,
+          ...(isDeepSeekV4Pro(baseRequest.model)
+            ? {}
+            : { parallelToolCalls: true }),
+        }
+      : isDeepSeekV4Pro(baseRequest.model)
+        ? {}
+        : {
+          responseFormat: {
+            name: "cantarella_thought",
+            schema: thoughtJsonSchema,
+          },
+          }),
+  };
+  try {
+    return await completeWithNitroFallback(request);
+  } catch (error) {
+    if (
+      useTools ||
+      !isOpenRouterError(error) ||
+      !(
+        error.status === 400 ||
+        (error.status === 404 &&
+          error.message.includes("No endpoints found"))
+      )
+    ) {
+      throw error;
+    }
+    return completeWithNitroFallback({
+      ...baseRequest,
+      messages,
+    });
+  }
+};
+
+const combinedCompletion = (): ModelCompletion => {
+  const last = completions.at(-1);
+  if (!last) throw new Error("Thought produced no model completion.");
+  const sum = (
+    values: Array<number | null | undefined>,
+  ): number | null => {
+    const present = values.filter((value): value is number => value !== null && value !== undefined);
+    return present.length === 0
+      ? null
+      : present.reduce((total, value) => total + value, 0);
+  };
+  return {
+    content: completions
+      .map((completion) =>
+        completion.content || JSON.stringify(completion.toolCalls ?? []),
+      )
+      .join("\n"),
+    model: last.model,
+    provider: last.provider,
+    usage: {
+      inputTokens: sum(completions.map((completion) => completion.usage.inputTokens)),
+      outputTokens: sum(completions.map((completion) => completion.usage.outputTokens)),
+      estimatedCostUsd: sum(
+        completions.map((completion) => completion.usage.estimatedCostUsd),
+      ),
+    },
+    latencyMs: completions.reduce(
+      (total, completion) => total + completion.latencyMs,
+      0,
+    ),
+  };
+};
+
+const maxReadCalls = toolRuntime?.maxReadCalls ?? 3;
+const maxMutationCalls = toolRuntime?.maxMutationCalls ?? 3;
+let parseFailure: Error | null = null;
+let readCalls = 0;
+let mutationCalls = 0;
+let forceFinal = false;
+const seenToolFingerprints = new Set<string>();
+const applicationResults: ThoughtApplicationResult[] = [];
+const maxModelSteps = Math.max(
+  MAX_MODEL_STEPS,
+  Math.min(maxReadCalls + maxMutationCalls + 4, 24),
+);
+
+for (let round = 0; round < maxModelSteps; round += 1) {
+  // Keep the complete application surface visible for every open tool
+  // stage. Runtime guards—not hidden tool definitions—enforce ordering,
+  // candidate safety, and per-turn limits.
+  const availableTools = toolRuntime && !forceFinal
+    ? toolRuntime.tools
+    : [];
+  const completion = await requestCompletion({
+    tools: availableTools,
+    forceFinal: forceFinal || availableTools.length === 0,
+  });
+  completions.push(completion);
+  const calls = completion.toolCalls ?? [];
+
+  if (calls.length > 0) {
+    if (!toolRuntime) {
+      throw thoughtContractError(
+        "The Thought model requested a tool when no tool runtime was available.",
+        completionEvidence(completions),
+        true,
+      );
+    }
+    if (forceFinal || availableTools.length === 0) {
       return {
         thought: {
           messageMode: "help",
           contextRelation: "immediate_context",
           applicationActionDecision: "none",
-          replyPoints: [
-            applicationResults.length > 0
-              ? "I got part of that done, but couldn't finish the rest cleanly."
-              : "I couldn't finish that cleanly.",
-          ],
-          question: applicationResults.length > 0 ? null : "send that again?",
+          voiceContext: [],
+          replyPoints: ["I couldn't finish that cleanly."],
+          question: "send that again?",
         },
         completion: combinedCompletion(),
         ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
@@ -1149,6 +941,262 @@ export function createThoughtGenerator(
             }
           : {}),
       };
-    },
-  };
+    }
+    if (!calls.every(isStructurallyValidToolCall)) {
+      throw thoughtContractError(
+        "The Thought model returned a structurally invalid tool call.",
+        completionEvidence(completions),
+        true,
+      );
+    }
+    const callIds = calls.map((call) => call.id);
+    if (callIds.some((id) => !id) || new Set(callIds).size !== callIds.length) {
+      throw thoughtContractError(
+        "The Thought model returned missing or duplicate tool-call IDs.",
+        completionEvidence(completions),
+        true,
+      );
+    }
+    const kinds = calls.map((call) => toolRuntime.classify(call.function.name));
+    const responseHasRead = kinds.includes("read");
+    let executedToolCall = false;
+
+    messages.push({
+      role: "assistant",
+      content: completion.content,
+      toolCalls: calls,
+      ...(completion.reasoning ? { reasoning: completion.reasoning } : {}),
+      ...(completion.reasoningDetails
+        ? { reasoningDetails: completion.reasoningDetails }
+        : {}),
+    });
+
+    for (const [index, call] of calls.entries()) {
+      const kind = kinds[index] ?? null;
+      const parsedArguments = parseToolArguments(call);
+      const fingerprint = `${call.function.name}:${
+        parsedArguments ? JSON.stringify(parsedArguments) : call.function.arguments
+      }`;
+      const isDuplicate = seenToolFingerprints.has(fingerprint);
+      let execution: ThoughtToolExecutionResult;
+
+      if (index >= MAX_TOOL_CALLS_PER_RESPONSE) {
+        execution = {
+          output: {
+            ok: false,
+            code: "TOOL_BATCH_DEFERRED",
+            error: `Only the first ${MAX_TOOL_CALLS_PER_RESPONSE} tool calls run in one model response. Continue with any remaining work in the next response.`,
+          },
+        };
+      } else if (isDuplicate) {
+        execution = {
+          output: {
+            ok: false,
+            code: "DUPLICATE_TOOL_CALL_REJECTED",
+            error: "The duplicate tool call did not run. Use the existing result and finish the current stage.",
+          },
+        };
+      } else if (kind === null) {
+        execution = {
+          output: {
+            ok: false,
+            code: "UNKNOWN_TOOL",
+            error: `Unknown tool ${call.function.name}. Use only supplied tool names.`,
+          },
+        };
+      } else if (parsedArguments === null) {
+        execution = {
+          output: {
+            ok: false,
+            code: "MALFORMED_TOOL_ARGUMENTS",
+            error: "Tool arguments must be exactly one valid JSON object matching the supplied schema.",
+          },
+        };
+      } else if (kind === "read" && mutationCalls > 0) {
+        execution = {
+          output: {
+            ok: false,
+            code: "READ_STAGE_CLOSED",
+            error: "The read stage is closed because mutations already ran.",
+          },
+        };
+      } else if (kind === "read" && readCalls >= maxReadCalls) {
+        execution = {
+          output: {
+            ok: false,
+            code: "READ_LIMIT_REACHED",
+            error: `The turn already used its ${maxReadCalls} read calls. Use those results.`,
+          },
+        };
+      } else if (kind === "mutation" && responseHasRead) {
+        execution = {
+          output: {
+            ok: false,
+            code: "MUTATION_MUST_FOLLOW_READS",
+            error: "This mutation did not run. Review the read results, then emit all intended mutations together.",
+          },
+        };
+      } else if (kind === "mutation" && mutationCalls >= maxMutationCalls) {
+        execution = {
+          output: {
+            ok: false,
+            code: "MUTATION_LIMIT_REACHED",
+            error: `The turn already used its ${maxMutationCalls} mutation calls.`,
+          },
+        };
+      } else {
+        seenToolFingerprints.add(fingerprint);
+        execution = await toolRuntime.execute(call);
+        executedToolCall = true;
+        if (kind === "read") readCalls += 1;
+        if (kind === "mutation") {
+          mutationCalls += 1;
+        }
+      }
+
+      toolExecutions.push({
+        name: call.function.name,
+        arguments: parsedArguments ?? { malformedArguments: call.function.arguments.slice(0, 2_000) },
+        output: execution.output,
+      });
+
+      if (execution.terminalThought) {
+        if (kind !== "mutation") {
+          throw thoughtContractError(
+            "A terminal application mutation violated the sequential tool contract.",
+            completionEvidence(completions),
+            false,
+          );
+        }
+        const validatedThought = thoughtSchema.safeParse(
+          execution.terminalThought,
+        );
+        const validatedApplicationResult =
+          thoughtApplicationResultSchema.safeParse(
+            execution.applicationResult,
+          );
+        if (!validatedThought.success || !validatedApplicationResult.success) {
+          throw thoughtContractError(
+            "The application runtime returned an invalid terminal result.",
+            completionEvidence(completions),
+            false,
+          );
+        }
+        return {
+          thought: suppressAutomaticMemoryNarration(
+            validatedThought.data,
+            context.currentMessages,
+            toolExecutions,
+          ),
+          completion: combinedCompletion(),
+          toolExecutions,
+          applicationResult: validatedApplicationResult.data,
+          applicationResults: [
+            ...applicationResults,
+            validatedApplicationResult.data,
+          ],
+        };
+      }
+      if (execution.applicationResult) {
+        const validatedApplicationResult =
+          thoughtApplicationResultSchema.safeParse(
+            execution.applicationResult,
+          );
+        if (!validatedApplicationResult.success) {
+          throw thoughtContractError(
+            "The application runtime returned an invalid mutation result.",
+            completionEvidence(completions),
+            false,
+          );
+        }
+        applicationResults.push(validatedApplicationResult.data);
+      }
+
+      messages.push({
+        role: "tool",
+        name: call.function.name,
+        toolCallId: call.id,
+        content: JSON.stringify(execution.output),
+      });
+    }
+    if (!executedToolCall) forceFinal = true;
+    continue;
+  }
+
+  try {
+    const thought = parseThought(
+      completion.content,
+      context,
+      applicationResults.length > 0,
+    );
+    return {
+      thought: suppressAutomaticMemoryNarration(
+        thought,
+        context.currentMessages,
+        toolExecutions,
+      ),
+      completion: combinedCompletion(),
+      ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
+      ...(applicationResults.length > 0
+        ? {
+            applicationResult: applicationResults[0],
+            applicationResults,
+          }
+        : {}),
+    };
+  } catch (error) {
+    if (!isOpenRouterError(error)) throw error;
+    if (parseFailure) {
+      return {
+        thought: {
+          messageMode: "help",
+          contextRelation: "immediate_context",
+          applicationActionDecision: "none",
+          voiceContext: [],
+          replyPoints: [
+            "I couldn't finish that cleanly.",
+          ],
+          question: "send that again?",
+        },
+        completion: combinedCompletion(),
+        ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
+        ...(applicationResults.length > 0
+          ? {
+              applicationResult: applicationResults[0],
+              applicationResults,
+            }
+          : {}),
+      };
+    }
+    parseFailure = error;
+    forceFinal = true;
+    messages.push({
+      role: "user",
+      content: `Your final response was rejected: ${error.message} Return one corrected JSON object containing only messageMode, contextRelation, voiceContext, replyPoints, and question. Do not call another tool or claim an application change unless a tool already returned success.`,
+    });
+  }
+}
+
+return {
+  thought: {
+    messageMode: "help",
+    contextRelation: "immediate_context",
+    applicationActionDecision: "none",
+    voiceContext: [],
+    replyPoints: [
+      applicationResults.length > 0
+        ? "I got part of that done, but couldn't finish the rest cleanly."
+        : "I couldn't finish that cleanly.",
+    ],
+    question: applicationResults.length > 0 ? null : "send that again?",
+  },
+  completion: combinedCompletion(),
+  ...(toolExecutions.length > 0 ? { toolExecutions } : {}),
+  ...(applicationResults.length > 0
+    ? {
+        applicationResult: applicationResults[0],
+        applicationResults,
+      }
+    : {}),
+};
 }

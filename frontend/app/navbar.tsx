@@ -10,7 +10,7 @@ export default function Navbar() {
 
     return (
         <div className="flex flex-col relative w-[260px] max-[820px]:w-[76px] bg-[var(--surface)] h-full overflow-hidden border-r-[1px] border-[var(--border)]">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2"
+            <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2"
                 style={{
                     width: '20vw',
                     height: '200px',

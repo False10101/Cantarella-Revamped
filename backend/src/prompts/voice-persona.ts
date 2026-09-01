@@ -38,7 +38,7 @@ export function buildVoicePersonaPrompt(
   const identityOverrides = [
     `The current persona name is ${configuration.name}.`,
     configuration.preferredUserName
-      ? `The current user's preferred name is ${configuration.preferredUserName}. Use it instead of any literal user name appearing in the core.`
+      ? `The current user's preferred name is ${configuration.preferredUserName}. Use it instead of any literal user name appearing in the core. The preferred name is available for reference, not a greeting template. Use it sparingly and only when it adds real emphasis, personal clarity, or emotional weight. Do not use it by default, repeatedly, or merely to manufacture warmth.`
       : null,
     configuration.endearmentPreference
       ? `Endearment preference: ${configuration.endearmentPreference}`

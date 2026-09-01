@@ -12,8 +12,8 @@ import {
   type Memory,
 } from "../db/schema.js";
 import {
-  createEmbeddingClient,
-  type EmbeddingClient,
+  embedTexts,
+  type EmbedTexts,
   type EmbeddingGeneration,
 } from "../models/embedding.js";
 import type { MemoryAction } from "../models/thought.js";
@@ -27,11 +27,18 @@ import {
 } from "./memory-core.js";
 import { reusableMemoryEmbeddingId } from "./memory-embedding-history.js";
 
-export class InvalidMemoryActionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidMemoryActionError";
-  }
+export type InvalidMemoryActionError = Error;
+
+export function invalidMemoryAction(message: string): InvalidMemoryActionError {
+  const error = new Error(message);
+  error.name = "InvalidMemoryActionError";
+  return error;
+}
+
+export function isInvalidMemoryActionError(
+  error: unknown,
+): error is InvalidMemoryActionError {
+  return error instanceof Error && error.name === "InvalidMemoryActionError";
 }
 
 function snapshot(memory: Memory): MemorySnapshot {
@@ -67,7 +74,7 @@ function normalizedFacets(canonicalText: string, facets: string[] | undefined): 
     unique.push(text);
   }
   if (unique.length > 4) {
-    throw new InvalidMemoryActionError("A memory can have at most four retrieval facets.");
+    throw invalidMemoryAction("A memory can have at most four retrieval facets.");
   }
   return unique;
 }
@@ -117,10 +124,10 @@ export async function createChatMemory(input: {
   retrievalFacets?: string[];
   importance: number;
   expiresAt: Date | null;
-}, embeddingClient: EmbeddingClient = createEmbeddingClient()): Promise<MemoryActionResult> {
+}, embed: EmbedTexts = embedTexts): Promise<MemoryActionResult> {
   const normalizedHash = memoryContentHash(normalizeMemoryText(input.canonicalText));
   const sources = embeddingSources(input.canonicalText, input.retrievalFacets);
-  const embedding = await embeddingClient.embed(sources.map((source) => source.text));
+  const embedding = await embed(sources.map((source) => source.text));
   if (embedding.vectors.length !== sources.length) {
     throw new Error("The memory embedding response did not match the requested sources.");
   }
@@ -141,7 +148,7 @@ export async function createChatMemory(input: {
       .limit(1)
       .for("update");
     if (duplicate) {
-      throw new InvalidMemoryActionError("That memory is already stored.");
+      throw invalidMemoryAction("That memory is already stored.");
     }
 
     const [record] = await transaction
@@ -162,7 +169,7 @@ export async function createChatMemory(input: {
         lastReinforcedAt: now,
       })
       .returning();
-    if (!record) throw new InvalidMemoryActionError("The memory could not be stored.");
+    if (!record) throw invalidMemoryAction("The memory could not be stored.");
 
     await transaction.insert(memoryEmbeddings).values(
       sources.map((source, index) => {
@@ -210,7 +217,7 @@ export async function executeMemoryAction(
     replacementImportance?: number;
     replacementExpiresAt?: Date | null;
   },
-  embeddingClient: EmbeddingClient = createEmbeddingClient(),
+  embed: EmbedTexts = embedTexts,
 ): Promise<MemoryActionResult> {
   const memoryId = input.action.targetMemoryRef;
   const [existing] = await database
@@ -225,7 +232,7 @@ export async function executeMemoryAction(
     )
     .limit(1);
   if (!existing) {
-    throw new InvalidMemoryActionError(
+    throw invalidMemoryAction(
       "The selected memory no longer exists or is not active.",
     );
   }
@@ -245,7 +252,7 @@ export async function executeMemoryAction(
         .limit(1)
         .for("update");
       if (!locked) {
-        throw new InvalidMemoryActionError(
+        throw invalidMemoryAction(
           "The selected memory no longer exists or is not active.",
         );
       }
@@ -269,7 +276,7 @@ export async function executeMemoryAction(
         )
         .returning({ id: memories.id });
       if (deleted.length === 0) {
-        throw new InvalidMemoryActionError(
+        throw invalidMemoryAction(
           "The selected memory could not be deleted.",
         );
       }
@@ -285,14 +292,14 @@ export async function executeMemoryAction(
 
   const replacementText = input.action.replacementText;
   if (!replacementText) {
-    throw new InvalidMemoryActionError(
+    throw invalidMemoryAction(
       "The memory edit has no replacement text.",
     );
   }
   const normalizedHash = memoryContentHash(normalizeMemoryText(replacementText));
   const contentChanged = replacementText !== existing.canonicalText;
   const sources = embeddingSources(replacementText, input.replacementRetrievalFacets);
-  const embedding = await embeddingClient.embed(sources.map((source) => source.text));
+  const embedding = await embed(sources.map((source) => source.text));
   if (embedding.vectors.length !== sources.length) {
     throw new Error("The memory embedding response did not match the requested sources.");
   }
@@ -311,7 +318,7 @@ export async function executeMemoryAction(
       .limit(1)
       .for("update");
     if (!locked) {
-      throw new InvalidMemoryActionError(
+      throw invalidMemoryAction(
         "The selected memory no longer exists or is not active.",
       );
     }
@@ -330,7 +337,7 @@ export async function executeMemoryAction(
         )
         .limit(1);
       if (duplicate) {
-        throw new InvalidMemoryActionError(
+        throw invalidMemoryAction(
           "That corrected memory is already stored.",
         );
       }
@@ -363,7 +370,7 @@ export async function executeMemoryAction(
       .where(eq(memories.id, memoryId))
       .returning();
     if (!record) {
-      throw new InvalidMemoryActionError(
+      throw invalidMemoryAction(
         "The selected memory could not be edited.",
       );
     }
