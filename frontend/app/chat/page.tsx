@@ -277,7 +277,7 @@ export default function Page() {
 
     const userTimeZone = account?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
     const isPeakTime = isDeepSeekPeakTime(now);
-    const showPeakPricingAlert = isPeakTime || process.env.NODE_ENV === "development";
+    const showPeakPricingAlert = true;
     const peakEndsAt = getDeepSeekPeakEnd(now);
 
     useEffect(() => {
@@ -733,7 +733,7 @@ export default function Page() {
                                 <span>
                                     {isPeakTime
                                         ? `DeepSeek peak pricing is active — 2× until ${peakEndsAt ? formatLocalTime(peakEndsAt, userTimeZone) : "the window ends"}`
-                                        : "DeepSeek peak pricing preview"}
+                                        : "DeepSeek peak pricing is not active right now"}
                                     <span className="ml-1.5 text-[var(--text-secondary)]">{formatLocalPeakSchedule(userTimeZone)}</span>
                                 </span>
                                 <span
