@@ -13,7 +13,7 @@ const environmentSchema = z.object({
   THOUGHT_MODEL: z
     .string()
     .min(1)
-    .default("deepseek/deepseek-v4-pro-0813"),
+    .default("openai/gpt-6-luna"),
   VOICE_MODEL: z.string().min(1).default("openai/gpt-5.6-luna"),
   VOICE_CONTEXT_MODE: z.enum(["history", "resolved"]).default("history"),
   EMBEDDING_MODEL: z

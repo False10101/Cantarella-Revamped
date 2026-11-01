@@ -617,6 +617,23 @@ Tool-stage discipline:
 - You are the sole live owner of memory and reminder decisions for this turn. No separate memory model will reconsider them later.
 - If rejectedResponse is present, the previous brief was rejected as unusable or unrelated to currentMessages. Reclassify currentMessages from scratch and produce a materially corrected response. Never repeat, lightly paraphrase, defend, or preserve the rejected meaning.`;
 
+const lunaExecutionPriorities = `Execution priorities for this private judgment pass:
+- Identify asserted facts, stored-information questions and requested changes independently of reply style. Casual or social messages can require application work; reply classification does not decide whether to act.
+- If a question or change has a searchable subject, perform the relevant lookup before treating its reference as ambiguous. Unretrieved information is not missing information. Ask only about consequential distinctions still unresolved after successful lookup and immediate context.
+- Apply the existing memory policy to clearly asserted useful personal facts, responsibilities, relationships and ongoing circumstances. After lookup, create absent warranted facts, merge changed facts or leave already complete records unchanged. Casual wording and lack of an explicit remember request do not waive persistence. Lookup alone does not complete a save.
+- Store only established assertions attributable to the user. Fictional dialogue, quotations, jokes, hypotheticals, uncertain possibilities and passing explanations do not establish lasting traits or preferences. Do not convert explanations of attribution or corrections of examples into personal preferences. A genuinely stated lasting preference remains eligible.
+- An edit produces a complete replacement from retrieved facts plus asserted changes. Preserve every independently valid detail not revised or removed, including units, currency, frequency, ownership, dates and unresolved parts. Do not summarize away unchanged qualifiers.
+- Explicit forgetting or permanent removal requires removal, not an inactive label or negative restatement. Delete a record containing only the removed information; for compound records remove the requested information while preserving independently useful unrelated facts. Cancelling an interruption and permanently removing its record are different operations; follow the requested outcome.
+- Parameter schemas are authoritative. Use only each parameter's own enum values; omit uncertain optional filters. A rejected lookup is not an empty successful lookup. Correct recoverable arguments from validation errors without repeating an identical rejected request.
+- Keep requested outcome, retrieved state and successful tool results distinct. Compare dates and times in the explicit timezone. Report completion only after success; disclose incomplete work rather than treating failed or skipped operations as complete.
+- Before final JSON check outstanding requested lookups, requested changes and warranted saves. Complete clear work through tools without inventing tasks, asking permission for ordinary memory persistence or creating reminders from passive plans.
+
+Scheduling and clarification priorities:
+- Latest explicitly undecided, withheld or rejected timing overrides stored times and earlier agreements. Leave the blocked schedule unchanged and ask the minimum timing clarification after relevant lookup.
+- An explicit instant or duration is sufficient. If only the date changes and time remains accepted, preserve the agreed stored time. A calendar day or broad window alone does not specify a new notification instant; do not invent default times or durations.
+- If required timing or retrieved targets remain ambiguous, return messageMode "unclear" with the resolving question without executing that blocked operation. Independently clear facts or unrelated operations may still be handled. Ordinary conversational questions do not require this mode.
+`;
+
 function contextMessage(context: ThoughtContext): ModelMessage {
   return {
     role: "user",
@@ -754,16 +771,17 @@ export async function generateThought(
   completeModel: CompleteModel = completeOpenRouter,
 ): Promise<ThoughtGeneration> {
 const environment = getEnvironment();
+const usesLuna = environment.THOUGHT_MODEL.split(":", 1)[0] === "openai/gpt-6-luna";
 const systemMessage: ModelMessage = {
   role: "system",
-  content: thoughtSystemPrompt,
+  content: usesLuna ? `${thoughtSystemPrompt}\n\n${lunaExecutionPriorities}` : thoughtSystemPrompt,
 };
 const userMessage = contextMessage(context);
 const baseRequest = {
   model: environment.THOUGHT_MODEL,
   temperature: 0,
   maxTokens: THOUGHT_MAX_OUTPUT_TOKENS,
-  reasoning: { exclude: true },
+  reasoning: usesLuna ? { effort: "medium" as const, exclude: true } : { exclude: true },
   ...(isDeepSeekV4Pro(environment.THOUGHT_MODEL)
     ? {
         providerRouting: {
@@ -820,11 +838,11 @@ const requestCompletion = async (input: {
       ? {
           tools: availableTools,
           toolChoice: "auto" as const,
-          ...(isDeepSeekV4Pro(baseRequest.model)
+          ...(isDeepSeekV4Pro(baseRequest.model) || usesLuna
             ? {}
             : { parallelToolCalls: true }),
         }
-      : isDeepSeekV4Pro(baseRequest.model)
+      : isDeepSeekV4Pro(baseRequest.model) || usesLuna
         ? {}
         : {
           responseFormat: {

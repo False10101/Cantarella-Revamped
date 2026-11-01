@@ -5,7 +5,6 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { Check, CheckCheck, CircleAlert, LoaderCircle, Send } from "lucide-react";
 
-import { useAuthSession } from "../auth/AuthBootstrap";
 
 type ChatMessage = {
     id: string;
@@ -175,46 +174,6 @@ function formatMessageTime(timeStr: string) {
     return getSafeDate(timeStr).toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" });
 }
 
-function isDeepSeekPeakTime(now: Date) {
-    const day = now.getUTCDay();
-    if (day === 0 || day === 6) return false;
-
-    const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    return (minutes >= 60 && minutes < 240) || (minutes >= 360 && minutes < 600);
-}
-
-function getDeepSeekPeakEnd(now: Date): Date | null {
-    const day = now.getUTCDay();
-    if (day === 0 || day === 6) return null;
-
-    const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-    if (minutes >= 60 && minutes < 240) {
-        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 4));
-    }
-    if (minutes >= 360 && minutes < 600) {
-        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 10));
-    }
-    return null;
-}
-
-function formatLocalTime(date: Date, timeZone: string) {
-    return new Intl.DateTimeFormat("en-US", {
-        timeZone,
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-    }).format(date);
-}
-
-function formatLocalPeakSchedule(timeZone: string) {
-    const format = (hour: number) => formatLocalTime(
-        new Date(Date.UTC(2026, 8, 7, hour, 0)),
-        timeZone,
-    );
-
-    return `${format(1)}–${format(4)} · ${format(6)}–${format(10)} on weekdays`;
-}
-
 function MessageStatus({ status }: { status: ChatMessage["status"] }) {
     if (status === "sending") {
         return (
@@ -249,9 +208,7 @@ function MessageStatus({ status }: { status: ChatMessage["status"] }) {
 
 export default function Page() {
     const { getAccessTokenSilently, isAuthenticated } = useAuth0();
-    const { account } = useAuthSession();
     const [message, setMessage] = useState("");
-    const [now, setNow] = useState(() => new Date());
     const [messageList, setMessageList] = useState<ChatMessage[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [isInitialLoaded, setIsInitialLoaded] = useState(false);
@@ -274,16 +231,6 @@ export default function Page() {
     const failedTurnIdsRef = useRef(new Set<string>());
     const messageInputRef = useRef<HTMLTextAreaElement>(null);
     messageListRef.current = messageList;
-
-    const userTimeZone = account?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
-    const isPeakTime = isDeepSeekPeakTime(now);
-    const showPeakPricingAlert = true;
-    const peakEndsAt = getDeepSeekPeakEnd(now);
-
-    useEffect(() => {
-        const timer = window.setInterval(() => setNow(new Date()), 30_000);
-        return () => window.clearInterval(timer);
-    }, []);
 
     useEffect(() => {
         const input = messageInputRef.current;
@@ -725,25 +672,6 @@ export default function Page() {
 
                 <div className="flex w-full shrink-0 bg-linear-to-r from-[var(--surface3)]/15 to-transparent px-[2.5%] py-3">
                     <div className="mx-auto flex w-full flex-col items-center justify-center space-y-2 font-[font-family:var(--font-body)]">
-                        {showPeakPricingAlert && (
-                            <div
-                                className="group relative flex w-full cursor-help items-center gap-2 rounded-lg border border-[rgba(201,147,90,0.24)] bg-[var(--amber-dim)] px-3 py-2 text-[10px] text-[var(--amber-soft)]"
-                            >
-                                <CircleAlert className="h-3.5 w-3.5 shrink-0" strokeWidth={1.7} />
-                                <span>
-                                    {isPeakTime
-                                        ? `DeepSeek peak pricing is active — 2× until ${peakEndsAt ? formatLocalTime(peakEndsAt, userTimeZone) : "the window ends"}`
-                                        : "DeepSeek peak pricing is not active right now"}
-                                    <span className="ml-1.5 text-[var(--text-secondary)]">{formatLocalPeakSchedule(userTimeZone)}</span>
-                                </span>
-                                <span
-                                    role="tooltip"
-                                    className="pointer-events-none absolute bottom-[calc(100%+8px)] left-0 z-40 w-[min(360px,calc(100vw-40px))] rounded-lg border border-[var(--border2)] bg-[var(--surface2)] px-3 py-2.5 text-[10px] leading-4 text-[var(--text-secondary)] opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100"
-                                >
-                                    Peak pricing means DeepSeek charges 2× during its busiest weekday windows. Cantarella works exactly the same; only the Thought-model price changes. These times are shown in your local timezone.
-                                </span>
-                            </div>
-                        )}
                         <div className="flex min-h-12 w-full items-end rounded-xl border-[1px] border-[var(--border2)] bg-[var(--surface)] px-3 py-2 transition-all focus-within:border-[rgba(201,147,90,0.35)] focus-within:shadow-[0_0px_3px_rgba(201,147,90,0.05)]">
                             <textarea
                                 ref={messageInputRef}

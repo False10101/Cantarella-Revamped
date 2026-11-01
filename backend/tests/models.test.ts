@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getEnvironment } from "../src/config/env.js";
 
 import {
   applicationTools,
@@ -1136,7 +1137,7 @@ describe("two-pass model contracts", () => {
     });
   });
 
-  it("uses DeepSeek V4 Pro with official-provider preference and fallback", async () => {
+  it("uses OpenRouter Luna with medium reasoning and the tested execution priorities", async () => {
     const requests: CompletionRequest[] = [];
     const generator = testThoughtGenerator({
       async complete(request) {
@@ -1162,15 +1163,40 @@ describe("two-pass model contracts", () => {
 
     expect(result.thought).toEqual(validThought);
     expect(requests).toHaveLength(1);
-    expect(requests[0]?.model).toBe("deepseek/deepseek-v4-pro-0813");
-    expect(requests[0]?.providerRouting).toEqual({
-      order: ["deepseek"],
-      allowFallbacks: true,
-      maxPrice: { prompt: 3, completion: 5 },
-    });
+    expect(requests[0]?.model).toBe("openai/gpt-6-luna");
+    expect(requests[0]?.providerRouting).toBeUndefined();
+    expect(requests[0]?.reasoning).toEqual({ effort: "medium", exclude: true });
+    expect(requests[0]?.messages[0]?.content).toContain("Execution priorities for this private judgment pass:");
+    expect(requests[0]?.messages[0]?.content).toContain("Preserve every independently valid detail");
+    expect(requests[0]?.messages[0]?.content).toContain("Fictional dialogue, quotations");
     expect(requests[0]?.parallelToolCalls).toBeUndefined();
     expect(requests[0]?.maxTokens).toBe(6_000);
     expect(requests[0]?.responseFormat).toBeUndefined();
+  });
+
+  it("preserves DeepSeek routing and the original prompt when selected for rollback", async () => {
+    const environment = getEnvironment();
+    const previousModel = environment.THOUGHT_MODEL;
+    environment.THOUGHT_MODEL = "deepseek/deepseek-v4-pro-0813";
+    const requests: CompletionRequest[] = [];
+    try {
+      await generateThought({
+        currentMessages: ["yo"], recentConversation: [], conversationSummary: null,
+        memories: [], reminders: [], localTime: "Thursday, October 8, 2026 at 3:00 PM GMT+7",
+      }, undefined, async request => {
+        requests.push(request);
+        return {content: JSON.stringify(validThought),model: request.model,provider: "test",
+          usage: {inputTokens: 1,outputTokens: 1,estimatedCostUsd: 0},latencyMs: 1};
+      });
+      expect(requests[0]?.model).toBe("deepseek/deepseek-v4-pro-0813");
+      expect(requests[0]?.reasoning).toEqual({ exclude: true });
+      expect(requests[0]?.providerRouting).toEqual({
+        order: ["deepseek"], allowFallbacks: true, maxPrice: {prompt: 3,completion: 5},
+      });
+      expect(requests[0]?.messages[0]?.content).not.toContain("Execution priorities for this private judgment pass:");
+    } finally {
+      environment.THOUGHT_MODEL = previousModel;
+    }
   });
 
   it("runs a duplicated read only once and quarantines its duplicate", async () => {

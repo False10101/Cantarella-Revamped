@@ -83,7 +83,7 @@ describe("conversation summary policy", () => {
 
     expect(result.plan).toEqual(validPlan);
     expect(requests).toHaveLength(2);
-    expect(requests[0]?.responseFormat).toBeUndefined();
+    expect(requests[0]?.responseFormat?.name).toBe("cantarella_conversation_summary_chunk");
     expect(requests[0]?.maxTokens).toBe(6_000);
     expect(requests[0]?.messages[0]?.content).toContain(
       "Summarize only NEW MESSAGES",
